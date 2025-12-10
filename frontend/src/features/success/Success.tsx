@@ -517,7 +517,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
 
 const SERVICE_OPTIONS = SERVICES
 const DEFAULT_SERVICE = 'Indemnisation et Service au client'
-const TEAMS_POLLS_URL = 'https://teams.microsoft.com/l/app/9fe30a27-8f6b-4f0f-aa59-6a1b0101ba8c?source=store'
+const TEAMS_PRAISE_IMAGE = `${import.meta.env.BASE_URL}teams-praise.png`
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
@@ -730,11 +730,11 @@ export default function Success() {
                 <button
                   type="button"
                   onClick={() => {
-                    window.open(TEAMS_POLLS_URL, '_blank', 'noopener,noreferrer')
+                    window.open(TEAMS_PRAISE_IMAGE, '_blank', 'noopener,noreferrer')
                   }}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-primary-800 shadow-sm hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  Ouvrir Teams — Polls
+                  Ouvrir Teams — Compliment
                 </button>
               </div>
             </div>
