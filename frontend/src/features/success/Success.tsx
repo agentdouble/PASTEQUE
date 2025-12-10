@@ -121,8 +121,7 @@ export default function Success() {
         </div>
         <h2 className="text-3xl font-bold text-primary-950">Success</h2>
         <p className="text-primary-600 max-w-3xl">
-          Radar synthétique des feedbacks positifs assurance par service : ce qui fonctionne déjà, à pousser encore.
-          Cette vue sert d’exemple pour matérialiser une analyse orientée « success stories » sans aspect négatif.
+          Vue conceptuelle des réussites par service (assurance) pour inspirer les prochaines actions.
         </p>
       </div>
 
