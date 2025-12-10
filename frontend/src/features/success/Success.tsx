@@ -650,9 +650,6 @@ export default function Success() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-primary-600">
-                Objectif : rendre visible ce qui marche déjà par service et le remonter aux équipes sans attendre.
-              </p>
             </div>
           </div>
         </Card>
