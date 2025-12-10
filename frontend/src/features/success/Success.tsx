@@ -480,7 +480,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
 ]
 
 const SERVICE_OPTIONS = SERVICES
-const DEFAULT_SERVICE = SERVICE_OPTIONS[0]
+const DEFAULT_SERVICE = 'Indemnisation et Service au client'
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
