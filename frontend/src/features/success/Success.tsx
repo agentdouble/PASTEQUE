@@ -1,4 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Radar } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+  type ChartData,
+  type ChartOptions,
+} from 'chart.js'
 import { Card } from '@/components/ui'
 import { HiArrowTrendingUp } from 'react-icons/hi2'
 
@@ -456,6 +468,8 @@ const SERVICE_OPTIONS = SERVICES
 const ALL_SERVICES = 'Tous les services'
 const REWARD_TARGET = 20
 
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
+
 export default function Success() {
   const [activeTab, setActiveTab] = useState<TabKey>('radar')
   const [serviceFilter, setServiceFilter] = useState<string>(SERVICE_OPTIONS[0] ?? '')
@@ -491,15 +505,11 @@ export default function Success() {
     () => [...POSITIVE_FEEDBACK].sort((a, b) => b.kudos - a.kudos),
     []
   )
-  const spotlightFeedbacks =
-    serviceFilter === ALL_SERVICES
-      ? sortedFeedback.slice(0, 3)
-      : selectedFeedback
-          ? [
-              selectedFeedback,
-              ...sortedFeedback.filter(item => item.service !== serviceFilter).slice(0, 2),
-            ]
-          : sortedFeedback.slice(0, 3)
+  const weeklySummaries = useMemo(() => {
+    if (serviceFilter === ALL_SERVICES) return POSITIVE_FEEDBACK
+    const filtered = POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter)
+    return filtered.length ? filtered : POSITIVE_FEEDBACK
+  }, [serviceFilter])
   const totalKudos = useMemo(
     () => sortedFeedback.reduce((sum, item) => sum + item.kudos, 0),
     [sortedFeedback]
@@ -511,6 +521,82 @@ export default function Success() {
   const activeNextAction =
     selectedFeedback?.nextAction ??
     'Partager aux équipes les trois feedbacks les plus cités cette semaine.'
+
+  const radarData = useMemo<ChartData<'radar'>>(() => {
+    if (!activeRadar) {
+      return { labels: [], datasets: [] }
+    }
+    const labels = activeRadar.metrics.map(m => m.label)
+    const values = activeRadar.metrics.map(m => m.value)
+    return {
+      labels,
+      datasets: [
+        {
+          label: activeRadar.service,
+          data: values,
+          fill: true,
+          backgroundColor: context => {
+            const { chart } = context
+            const { ctx, chartArea } = chart
+            if (!chartArea) return 'rgba(56, 189, 248, 0.14)'
+            const centerX = (chartArea.left + chartArea.right) / 2
+            const centerY = (chartArea.top + chartArea.bottom) / 2
+            const radius = Math.min(chartArea.width, chartArea.height) / 2
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius)
+            gradient.addColorStop(0, 'rgba(56, 189, 248, 0.30)')
+            gradient.addColorStop(1, 'rgba(14, 165, 233, 0.05)')
+            return gradient
+          },
+          borderColor: 'rgba(14, 165, 233, 0.6)',
+          pointBackgroundColor: '#22d3ee',
+          pointBorderColor: '#0f766e',
+          pointHoverBackgroundColor: '#e0f7ff',
+          pointHoverBorderColor: '#0ea5e9',
+          borderWidth: 1.5,
+        },
+      ],
+    }
+  }, [activeRadar])
+
+  const radarOptions = useMemo<ChartOptions<'radar'>>(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          beginAtZero: true,
+          suggestedMax: 100,
+          ticks: { display: false, stepSize: 20 },
+          grid: {
+            color: 'rgba(15, 118, 110, 0.06)',
+          },
+          angleLines: {
+            color: 'rgba(14, 165, 233, 0.08)',
+          },
+          pointLabels: {
+            color: '#0f172a',
+            font: { size: 11, weight: 600 },
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            label: context => `${context.label}: ${context.parsed.r} / 100`,
+          },
+        },
+      },
+      elements: {
+        line: {
+          tension: 0.25,
+        },
+      },
+    }),
+    []
+  )
 
   const tabButtonClass = (key: TabKey) =>
     [
@@ -580,20 +666,20 @@ export default function Success() {
               <div className="relative h-80 overflow-hidden rounded-xl border border-teal-100 bg-gradient-to-br from-white via-primary-25 to-teal-50">
                 <SpaceBackground
                   particleCount={420}
-                  particleColor="rgba(14,165,233,0.65)"
+                  particleColor="rgba(14,165,233,0.55)"
                   className="absolute inset-0"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/40 to-white/10" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center space-y-1">
-                    <p className="text-xs uppercase tracking-wide text-primary-500">Radar animé</p>
-                    <p className="text-lg font-semibold text-primary-900">
-                      {activeRadar?.service ?? 'Service'}
-                    </p>
-                    <p className="text-sm text-primary-700">
-                      Progression visualisée par l’animation (remplace le graphique radar ici).
-                    </p>
-                  </div>
+                <div className="absolute inset-0 opacity-60">
+                  <Radar
+                    key={activeRadar?.service ?? 'radar-empty'}
+                    data={radarData}
+                    options={radarOptions}
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white/75 via-white/30 to-white/10" />
+                <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm border border-teal-100 rounded-full px-3 py-1">
+                  <p className="text-[11px] uppercase tracking-wide text-primary-500">Radar feedback</p>
+                  <p className="text-sm font-semibold text-primary-900">{activeRadar?.service ?? 'Service'}</p>
                 </div>
               </div>
             </div>
@@ -601,10 +687,11 @@ export default function Success() {
             <div className="lg:w-1/3 space-y-4">
               <div className="flex items-center gap-2 text-teal-800">
                 <HiArrowTrendingUp className="w-5 h-5" />
-                <p className="text-sm font-semibold">Ce que les clients ont adoré</p>
+                <p className="text-sm font-semibold">Résumé hebdomadaire</p>
               </div>
+              <p className="text-xs text-primary-700">Ce que les clients ont adoré, synthétisé par service.</p>
               <div className="space-y-2">
-                {spotlightFeedbacks.map(item => (
+                {weeklySummaries.map(item => (
                   <div
                     key={item.service}
                     className={`rounded-lg border px-3 py-2 shadow-sm ${
@@ -613,23 +700,16 @@ export default function Success() {
                         : 'border-teal-100 bg-white/80'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <p className="text-xs uppercase tracking-wide text-primary-500">{item.service}</p>
                       <span className="text-[11px] font-semibold text-teal-700 bg-teal-50 px-2 py-1 rounded-full border border-teal-100">
-                        +{item.kudos} kudos
+                        Score {item.score} / 100
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-primary-900">{item.momentum}</p>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
-                      {item.highlights.slice(0, 3).map(highlight => (
-                        <span
-                          key={highlight}
-                          className="text-[11px] text-primary-700 bg-primary-50 border border-primary-100 px-2 py-0.5 rounded-full"
-                        >
-                          {highlight}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-sm font-semibold text-primary-900">
+                      {item.highlights.slice(0, 3).join(' • ')}
+                    </p>
+                    <p className="text-xs text-primary-700">{item.momentum}</p>
                   </div>
                 ))}
               </div>
