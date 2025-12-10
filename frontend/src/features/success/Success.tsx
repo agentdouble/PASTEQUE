@@ -150,6 +150,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
 ]
 
 const SERVICE_OPTIONS = POSITIVE_FEEDBACK.map(item => item.service)
+const ALL_SERVICES = 'Tous les services'
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
@@ -158,7 +159,9 @@ export default function Success() {
   const [serviceFilter, setServiceFilter] = useState<string>(SERVICE_OPTIONS[0] ?? '')
 
   const radarData = useMemo<ChartData<'radar'>>(() => {
-    const target = SERVICE_RADARS.find(item => item.service === serviceFilter) ?? SERVICE_RADARS[0]
+    const target =
+      SERVICE_RADARS.find(item => item.service === serviceFilter) ??
+      SERVICE_RADARS[0]
     const labels = target?.metrics.map(m => m.label) ?? []
     const values = target?.metrics.map(m => m.value) ?? []
     return {
@@ -223,10 +226,14 @@ export default function Success() {
     ].join(' ')
 
   const filteredExamples =
-    POSITIVE_EXAMPLES.filter(example => example.service === serviceFilter) ||
-    []
+    serviceFilter === ALL_SERVICES
+      ? POSITIVE_EXAMPLES
+      : POSITIVE_EXAMPLES.filter(example => example.service === serviceFilter)
 
-  const filteredServices = POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter)
+  const filteredServices =
+    serviceFilter === ALL_SERVICES
+      ? POSITIVE_FEEDBACK
+      : POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter)
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-6">
@@ -241,35 +248,34 @@ export default function Success() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-primary-100 pb-2">
-        {(['radar', 'moments', 'services'] as TabKey[]).map(key => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveTab(key)}
-            className={tabButtonClass(key)}
-          >
-            {key === 'radar' ? 'Radar' : key === 'moments' ? 'Moments forts' : 'Services'}
-          </button>
-        ))}
-      </div>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-primary-100 pb-2">
+          {(['radar', 'moments', 'services'] as TabKey[]).map(key => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveTab(key)}
+              className={tabButtonClass(key)}
+            >
+              {key === 'radar' ? 'Radar' : key === 'moments' ? 'Moments forts' : 'Services'}
+            </button>
+          ))}
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-primary-600">Service :</span>
-        {SERVICE_OPTIONS.map(option => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => setServiceFilter(option)}
-            className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition-colors ${
-              serviceFilter === option
-                ? 'bg-primary-950 text-white border-primary-900 shadow-sm'
-                : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
-            }`}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-primary-600">Service :</span>
+          <select
+            value={serviceFilter}
+            onChange={e => setServiceFilter(e.target.value)}
+            className="h-10 rounded-lg border border-primary-200 bg-white px-3 text-sm text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            {option}
-          </button>
-        ))}
+            {[ALL_SERVICES, ...SERVICE_OPTIONS].map(option => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {activeTab === 'radar' && (
