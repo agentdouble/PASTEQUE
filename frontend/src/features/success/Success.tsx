@@ -23,34 +23,34 @@ type ServiceFeedback = {
 
 const POSITIVE_FEEDBACK: ServiceFeedback[] = [
   {
-    service: 'Support client',
+    service: 'Relation client',
     score: 92,
-    highlights: ['Résolutions dès le premier contact', 'Temps de réponse divisés par 2', 'FAQ enrichie plébiscitée'],
-    momentum: 'Maintenir les temps de réponse instantanés sur les pics du lundi',
+    highlights: ['Résolutions dès le premier contact', 'Temps de réponse stabilisés sous 2 min', 'FAQ enrichie plébiscitée'],
+    momentum: 'Préserver l’accueil premium sur tous les canaux entrants',
   },
   {
-    service: 'Facturation',
-    score: 84,
-    highlights: ['Portail paiement fluide', 'Notifications claires', 'Moins de relances nécessaires'],
-    momentum: 'Renforcer la pédagogie sur les avoirs pour conserver la dynamique',
-  },
-  {
-    service: 'Technique',
-    score: 88,
-    highlights: ['Mises à jour sans interruption', 'Qualité audio/vidéo saluée', 'Diagnostic proactif'],
-    momentum: 'Capitaliser sur l’automatisation des patchs qui rassure les équipes',
-  },
-  {
-    service: 'Onboarding',
-    score: 79,
-    highlights: ['Parcours guidé apprécié', 'Tutoriels courts efficaces', 'Accompagnement personnalisé'],
-    momentum: 'Doubler les micro-démos pour maintenir l’élan des nouvelles équipes',
-  },
-  {
-    service: 'Data & reporting',
+    service: 'Souscription & devis',
     score: 86,
-    highlights: ['Tableaux prêts à l’emploi', 'Export simple', 'Alertes pertinentes'],
-    momentum: 'Continuer à simplifier les filtres avancés plébiscités',
+    highlights: ['Parcours devis en 3 étapes', 'Signature électronique fluide', 'Tarification claire en mobilité'],
+    momentum: 'Continuer à proposer le devis instantané sur les nouveaux produits',
+  },
+  {
+    service: 'Gestion des sinistres',
+    score: 94,
+    highlights: ['Déclaration en 5 minutes', 'Suivi temps réel apprécié', 'Contacts proactifs après ouverture'],
+    momentum: 'Amplifier la dématérialisation totale des pièces jointes',
+  },
+  {
+    service: 'Indemnisation',
+    score: 88,
+    highlights: ['Décisions rapides', 'Explications claires des montants', 'Virements anticipés salués'],
+    momentum: 'Poursuivre les versements express qui rassurent les assurés',
+  },
+  {
+    service: 'Assistance 24/7',
+    score: 90,
+    highlights: ['Prise en charge immédiate', 'Coordination prestataires efficace', 'Canal vidéo rassurant'],
+    momentum: 'Maintenir la réactivité 24/7 sur tous les segments',
   },
 ]
 
@@ -121,8 +121,8 @@ export default function Success() {
         </div>
         <h2 className="text-3xl font-bold text-primary-950">Success</h2>
         <p className="text-primary-600 max-w-3xl">
-          Radar synthétique des feedbacks positifs par service : ce qui fonctionne déjà, à pousser encore.
-          Cette vue sert d’exemple pour matérialiser une analyse orientée « success stories ».
+          Radar synthétique des feedbacks positifs assurance par service : ce qui fonctionne déjà, à pousser encore.
+          Cette vue sert d’exemple pour matérialiser une analyse orientée « success stories » sans aspect négatif.
         </p>
       </div>
 

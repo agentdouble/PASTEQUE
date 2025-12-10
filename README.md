@@ -152,7 +152,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 
 ### Success – feedback positifs (concept)
 
-- Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives) avec un radar des feedbacks positifs par service pour mettre en avant ce qui fonctionne déjà et doit être amplifié.
+- Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives, assurance) avec un radar des feedbacks uniquement positifs par service pour mettre en avant ce qui fonctionne déjà et doit être amplifié.
 
 ## Principes d’architecture
 
