@@ -243,9 +243,6 @@ export default function Success() {
           <span className="text-xs font-semibold uppercase tracking-wide">Concept assurance</span>
         </div>
         <h2 className="text-3xl font-bold text-primary-950">Success</h2>
-        <p className="text-primary-600 max-w-3xl">
-          Concept assurance hebdomadaire : focus sur les réussites, données fictives et signaux uniquement positifs.
-        </p>
       </div>
 
       <div className="flex flex-col gap-3">
