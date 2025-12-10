@@ -25,6 +25,7 @@ type PositiveExample = {
   title: string
   summary: string
   quote: string
+  service: string
 }
 
 type TabKey = 'radar' | 'moments' | 'services'
@@ -72,26 +73,31 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     title: 'Traitement éclair des sinistres',
     summary: 'Dossiers clôturés en moins de 48h avec une communication claire à chaque étape.',
     quote: '« Mon sinistre a été traité en moins de 48 heures, et j’ai reçu toutes les informations nécessaires pour comprendre le processus. »',
+    service: 'Gestion des sinistres',
   },
   {
     title: 'Réactivité MyFoyer',
     summary: 'Incident applicatif résolu dans la journée, avec accompagnement proactif.',
     quote: '« L’application MyFoyer a été remise en service en quelques heures, le support a été super réactif. »',
+    service: 'Assistance 24/7',
   },
   {
     title: 'Transparence sur les dossiers',
     summary: 'Mises à jour régulières et réponses immédiates qui rassurent les assurés.',
     quote: '« J’ai été tenu informé de l’avancement de mon dossier à chaque étape, c’était très rassurant. »',
+    service: 'Relation client',
   },
   {
     title: 'Rapatriement orchestré',
     summary: 'Prise en charge rapide et professionnelle, coordination fluide des équipes terrain.',
     quote: '« Le service de rapatriement a été très efficace et rapide, avec des équipes très professionnelles. »',
+    service: 'Assistance 24/7',
   },
   {
     title: 'Parcours contractuel simplifié',
     summary: 'Signature DocuSign fluide et affichage limpide des garanties.',
     quote: '« La signature DocuSign a été simple et rapide, et les garanties de mon contrat sont maintenant clairement affichées. »',
+    service: 'Souscription & devis',
   },
 ]
 
@@ -143,14 +149,16 @@ const SERVICE_RADARS: ServiceRadar[] = [
   },
 ]
 
+const SERVICE_OPTIONS = POSITIVE_FEEDBACK.map(item => item.service)
+
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
 export default function Success() {
   const [activeTab, setActiveTab] = useState<TabKey>('radar')
-  const [selectedService, setSelectedService] = useState<string>(SERVICE_RADARS[0]?.service ?? '')
+  const [serviceFilter, setServiceFilter] = useState<string>(SERVICE_OPTIONS[0] ?? '')
 
   const radarData = useMemo<ChartData<'radar'>>(() => {
-    const target = SERVICE_RADARS.find(item => item.service === selectedService) ?? SERVICE_RADARS[0]
+    const target = SERVICE_RADARS.find(item => item.service === serviceFilter) ?? SERVICE_RADARS[0]
     const labels = target?.metrics.map(m => m.label) ?? []
     const values = target?.metrics.map(m => m.value) ?? []
     return {
@@ -169,7 +177,7 @@ export default function Success() {
         },
       ],
     }
-  }, [selectedService])
+  }, [serviceFilter])
 
   const radarOptions = useMemo<ChartOptions<'radar'>>(
     () => ({
@@ -214,6 +222,12 @@ export default function Success() {
         : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50',
     ].join(' ')
 
+  const filteredExamples =
+    POSITIVE_EXAMPLES.filter(example => example.service === serviceFilter) ||
+    []
+
+  const filteredServices = POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter)
+
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-6">
       <div className="flex flex-col gap-2">
@@ -240,6 +254,24 @@ export default function Success() {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-primary-600">Service :</span>
+        {SERVICE_OPTIONS.map(option => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setServiceFilter(option)}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition-colors ${
+              serviceFilter === option
+                ? 'bg-primary-950 text-white border-primary-900 shadow-sm'
+                : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+
       {activeTab === 'radar' && (
         <Card
           variant="elevated"
@@ -247,22 +279,6 @@ export default function Success() {
         >
           <div className="flex flex-col lg:flex-row gap-6">
             <div className="lg:w-2/3">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                {SERVICE_RADARS.map(item => (
-                  <button
-                    key={item.service}
-                    type="button"
-                    onClick={() => setSelectedService(item.service)}
-                    className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition-colors ${
-                      selectedService === item.service
-                        ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                        : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
-                    }`}
-                  >
-                    {item.service}
-                  </button>
-                ))}
-              </div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-semibold text-primary-800">Radar des points forts par service</p>
                 <span className="text-xs font-semibold text-teal-700 bg-white px-3 py-1 rounded-full border border-teal-100">
@@ -280,13 +296,13 @@ export default function Success() {
                 <p className="text-sm font-semibold">Moments à amplifier</p>
               </div>
               <div className="space-y-2">
-                {POSITIVE_FEEDBACK.filter(item => item.service === selectedService).map(item => (
+                {POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter).map(item => (
                   <div key={item.service} className="rounded-lg border border-teal-100 bg-white px-3 py-2 shadow-sm">
                     <p className="text-xs uppercase tracking-wide text-primary-500">{item.service}</p>
                     <p className="text-sm font-semibold text-primary-900">{item.momentum}</p>
                   </div>
                 ))}
-                {POSITIVE_FEEDBACK.filter(item => item.service !== selectedService).slice(0, 2).map(item => (
+                {POSITIVE_FEEDBACK.filter(item => item.service !== serviceFilter).slice(0, 2).map(item => (
                   <div key={item.service} className="rounded-lg border border-teal-100 bg-white px-3 py-2 shadow-sm opacity-80">
                     <p className="text-xs uppercase tracking-wide text-primary-500">{item.service}</p>
                     <p className="text-sm font-semibold text-primary-900">{item.momentum}</p>
@@ -314,7 +330,7 @@ export default function Success() {
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-            {POSITIVE_EXAMPLES.map(example => (
+            {(filteredExamples.length ? filteredExamples : POSITIVE_EXAMPLES).map(example => (
               <div
                 key={example.title}
                 className="rounded-lg border border-primary-100 bg-primary-25 px-4 py-3 space-y-2"
@@ -322,6 +338,7 @@ export default function Success() {
                 <p className="text-xs uppercase tracking-wide text-primary-500">{example.title}</p>
                 <p className="text-sm font-semibold text-primary-900">{example.summary}</p>
                 <p className="text-xs text-primary-700 italic leading-relaxed">{example.quote}</p>
+                <p className="text-[11px] text-primary-500 font-semibold">Service : {example.service}</p>
               </div>
             ))}
           </div>
@@ -330,7 +347,7 @@ export default function Success() {
 
       {activeTab === 'services' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {POSITIVE_FEEDBACK.map(item => (
+          {(filteredServices.length ? filteredServices : POSITIVE_FEEDBACK).map(item => (
             <Card
               key={item.service}
               variant="elevated"

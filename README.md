@@ -154,7 +154,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 
 - Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives, assurance) avec un radar des feedbacks uniquement positifs par service pour mettre en avant ce qui fonctionne déjà et doit être amplifié.
 - Trois onglets : « Radar » (vue synthétique + moments à amplifier), « Moments forts » (exemples AQA positifs : sinistres en 48h, MyFoyer réactif, rapatriement, DocuSign, transparence dossiers) et « Services » (détails par service, scores et points forts).
-- Radar par service : sélection du service pour afficher son radar (Rapidité, Clarté, Proactivité, Simplicité) et son momentum associé.
+- Filtre de service commun aux 3 onglets : radar par service (axes Rapidité/Clarté/Proactivité/Simplicité), exemples AQA et cartes service synchronisés sur le service sélectionné.
 
 ## Principes d’architecture
 
