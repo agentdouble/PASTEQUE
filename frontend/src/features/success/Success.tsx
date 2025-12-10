@@ -36,16 +36,8 @@ type ServiceRadar = {
 }
 
 const SERVICES: string[] = [
-  'Direction des opérations',
-  'Employee benefits',
-  'Executive office',
-  'Grands comptes et Risques spéciaux',
-  'Marketing et Value Proposition',
-  'Product management',
-  "Réseau d'agents",
-  'Support aux réseaux de distribution',
-  "Systèmes d'information Front-office",
   'Contrats IARD-Vie-Santé',
+  'Executive office',
   'Indemnisation et Service au client',
   'Support transverse Opérations',
   'Surveillance et Comptabilité clients',
@@ -54,88 +46,40 @@ const SERVICES: string[] = [
 
 const POSITIVE_FEEDBACK: ServiceFeedback[] = [
   {
-    service: 'Direction des opérations',
-    score: 93,
-    highlights: ['Coordination fluide entre équipes', 'Priorisation des dossiers clés', 'Décisions rapides en comité'],
-    momentum: 'Poursuivre les rituels courts qui sécurisent les jalons hebdo.',
-  },
-  {
-    service: 'Employee benefits',
-    score: 90,
-    highlights: ['Offres packagées appréciées', 'Parcours adhésion simplifié', 'Suivi employeur transparent'],
-    momentum: 'Maintenir la pédagogie claire sur les avantages différenciants.',
-  },
-  {
-    service: 'Executive office',
-    score: 94,
-    highlights: ['Alignement stratégique lisible', 'Communication positive aux équipes', 'Décisions validées rapidement'],
-    momentum: 'Continuer les points flash qui éclairent les priorités.',
-  },
-  {
-    service: 'Grands comptes et Risques spéciaux',
-    score: 91,
-    highlights: ['Montages sur-mesure salués', 'Réactivité sur les demandes complexes', 'Relationnel premium renforcé'],
-    momentum: 'Capitaliser sur les ateliers co-construction qui rassurent les clients clés.',
-  },
-  {
-    service: 'Marketing et Value Proposition',
-    score: 89,
-    highlights: ['Messages clairs sur les garanties', 'Campagnes perçues comme utiles', 'Supports simples à réutiliser'],
-    momentum: 'Amplifier les formats courts qui engagent les réseaux.',
-  },
-  {
-    service: 'Product management',
-    score: 90,
-    highlights: ['Roadmap lisible', 'Livraisons stables', 'Feedbacks intégrés en continu'],
-    momentum: 'Prolonger les démos courtes qui montrent les gains utilisateurs.',
-  },
-  {
-    service: "Réseau d'agents",
-    score: 88,
-    highlights: ['Devis rapides', 'Accès mobile apprécié', 'Support réactif aux questions terrain'],
-    momentum: 'Renforcer les kits express pour les rendez-vous clients.',
-  },
-  {
-    service: 'Support aux réseaux de distribution',
-    score: 87,
-    highlights: ['Hotline efficace', 'Guides mis à jour', 'Temps d’attente réduits'],
-    momentum: 'Maintenir les temps de prise en charge courts sur les pics.',
-  },
-  {
-    service: "Systèmes d'information Front-office",
-    score: 92,
-    highlights: ['Interface fluide MyFoyer', 'Stabilité en campagne', 'Parcours signature rapide'],
-    momentum: 'Pousser les micro-améliorations UX plébiscitées.',
-  },
-  {
     service: 'Contrats IARD-Vie-Santé',
-    score: 89,
-    highlights: ['Garantie mieux présentée', 'DocuSign apprécié', 'Clarté des exclusions'],
+    score: 92,
+    highlights: ['Garanties lisibles', 'DocuSign fluide', 'Clarté des exclusions'],
     momentum: 'Poursuivre la simplification contractuelle sans alourdir les parcours.',
   },
   {
     service: 'Indemnisation et Service au client',
-    score: 95,
+    score: 96,
     highlights: ['Traitements en <48h', 'Explications limpides', 'Versements anticipés rassurants'],
     momentum: 'Continuer les contacts proactifs post-déclaration.',
   },
   {
+    service: "Systèmes d'information Back-office",
+    score: 91,
+    highlights: ['Automatisations fiables', 'Intégrations réussies', 'Données synchronisées'],
+    momentum: 'Étendre les automatisations qui réduisent les saisies.',
+  },
+  {
+    service: 'Executive office',
+    score: 94,
+    highlights: ['Alignement stratégique lisible', 'Communication positive', 'Décisions rapides'],
+    momentum: 'Prolonger les points flash qui éclairent les priorités.',
+  },
+  {
     service: 'Support transverse Opérations',
-    score: 88,
+    score: 89,
     highlights: ['Appuis inter-équipes efficaces', 'Documentation claire', 'Outils partagés appréciés'],
     momentum: 'Renforcer la capitalisation des bonnes pratiques communes.',
   },
   {
     service: 'Surveillance et Comptabilité clients',
-    score: 86,
+    score: 87,
     highlights: ['Suivi régulier des comptes', 'Alertes précises', 'Recouvrement perçu comme constructif'],
     momentum: 'Maintenir les notifications claires pour anticiper les régularisations.',
-  },
-  {
-    service: "Systèmes d'information Back-office",
-    score: 90,
-    highlights: ['Automatisations fiables', 'Intégrations réussies', 'Données synchronisées'],
-    momentum: 'Étendre les automatisations qui réduisent les saisies.',
   },
 ]
 
@@ -147,28 +91,10 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Indemnisation et Service au client',
   },
   {
-    title: 'MyFoyer réactif',
-    summary: 'Incident résolu dans la journée, parcours fluide pour les assurés.',
-    quote: '« L’application MyFoyer a été remise en service en quelques heures, sans perturbation. »',
-    service: "Systèmes d'information Front-office",
-  },
-  {
     title: 'Contrats clairs',
     summary: 'DocuSign fluide et garanties mieux présentées.',
     quote: '« Signature simple et rapide, les garanties sont limpides. »',
     service: 'Contrats IARD-Vie-Santé',
-  },
-  {
-    title: 'Appui terrain agents',
-    summary: 'Devis express et réponses immédiates aux questions clients.',
-    quote: '« J’ai pu finaliser mon devis en quelques minutes chez le client. »',
-    service: "Réseau d'agents",
-  },
-  {
-    title: 'Montage grands comptes',
-    summary: 'Solutions sur-mesure validées sans aller-retour lourds.',
-    quote: '« Le montage a été construit rapidement, avec une posture très proactive. »',
-    service: 'Grands comptes et Risques spéciaux',
   },
   {
     title: 'Automatisation back-office',
@@ -177,40 +103,26 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: "Systèmes d'information Back-office",
   },
   {
-    title: 'Support distribution',
-    summary: 'Hotline sous 2 minutes et guides à jour.',
-    quote: '« J’ai eu ma réponse immédiatement, avec le bon guide prêt à l’emploi. »',
-    service: 'Support aux réseaux de distribution',
-  },
-  {
     title: 'Surveillance rassurante',
     summary: 'Alertes claires et recouvrement perçu comme constructif.',
     quote: '« Les notifications sont claires, on sait exactement quoi faire. »',
     service: 'Surveillance et Comptabilité clients',
   },
+  {
+    title: 'Flash exécutif',
+    summary: 'Décisions hebdo prises vite, partage transparent aux équipes.',
+    quote: '« On sait où on va, les arbitrages sont clairs et rapides. »',
+    service: 'Executive office',
+  },
+  {
+    title: 'Appui transverse',
+    summary: 'Réponses transverses rapides, documentation prête à l’emploi.',
+    quote: '« On a obtenu la bonne ressource en quelques minutes. »',
+    service: 'Support transverse Opérations',
+  },
 ]
 
 const SERVICE_RADARS: ServiceRadar[] = [
-  {
-    service: 'Direction des opérations',
-    metrics: [
-      { label: 'Empathie', value: 92 },
-      { label: 'Sourire', value: 90 },
-      { label: 'Rapidité perçue', value: 93 },
-      { label: 'Clarté', value: 91 },
-      { label: 'Proactivité', value: 92 },
-    ],
-  },
-  {
-    service: 'Employee benefits',
-    metrics: [
-      { label: 'Empathie', value: 90 },
-      { label: 'Sourire', value: 88 },
-      { label: 'Rapidité perçue', value: 89 },
-      { label: 'Clarté', value: 90 },
-      { label: 'Proactivité', value: 88 },
-    ],
-  },
   {
     service: 'Executive office',
     metrics: [
@@ -219,66 +131,6 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Rapidité perçue', value: 94 },
       { label: 'Clarté', value: 94 },
       { label: 'Proactivité', value: 93 },
-    ],
-  },
-  {
-    service: 'Grands comptes et Risques spéciaux',
-    metrics: [
-      { label: 'Empathie', value: 94 },
-      { label: 'Sourire', value: 92 },
-      { label: 'Rapidité perçue', value: 92 },
-      { label: 'Clarté', value: 90 },
-      { label: 'Proactivité', value: 93 },
-    ],
-  },
-  {
-    service: 'Marketing et Value Proposition',
-    metrics: [
-      { label: 'Empathie', value: 88 },
-      { label: 'Sourire', value: 86 },
-      { label: 'Rapidité perçue', value: 87 },
-      { label: 'Clarté', value: 90 },
-      { label: 'Proactivité', value: 88 },
-    ],
-  },
-  {
-    service: 'Product management',
-    metrics: [
-      { label: 'Empathie', value: 90 },
-      { label: 'Sourire', value: 88 },
-      { label: 'Rapidité perçue', value: 91 },
-      { label: 'Clarté', value: 92 },
-      { label: 'Proactivité', value: 90 },
-    ],
-  },
-  {
-    service: "Réseau d'agents",
-    metrics: [
-      { label: 'Empathie', value: 89 },
-      { label: 'Sourire', value: 88 },
-      { label: 'Rapidité perçue', value: 92 },
-      { label: 'Clarté', value: 88 },
-      { label: 'Proactivité', value: 89 },
-    ],
-  },
-  {
-    service: 'Support aux réseaux de distribution',
-    metrics: [
-      { label: 'Empathie', value: 88 },
-      { label: 'Sourire', value: 87 },
-      { label: 'Rapidité perçue', value: 90 },
-      { label: 'Clarté', value: 89 },
-      { label: 'Proactivité', value: 88 },
-    ],
-  },
-  {
-    service: "Systèmes d'information Front-office",
-    metrics: [
-      { label: 'Empathie', value: 92 },
-      { label: 'Sourire', value: 90 },
-      { label: 'Rapidité perçue', value: 94 },
-      { label: 'Clarté', value: 93 },
-      { label: 'Proactivité', value: 92 },
     ],
   },
   {
