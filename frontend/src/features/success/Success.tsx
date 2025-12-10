@@ -325,6 +325,30 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Indemnisation et Service au client',
   },
   {
+    title: 'Canal direct sinistres',
+    summary: 'Fil dédié pour les urgences avec réponse en moins de 10 minutes.',
+    quote: '« J’ai eu quelqu’un tout de suite, sans passer par un labyrinthe de menus. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
+    title: 'Déclaration simplifiée mobile',
+    summary: 'Parcours mobile en 5 étapes avec scan automatique des pièces.',
+    quote: '« Photos et documents ajoutés en quelques secondes depuis mon téléphone. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
+    title: 'Versement anticipé partiel',
+    summary: 'Avance proposée automatiquement après validation des premières pièces.',
+    quote: '« L’avance a été versée avant même la clôture, super rassurant. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
+    title: 'Tableau de suivi sinistre',
+    summary: 'Visibilité temps réel des étapes restantes et des délais prévus.',
+    quote: '« Je vois où en est mon dossier et les prochaines actions, sans appeler. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
     title: 'Contrats clairs',
     summary: 'DocuSign fluide et garanties mieux présentées.',
     quote: '« Signature simple et rapide, les garanties sont limpides. »',
