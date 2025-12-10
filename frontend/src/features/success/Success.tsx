@@ -659,7 +659,6 @@ export default function Success() {
                 <HiArrowTrendingUp className="w-5 h-5" />
                 <p className="text-sm font-semibold">Résumé hebdomadaire</p>
               </div>
-              <p className="text-xs text-primary-700">Ce que les clients ont adoré, synthétisé par service.</p>
               <div className="space-y-2">
                 {weeklySummaries.map(item => (
                   <div
