@@ -795,13 +795,20 @@ export default function Success() {
               <div>
                 <p className="text-xs text-neutral-300 mb-1">Titre</p>
                 <div className="flex flex-wrap gap-2">
-                  {['Génial', 'Merci', 'Félicitations', 'Champion'].map(label => (
+                  {[
+                    { label: 'Génial', icon: '🏆' },
+                    { label: 'Merci', icon: '✨' },
+                    { label: 'Félicitations', icon: '🎉' },
+                    { label: 'Champion', icon: '🏅' },
+                    { label: 'Idée', icon: '💡' },
+                  ].map(item => (
                     <button
-                      key={label}
+                      key={item.label}
                       type="button"
                       className="px-3 py-1.5 rounded-full bg-[#2f2f2f] border border-neutral-700 text-sm font-semibold text-neutral-100 hover:bg-[#3a3a3a]"
                     >
-                      {label}
+                      <span className="mr-1.5">{item.icon}</span>
+                      {item.label}
                     </button>
                   ))}
                 </div>
