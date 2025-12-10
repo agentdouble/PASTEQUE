@@ -153,7 +153,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 ### Success – feedback positifs (concept)
 
 - Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives, assurance) avec un radar des feedbacks uniquement positifs par service pour mettre en avant ce qui fonctionne déjà et doit être amplifié.
-- Bloc « Exemples AQA positifs » listant des moments forts appréciés (sinistres traités en 48h, réactivité MyFoyer, rapatriement, DocuSign, transparence dossiers) pour inspirer les actions.
+- Trois onglets : « Radar » (vue synthétique + moments à amplifier), « Moments forts » (exemples AQA positifs : sinistres en 48h, MyFoyer réactif, rapatriement, DocuSign, transparence dossiers) et « Services » (détails par service, scores et points forts).
 
 ## Principes d’architecture
 
