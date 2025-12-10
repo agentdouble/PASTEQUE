@@ -152,9 +152,10 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 
 ### Success – feedback positifs (concept)
 
-- Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives, assurance) avec un radar « Feedback Positive Themes Map » par service pour mettre en avant ce que les clients ont adoré (axes positifs : Accueil chaleureux, Réactivité/délais, Clarté du parcours, Suivi proactif, Fiabilité/indemnisation).
-- Trois onglets : « Radar » (vue synthétique + moments à amplifier), « Moments forts » (exemples AQA positifs : sinistres en 48h, MyFoyer réactif, rapatriement, DocuSign, transparence dossiers) et « Services » (détails par service, scores et points forts).
-- Sélecteur de service commun (dropdown) au-dessus des onglets : radar par service (axes Empathie/Sourire/Rapidité perçue/Clarté/Proactivité), exemples AQA et cartes service synchronisés sur le service choisi ou sur « Tous les services ».
+- Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives, assurance) avec un radar « Feedback Positive Themes Map » par service (axes Accueil chaleureux, Réactivité/délais, Clarté du parcours, Suivi proactif, Fiabilité/indemnisation) et un remplissage animé en léger décalé pour souligner la progression.
+- Deux onglets : « Radar » (synthèse + récompenses/kudos par service) et « Moments forts » (exemples AQA positifs : sinistres en 48h, MyFoyer réactif, rapatriement, DocuSign, transparence dossiers).
+- Sélecteur de service commun (dropdown) au-dessus des onglets : radar par service ou vue « Tous les services » (moyenne des métriques) pour voir d’un coup d’œil la tendance positive par équipe.
+- Panneau reconnaissance : compteur de feedbacks positifs, badge/récompense active et actions à partager aux équipes pour remonter les retours positifs (kudos par service, message prêt à diffuser).
 - Vue hebdomadaire (concept) : tout le contenu est présenté comme une photographie de la semaine, 100% positif.
 
 ## Principes d’architecture
