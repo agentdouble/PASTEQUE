@@ -729,7 +729,7 @@ export default function Success() {
                 <button
                   type="button"
                   onClick={() => {
-                    const pollsWebLink = 'https://teams.microsoft.com/l/app/9fe30a27-8f6b-4f0f-aa59-6a1b0101ba8c'
+                    const pollsWebLink = 'https://teams.microsoft.com/_#/apps/9fe30a27-8f6b-4f0f-aa59-6a1b0101ba8c'
                     window.open(pollsWebLink, '_blank', 'noopener,noreferrer')
                   }}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-primary-800 shadow-sm hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
