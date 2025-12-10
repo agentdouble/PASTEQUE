@@ -29,6 +29,11 @@ type PositiveExample = {
 
 type TabKey = 'radar' | 'moments' | 'services'
 
+type ServiceRadar = {
+  service: string
+  metrics: { label: string; value: number }[]
+}
+
 const POSITIVE_FEEDBACK: ServiceFeedback[] = [
   {
     service: 'Relation client',
@@ -90,16 +95,70 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
   },
 ]
 
+const SERVICE_RADARS: ServiceRadar[] = [
+  {
+    service: 'Relation client',
+    metrics: [
+      { label: 'Rapidité', value: 93 },
+      { label: 'Clarté', value: 91 },
+      { label: 'Proactivité', value: 90 },
+      { label: 'Simplicité', value: 92 },
+    ],
+  },
+  {
+    service: 'Souscription & devis',
+    metrics: [
+      { label: 'Rapidité', value: 88 },
+      { label: 'Clarté', value: 90 },
+      { label: 'Proactivité', value: 84 },
+      { label: 'Simplicité', value: 89 },
+    ],
+  },
+  {
+    service: 'Gestion des sinistres',
+    metrics: [
+      { label: 'Rapidité', value: 95 },
+      { label: 'Clarté', value: 93 },
+      { label: 'Proactivité', value: 92 },
+      { label: 'Simplicité', value: 90 },
+    ],
+  },
+  {
+    service: 'Indemnisation',
+    metrics: [
+      { label: 'Rapidité', value: 92 },
+      { label: 'Clarté', value: 90 },
+      { label: 'Proactivité', value: 88 },
+      { label: 'Simplicité', value: 89 },
+    ],
+  },
+  {
+    service: 'Assistance 24/7',
+    metrics: [
+      { label: 'Rapidité', value: 94 },
+      { label: 'Clarté', value: 88 },
+      { label: 'Proactivité', value: 92 },
+      { label: 'Simplicité', value: 90 },
+    ],
+  },
+]
+
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
 export default function Success() {
-  const radarData = useMemo<ChartData<'radar'>>(
-    () => ({
-      labels: POSITIVE_FEEDBACK.map(item => item.service),
+  const [activeTab, setActiveTab] = useState<TabKey>('radar')
+  const [selectedService, setSelectedService] = useState<string>(SERVICE_RADARS[0]?.service ?? '')
+
+  const radarData = useMemo<ChartData<'radar'>>(() => {
+    const target = SERVICE_RADARS.find(item => item.service === selectedService) ?? SERVICE_RADARS[0]
+    const labels = target?.metrics.map(m => m.label) ?? []
+    const values = target?.metrics.map(m => m.value) ?? []
+    return {
+      labels,
       datasets: [
         {
-          label: 'Feedback positif (concept)',
-          data: POSITIVE_FEEDBACK.map(item => item.score),
+          label: target?.service ?? 'Service',
+          data: values,
           backgroundColor: 'rgba(34, 211, 238, 0.14)',
           borderColor: '#14b8a6',
           pointBackgroundColor: '#0ea5e9',
@@ -109,9 +168,8 @@ export default function Success() {
           borderWidth: 2,
         },
       ],
-    }),
-    []
-  )
+    }
+  }, [selectedService])
 
   const radarOptions = useMemo<ChartOptions<'radar'>>(
     () => ({
@@ -147,8 +205,6 @@ export default function Success() {
     }),
     []
   )
-
-  const [activeTab, setActiveTab] = useState<TabKey>('radar')
 
   const tabButtonClass = (key: TabKey) =>
     [
@@ -191,8 +247,24 @@ export default function Success() {
         >
           <div className="flex flex-col lg:flex-row gap-6">
             <div className="lg:w-2/3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {SERVICE_RADARS.map(item => (
+                  <button
+                    key={item.service}
+                    type="button"
+                    onClick={() => setSelectedService(item.service)}
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition-colors ${
+                      selectedService === item.service
+                        ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                        : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
+                    }`}
+                  >
+                    {item.service}
+                  </button>
+                ))}
+              </div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-primary-800">Radar des points forts</p>
+                <p className="text-sm font-semibold text-primary-800">Radar des points forts par service</p>
                 <span className="text-xs font-semibold text-teal-700 bg-white px-3 py-1 rounded-full border border-teal-100">
                   Continuer dans cette lancée
                 </span>
@@ -208,11 +280,14 @@ export default function Success() {
                 <p className="text-sm font-semibold">Moments à amplifier</p>
               </div>
               <div className="space-y-2">
-                {POSITIVE_FEEDBACK.slice(0, 3).map(item => (
-                  <div
-                    key={item.service}
-                    className="rounded-lg border border-teal-100 bg-white px-3 py-2 shadow-sm"
-                  >
+                {POSITIVE_FEEDBACK.filter(item => item.service === selectedService).map(item => (
+                  <div key={item.service} className="rounded-lg border border-teal-100 bg-white px-3 py-2 shadow-sm">
+                    <p className="text-xs uppercase tracking-wide text-primary-500">{item.service}</p>
+                    <p className="text-sm font-semibold text-primary-900">{item.momentum}</p>
+                  </div>
+                ))}
+                {POSITIVE_FEEDBACK.filter(item => item.service !== selectedService).slice(0, 2).map(item => (
+                  <div key={item.service} className="rounded-lg border border-teal-100 bg-white px-3 py-2 shadow-sm opacity-80">
                     <p className="text-xs uppercase tracking-wide text-primary-500">{item.service}</p>
                     <p className="text-sm font-semibold text-primary-900">{item.momentum}</p>
                   </div>
