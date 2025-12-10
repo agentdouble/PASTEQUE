@@ -152,7 +152,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 
 ### Success – feedback positifs (concept)
 
-- Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives, assurance) avec un radar « Feedback Positive Themes Map » par service (axes Accueil chaleureux, Réactivité/délais, Clarté du parcours, Suivi proactif, Fiabilité/indemnisation) et un remplissage animé en léger décalé pour souligner la progression.
+- Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives, assurance) avec un fond animé (particules) à la place du radar; l’accent reste mis sur les axes Accueil chaleureux, Réactivité/délais, Clarté du parcours, Suivi proactif, Fiabilité/indemnisation.
 - Deux onglets : « Radar » (synthèse + récompenses/kudos par service) et « Moments forts » (exemples AQA positifs : sinistres en 48h, MyFoyer réactif, rapatriement, DocuSign, transparence dossiers).
 - Sélecteur de service commun (dropdown) au-dessus des onglets : radar par service ou vue « Tous les services » (moyenne des métriques) pour voir d’un coup d’œil la tendance positive par équipe.
 - Moments forts : plusieurs exemples par service pour illustrer concrètement les retours positifs; le filtre service permet de zoomer sur une équipe.
