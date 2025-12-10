@@ -517,14 +517,13 @@ const SERVICE_RADARS: ServiceRadar[] = [
 
 const SERVICE_OPTIONS = SERVICES
 const DEFAULT_SERVICE = 'Indemnisation et Service au client'
-const TEAMS_PRAISE_IMAGE = `${import.meta.env.BASE_URL}teams-praise.png`
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
 export default function Success() {
   const [activeTab, setActiveTab] = useState<TabKey>('radar')
   const [serviceFilter, setServiceFilter] = useState<string>(DEFAULT_SERVICE ?? '')
-  const [showTeamsImage, setShowTeamsImage] = useState(false)
+  const [showTeamsApp, setShowTeamsApp] = useState(false)
 
   const activeRadar = useMemo<ServiceRadar | null>(() => {
     return SERVICE_RADARS.find(item => item.service === serviceFilter) ?? null
@@ -731,7 +730,7 @@ export default function Success() {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowTeamsImage(true)
+                    setShowTeamsApp(true)
                   }}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-primary-800 shadow-sm hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
@@ -766,21 +765,72 @@ export default function Success() {
         </Card>
       )}
 
-      {showTeamsImage && (
+      {showTeamsApp && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="relative max-w-6xl w-full">
-            <button
-              type="button"
-              onClick={() => setShowTeamsImage(false)}
-              className="absolute right-3 top-3 z-10 rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-primary-900 border border-primary-100 shadow-sm hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              Fermer
-            </button>
-            <img
-              src={TEAMS_PRAISE_IMAGE}
-              alt="Compliment Teams"
-              className="w-full h-[80vh] object-contain rounded-lg shadow-2xl border border-primary-200 bg-black"
-            />
+          <div className="relative max-w-5xl w-full rounded-2xl border border-primary-200 shadow-2xl bg-[#0f172a]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-primary-900/40">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-md bg-primary-700 flex items-center justify-center text-white text-lg">👏</div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Compliment</p>
+                  <p className="text-xs text-primary-200">Envoyez un compliment !</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTeamsApp(false)}
+                className="text-primary-100 hover:text-white text-sm font-semibold"
+              >
+                Fermer
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-primary-50">
+              <div>
+                <p className="text-xs text-primary-300 mb-1">À (obligatoire)</p>
+                <div className="flex items-center gap-3 rounded-lg bg-[#0b1220] border border-primary-800 px-3 py-2">
+                  <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm">TY</div>
+                  <span className="text-sm font-semibold">TRUR Yannick</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-primary-300 mb-1">Titre</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Génial', 'Merci', 'Félicitations', 'Champion'].map(label => (
+                    <button
+                      key={label}
+                      type="button"
+                      className="px-3 py-1.5 rounded-full bg-primary-800/80 border border-primary-700 text-sm font-semibold text-primary-100 hover:bg-primary-700"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-primary-300 mb-1">Note (facultatif)</p>
+                <textarea
+                  rows={3}
+                  defaultValue={'Bravo,\nvous avez été très rapide sur la résolution de mon problème.'}
+                  className="w-full rounded-lg bg-[#0b1220] border border-primary-800 text-sm text-primary-50 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-primary-900/40">
+                <button
+                  type="button"
+                  onClick={() => setShowTeamsApp(false)}
+                  className="px-4 py-2 rounded-full bg-primary-800 text-sm font-semibold text-primary-100 hover:bg-primary-700"
+                >
+                  Aperçu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowTeamsApp(false)}
+                  className="px-4 py-2 rounded-full bg-indigo-500 text-sm font-semibold text-white hover:bg-indigo-400 shadow"
+                >
+                  Envoyer
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
