@@ -349,6 +349,24 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Indemnisation et Service au client',
   },
   {
+    title: 'Assistance 24/7',
+    summary: 'Support continu avec transfert direct vers un conseiller dédié sinistre.',
+    quote: '« Même tard le soir, quelqu’un a pris le relais et m’a rassuré. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
+    title: 'Formulaire pré-rempli',
+    summary: 'Champs auto-complétés avec les données connues pour accélérer la déclaration.',
+    quote: '« J’ai gagné du temps, presque tout était déjà rempli. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
+    title: 'Rappel automatique post-versement',
+    summary: 'Appel proactif pour vérifier que l’indemnité reçue couvre bien le besoin.',
+    quote: '« On m’a rappelé pour vérifier si tout était OK après le virement, appréciable. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
     title: 'Contrats clairs',
     summary: 'DocuSign fluide et garanties mieux présentées.',
     quote: '« Signature simple et rapide, les garanties sont limpides. »',
