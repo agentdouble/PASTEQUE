@@ -629,8 +629,8 @@ export default function Success() {
             <div className="lg:w-2/3">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-sm font-semibold text-primary-800">Feedback Positive Themes Map</p>
-                  <p className="text-xs text-primary-600">Ce que les clients ont adoré, regroupé par grands thèmes positifs.</p>
+                  <p className="text-sm font-semibold text-primary-800">Feedback radar</p>
+                  <p className="text-xs text-primary-600">Ce que les clients ont adoré sur les grands thèmes positifs.</p>
                 </div>
               </div>
               <div className="relative h-80 overflow-hidden rounded-xl border border-teal-100 bg-gradient-to-br from-white via-primary-25 to-teal-50">
