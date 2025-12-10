@@ -669,12 +669,7 @@ export default function Success() {
                         : 'border-teal-100 bg-white/80'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs uppercase tracking-wide text-primary-500">{item.service}</p>
-                      <span className="text-[11px] font-semibold text-teal-700 bg-teal-50 px-2 py-1 rounded-full border border-teal-100">
-                        Score {item.score} / 100
-                      </span>
-                    </div>
+                    <p className="text-xs uppercase tracking-wide text-primary-500">{item.service}</p>
                     <p className="text-sm font-semibold text-primary-900">
                       {item.highlights.slice(0, 3).join(' • ')}
                     </p>
