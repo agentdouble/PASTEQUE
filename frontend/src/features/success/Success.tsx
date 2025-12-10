@@ -767,39 +767,39 @@ export default function Success() {
 
       {showTeamsApp && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="relative max-w-5xl w-full rounded-2xl border border-primary-200 shadow-2xl bg-[#0f172a]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-primary-900/40">
+          <div className="relative max-w-5xl w-full rounded-2xl border border-neutral-700 shadow-2xl bg-[#1f1f1f]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-700">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-md bg-primary-700 flex items-center justify-center text-white text-lg">👏</div>
+                <div className="h-8 w-8 rounded-md bg-[#4f46e5] flex items-center justify-center text-white text-lg">👏</div>
                 <div>
                   <p className="text-sm font-semibold text-white">Compliment</p>
-                  <p className="text-xs text-primary-200">Envoyez un compliment !</p>
+                  <p className="text-xs text-neutral-300">Envoyez un compliment !</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTeamsApp(false)}
-                className="text-primary-100 hover:text-white text-sm font-semibold"
+                className="text-neutral-200 hover:text-white text-sm font-semibold"
               >
                 Fermer
               </button>
             </div>
-            <div className="p-5 space-y-4 text-primary-50">
+            <div className="p-5 space-y-4 text-neutral-100">
               <div>
-                <p className="text-xs text-primary-300 mb-1">À (obligatoire)</p>
-                <div className="flex items-center gap-3 rounded-lg bg-[#0b1220] border border-primary-800 px-3 py-2">
-                  <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm">TY</div>
+                <p className="text-xs text-neutral-300 mb-1">À (obligatoire)</p>
+                <div className="flex items-center gap-3 rounded-lg bg-[#2b2b2b] border border-neutral-700 px-3 py-2">
+                  <div className="h-8 w-8 rounded-full bg-[#3b82f6] flex items-center justify-center text-white text-sm">TY</div>
                   <span className="text-sm font-semibold">TRUR Yannick</span>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-primary-300 mb-1">Titre</p>
+                <p className="text-xs text-neutral-300 mb-1">Titre</p>
                 <div className="flex flex-wrap gap-2">
                   {['Génial', 'Merci', 'Félicitations', 'Champion'].map(label => (
                     <button
                       key={label}
                       type="button"
-                      className="px-3 py-1.5 rounded-full bg-primary-800/80 border border-primary-700 text-sm font-semibold text-primary-100 hover:bg-primary-700"
+                      className="px-3 py-1.5 rounded-full bg-[#2f2f2f] border border-neutral-700 text-sm font-semibold text-neutral-100 hover:bg-[#3a3a3a]"
                     >
                       {label}
                     </button>
@@ -807,25 +807,25 @@ export default function Success() {
                 </div>
               </div>
               <div>
-                <p className="text-xs text-primary-300 mb-1">Note (facultatif)</p>
+                <p className="text-xs text-neutral-300 mb-1">Note (facultatif)</p>
                 <textarea
                   rows={3}
                   defaultValue={'Bravo,\nvous avez été très rapide sur la résolution de mon problème.'}
-                  className="w-full rounded-lg bg-[#0b1220] border border-primary-800 text-sm text-primary-50 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full rounded-lg bg-[#2b2b2b] border border-neutral-700 text-sm text-neutral-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                 />
               </div>
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-primary-900/40">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-neutral-700">
                 <button
                   type="button"
                   onClick={() => setShowTeamsApp(false)}
-                  className="px-4 py-2 rounded-full bg-primary-800 text-sm font-semibold text-primary-100 hover:bg-primary-700"
+                  className="px-4 py-2 rounded-full bg-[#2f2f2f] text-sm font-semibold text-neutral-100 hover:bg-[#3a3a3a]"
                 >
                   Aperçu
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowTeamsApp(false)}
-                  className="px-4 py-2 rounded-full bg-indigo-500 text-sm font-semibold text-white hover:bg-indigo-400 shadow"
+                  className="px-4 py-2 rounded-full bg-[#4f46e5] text-sm font-semibold text-white hover:bg-[#6366f1] shadow"
                 >
                   Envoyer
                 </button>
