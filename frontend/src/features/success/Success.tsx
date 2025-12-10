@@ -343,12 +343,6 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Indemnisation et Service au client',
   },
   {
-    title: 'Tableau de suivi sinistre',
-    summary: 'Visibilité temps réel des étapes restantes et des délais prévus.',
-    quote: '« Je vois où en est mon dossier et les prochaines actions, sans appeler. »',
-    service: 'Indemnisation et Service au client',
-  },
-  {
     title: 'Assistance 24/7',
     summary: 'Support continu avec transfert direct vers un conseiller dédié sinistre.',
     quote: '« Même tard le soir, quelqu’un a pris le relais et m’a rassuré. »',
