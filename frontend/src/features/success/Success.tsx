@@ -596,9 +596,6 @@ export default function Success() {
                   <p className="text-sm font-semibold text-primary-800">Feedback Positive Themes Map</p>
                   <p className="text-xs text-primary-600">Ce que les clients ont adoré, regroupé par grands thèmes positifs.</p>
                 </div>
-                <span className="text-xs font-semibold text-teal-700 bg-white px-3 py-1 rounded-full border border-teal-100">
-                  Continuer dans cette lancée
-                </span>
               </div>
               <div className="relative h-80 overflow-hidden rounded-xl border border-teal-100 bg-gradient-to-br from-white via-primary-25 to-teal-50">
                 <SpaceBackground
