@@ -105,46 +105,46 @@ const SERVICE_RADARS: ServiceRadar[] = [
   {
     service: 'Relation client',
     metrics: [
-      { label: 'Rapidité', value: 93 },
+      { label: 'Empathie', value: 95 },
+      { label: 'Sourire', value: 92 },
+      { label: 'Rapidité perçue', value: 93 },
       { label: 'Clarté', value: 91 },
-      { label: 'Proactivité', value: 90 },
-      { label: 'Simplicité', value: 92 },
     ],
   },
   {
     service: 'Souscription & devis',
     metrics: [
-      { label: 'Rapidité', value: 88 },
+      { label: 'Empathie', value: 89 },
+      { label: 'Sourire', value: 87 },
+      { label: 'Rapidité perçue', value: 90 },
       { label: 'Clarté', value: 90 },
-      { label: 'Proactivité', value: 84 },
-      { label: 'Simplicité', value: 89 },
     ],
   },
   {
     service: 'Gestion des sinistres',
     metrics: [
-      { label: 'Rapidité', value: 95 },
+      { label: 'Empathie', value: 97 },
+      { label: 'Sourire', value: 94 },
+      { label: 'Rapidité perçue', value: 95 },
       { label: 'Clarté', value: 93 },
-      { label: 'Proactivité', value: 92 },
-      { label: 'Simplicité', value: 90 },
     ],
   },
   {
     service: 'Indemnisation',
     metrics: [
-      { label: 'Rapidité', value: 92 },
+      { label: 'Empathie', value: 90 },
+      { label: 'Sourire', value: 89 },
+      { label: 'Rapidité perçue', value: 92 },
       { label: 'Clarté', value: 90 },
-      { label: 'Proactivité', value: 88 },
-      { label: 'Simplicité', value: 89 },
     ],
   },
   {
     service: 'Assistance 24/7',
     metrics: [
-      { label: 'Rapidité', value: 94 },
+      { label: 'Empathie', value: 96 },
+      { label: 'Sourire', value: 93 },
+      { label: 'Rapidité perçue', value: 94 },
       { label: 'Clarté', value: 88 },
-      { label: 'Proactivité', value: 92 },
-      { label: 'Simplicité', value: 90 },
     ],
   },
 ]
@@ -170,11 +170,22 @@ export default function Success() {
         {
           label: target?.service ?? 'Service',
           data: values,
-          backgroundColor: 'rgba(34, 211, 238, 0.14)',
-          borderColor: '#14b8a6',
-          pointBackgroundColor: '#0ea5e9',
+          backgroundColor: (context) => {
+            const { chart } = context
+            const { ctx, chartArea } = chart
+            if (!chartArea) return 'rgba(56, 189, 248, 0.16)'
+            const centerX = (chartArea.left + chartArea.right) / 2
+            const centerY = (chartArea.top + chartArea.bottom) / 2
+            const radius = Math.min(chartArea.width, chartArea.height) / 2
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius)
+            gradient.addColorStop(0, 'rgba(56, 189, 248, 0.24)')
+            gradient.addColorStop(1, 'rgba(14, 165, 233, 0.08)')
+            return gradient
+          },
+          borderColor: '#0ea5e9',
+          pointBackgroundColor: '#22d3ee',
           pointBorderColor: '#0f766e',
-          pointHoverBackgroundColor: '#ecfeff',
+          pointHoverBackgroundColor: '#e0f7ff',
           pointHoverBorderColor: '#0ea5e9',
           borderWidth: 2,
         },
@@ -211,6 +222,11 @@ export default function Success() {
           callbacks: {
             label: context => `${context.label}: ${context.parsed.r} / 100`,
           },
+        },
+      },
+      elements: {
+        line: {
+          tension: 0.25,
         },
       },
     }),
