@@ -28,10 +28,6 @@ export default function Layout() {
     [navigate]
   )
 
-  const openTeams = useCallback(() => {
-    window.open('https://teams.microsoft.com/', '_blank', 'noopener,noreferrer')
-  }, [])
-
   if (!auth) {
     navigate('/login')
     return null
@@ -74,9 +70,6 @@ export default function Layout() {
               </Button>
               <Button variant="secondary" size="sm" onClick={goTo('/dashboard')} className="!rounded-full">
                 Graph
-              </Button>
-              <Button variant="secondary" size="sm" onClick={openTeams} className="!rounded-full">
-                Teams
               </Button>
               <Button
                 variant="secondary"
