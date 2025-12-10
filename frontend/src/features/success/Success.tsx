@@ -21,6 +21,12 @@ type ServiceFeedback = {
   momentum: string
 }
 
+type PositiveExample = {
+  title: string
+  summary: string
+  quote: string
+}
+
 const POSITIVE_FEEDBACK: ServiceFeedback[] = [
   {
     service: 'Relation client',
@@ -51,6 +57,34 @@ const POSITIVE_FEEDBACK: ServiceFeedback[] = [
     score: 90,
     highlights: ['Prise en charge immédiate', 'Coordination prestataires efficace', 'Canal vidéo rassurant'],
     momentum: 'Maintenir la réactivité 24/7 sur tous les segments',
+  },
+]
+
+const POSITIVE_EXAMPLES: PositiveExample[] = [
+  {
+    title: 'Traitement éclair des sinistres',
+    summary: 'Dossiers clôturés en moins de 48h avec une communication claire à chaque étape.',
+    quote: '« Mon sinistre a été traité en moins de 48 heures, et j’ai reçu toutes les informations nécessaires pour comprendre le processus. »',
+  },
+  {
+    title: 'Réactivité MyFoyer',
+    summary: 'Incident applicatif résolu dans la journée, avec accompagnement proactif.',
+    quote: '« L’application MyFoyer a été remise en service en quelques heures, le support a été super réactif. »',
+  },
+  {
+    title: 'Transparence sur les dossiers',
+    summary: 'Mises à jour régulières et réponses immédiates qui rassurent les assurés.',
+    quote: '« J’ai été tenu informé de l’avancement de mon dossier à chaque étape, c’était très rassurant. »',
+  },
+  {
+    title: 'Rapatriement orchestré',
+    summary: 'Prise en charge rapide et professionnelle, coordination fluide des équipes terrain.',
+    quote: '« Le service de rapatriement a été très efficace et rapide, avec des équipes très professionnelles. »',
+  },
+  {
+    title: 'Parcours contractuel simplifié',
+    summary: 'Signature DocuSign fluide et affichage limpide des garanties.',
+    quote: '« La signature DocuSign a été simple et rapide, et les garanties de mon contrat sont maintenant clairement affichées. »',
   },
 ]
 
@@ -163,6 +197,30 @@ export default function Success() {
               produit et opérationnelles.
             </p>
           </div>
+        </div>
+      </Card>
+
+      <Card variant="elevated" className="p-5 border-primary-100 bg-white/95">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-primary-500">Exemples AQA positifs</p>
+            <h3 className="text-lg font-semibold text-primary-950">Moments forts appréciés par les assurés</h3>
+            <p className="text-sm text-primary-600 max-w-3xl">
+              Illustrations factuelles (données fictives) des réussites qui renforcent la satisfaction et la confiance.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {POSITIVE_EXAMPLES.map(example => (
+            <div
+              key={example.title}
+              className="rounded-lg border border-primary-100 bg-primary-25 px-4 py-3 space-y-2"
+            >
+              <p className="text-xs uppercase tracking-wide text-primary-500">{example.title}</p>
+              <p className="text-sm font-semibold text-primary-900">{example.summary}</p>
+              <p className="text-xs text-primary-700 italic leading-relaxed">{example.quote}</p>
+            </div>
+          ))}
         </div>
       </Card>
 
