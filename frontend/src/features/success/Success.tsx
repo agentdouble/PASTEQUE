@@ -524,6 +524,7 @@ ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, 
 export default function Success() {
   const [activeTab, setActiveTab] = useState<TabKey>('radar')
   const [serviceFilter, setServiceFilter] = useState<string>(DEFAULT_SERVICE ?? '')
+  const [showTeamsImage, setShowTeamsImage] = useState(false)
 
   const activeRadar = useMemo<ServiceRadar | null>(() => {
     return SERVICE_RADARS.find(item => item.service === serviceFilter) ?? null
@@ -730,7 +731,7 @@ export default function Success() {
                 <button
                   type="button"
                   onClick={() => {
-                    window.open(TEAMS_PRAISE_IMAGE, '_blank', 'noopener,noreferrer')
+                    setShowTeamsImage(true)
                   }}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-primary-800 shadow-sm hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
@@ -765,6 +766,24 @@ export default function Success() {
         </Card>
       )}
 
+      {showTeamsImage && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="relative max-w-6xl w-full">
+            <button
+              type="button"
+              onClick={() => setShowTeamsImage(false)}
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-primary-900 border border-primary-100 shadow-sm hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              Fermer
+            </button>
+            <img
+              src={TEAMS_PRAISE_IMAGE}
+              alt="Compliment Teams"
+              className="w-full h-[80vh] object-contain rounded-lg shadow-2xl border border-primary-200 bg-black"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
