@@ -19,9 +19,6 @@ type ServiceFeedback = {
   score: number
   highlights: string[]
   momentum: string
-  kudos: number
-  reward: string
-  nextAction: string
 }
 
 type PositiveExample = {
@@ -275,54 +272,36 @@ const POSITIVE_FEEDBACK: ServiceFeedback[] = [
     score: 92,
     highlights: ['Garanties lisibles', 'DocuSign fluide', 'Clarté des exclusions'],
     momentum: 'Poursuivre la simplification contractuelle sans alourdir les parcours.',
-    kudos: 18,
-    reward: 'Badge clarté contrat + mention hebdo',
-    nextAction: 'Partager le template de contrat le plus lisible dans #wins et remercier l’équipe juridique.',
   },
   {
     service: 'Indemnisation et Service au client',
     score: 96,
     highlights: ['Traitements en <48h', 'Explications limpides', 'Versements anticipés rassurants'],
     momentum: 'Continuer les contacts proactifs post-déclaration.',
-    kudos: 26,
-    reward: 'Prime empathie sinistre',
-    nextAction: 'Publier les verbatims rassurants au plateau sinistres et offrir un créneau de démo pour pérenniser.',
   },
   {
     service: "Systèmes d'information Back-office",
     score: 91,
     highlights: ['Automatisations fiables', 'Intégrations réussies', 'Données synchronisées'],
     momentum: 'Étendre les automatisations qui réduisent les saisies.',
-    kudos: 15,
-    reward: 'Badge automatisation fiable',
-    nextAction: 'Planifier une courte démo des automatisations pour les équipes front et créditer l’équipe run.',
   },
   {
     service: 'Executive office',
     score: 94,
     highlights: ['Alignement stratégique lisible', 'Communication positive', 'Décisions rapides'],
     momentum: 'Prolonger les points flash qui éclairent les priorités.',
-    kudos: 17,
-    reward: 'Shoutout décisions rapides',
-    nextAction: 'Envoyer une note de reconnaissance sur la clarté des arbitrages aux équipes de pilotage.',
   },
   {
     service: 'Support transverse Opérations',
     score: 89,
     highlights: ['Appuis inter-équipes efficaces', 'Documentation claire', 'Outils partagés appréciés'],
     momentum: 'Renforcer la capitalisation des bonnes pratiques communes.',
-    kudos: 14,
-    reward: 'Badge appui express',
-    nextAction: 'Mettre en avant les référents cross-team dans la newsletter interne.',
   },
   {
     service: 'Surveillance et Comptabilité clients',
     score: 87,
     highlights: ['Suivi régulier des comptes', 'Alertes précises', 'Recouvrement perçu comme constructif'],
     momentum: 'Maintenir les notifications claires pour anticiper les régularisations.',
-    kudos: 13,
-    reward: 'Badge alertes claires',
-    nextAction: 'Envoyer aux chargés de recouvrement les verbatims positifs sur les notifications rassurantes.',
   },
 ]
 
@@ -465,62 +444,23 @@ const SERVICE_RADARS: ServiceRadar[] = [
 ]
 
 const SERVICE_OPTIONS = SERVICES
-const ALL_SERVICES = 'Tous les services'
-const REWARD_TARGET = 20
+const DEFAULT_SERVICE = SERVICE_OPTIONS[0]
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
 export default function Success() {
   const [activeTab, setActiveTab] = useState<TabKey>('radar')
-  const [serviceFilter, setServiceFilter] = useState<string>(SERVICE_OPTIONS[0] ?? '')
-
-  const aggregatedRadar = useMemo<ServiceRadar | null>(() => {
-    if (!SERVICE_RADARS.length) return null
-    const baseLabels = SERVICE_RADARS[0].metrics.map(metric => metric.label)
-    const totals = baseLabels.reduce(
-      (acc, label) => ({ ...acc, [label]: 0 }),
-      {} as Record<string, number>
-    )
-    SERVICE_RADARS.forEach(({ metrics }) => {
-      metrics.forEach(metric => {
-        if (metric.label in totals) {
-          totals[metric.label] += metric.value
-        }
-      })
-    })
-    const averagedMetrics = baseLabels.map(label => ({
-      label,
-      value: Number((totals[label] / SERVICE_RADARS.length).toFixed(1)),
-    }))
-    return { service: ALL_SERVICES, metrics: averagedMetrics }
-  }, [])
+  const [serviceFilter, setServiceFilter] = useState<string>(DEFAULT_SERVICE ?? '')
 
   const activeRadar = useMemo<ServiceRadar | null>(() => {
-    if (serviceFilter === ALL_SERVICES) return aggregatedRadar
     return SERVICE_RADARS.find(item => item.service === serviceFilter) ?? null
-  }, [aggregatedRadar, serviceFilter])
+  }, [serviceFilter])
 
   const selectedFeedback = POSITIVE_FEEDBACK.find(item => item.service === serviceFilter)
-  const sortedFeedback = useMemo(
-    () => [...POSITIVE_FEEDBACK].sort((a, b) => b.kudos - a.kudos),
-    []
-  )
   const weeklySummaries = useMemo(() => {
-    if (serviceFilter === ALL_SERVICES) return POSITIVE_FEEDBACK
     const filtered = POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter)
-    return filtered.length ? filtered : POSITIVE_FEEDBACK
+    return filtered.length ? filtered : POSITIVE_FEEDBACK.slice(0, 3)
   }, [serviceFilter])
-  const totalKudos = useMemo(
-    () => sortedFeedback.reduce((sum, item) => sum + item.kudos, 0),
-    [sortedFeedback]
-  )
-  const rewardProgress = selectedFeedback
-    ? Math.min(100, Math.round((selectedFeedback.kudos / REWARD_TARGET) * 100))
-    : Math.min(100, Math.round((totalKudos / (REWARD_TARGET * POSITIVE_FEEDBACK.length)) * 100))
-  const activeReward = selectedFeedback?.reward ?? 'Reconnaissance transversale'
-  const activeNextAction =
-    selectedFeedback?.nextAction ??
-    'Partager aux équipes les trois feedbacks les plus cités cette semaine.'
 
   const radarData = useMemo<ChartData<'radar'>>(() => {
     if (!activeRadar) {
@@ -606,10 +546,7 @@ export default function Success() {
         : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50',
     ].join(' ')
 
-  const filteredExamples =
-    serviceFilter === ALL_SERVICES
-      ? POSITIVE_EXAMPLES
-      : POSITIVE_EXAMPLES.filter(example => example.service === serviceFilter)
+  const filteredExamples = POSITIVE_EXAMPLES.filter(example => example.service === serviceFilter)
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-6">
@@ -638,7 +575,7 @@ export default function Success() {
             onChange={e => setServiceFilter(e.target.value)}
             className="h-10 rounded-lg border border-primary-200 bg-white px-3 text-sm text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            {[ALL_SERVICES, ...SERVICE_OPTIONS].map(option => (
+            {SERVICE_OPTIONS.map(option => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -695,7 +632,7 @@ export default function Success() {
                   <div
                     key={item.service}
                     className={`rounded-lg border px-3 py-2 shadow-sm ${
-                      selectedFeedback?.service === item.service && serviceFilter !== ALL_SERVICES
+                      selectedFeedback?.service === item.service
                         ? 'border-teal-200 bg-white'
                         : 'border-teal-100 bg-white/80'
                     }`}
@@ -713,40 +650,8 @@ export default function Success() {
                   </div>
                 ))}
               </div>
-              <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-3 shadow-sm space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-amber-700">Récompenses par service</p>
-                    <p className="text-sm font-semibold text-primary-900">{activeReward}</p>
-                  </div>
-                  <span className="text-[11px] font-semibold text-amber-800 bg-white px-2 py-1 rounded-full border border-amber-100">
-                    {selectedFeedback ? `${selectedFeedback.kudos} feedbacks` : `${totalKudos} feedbacks`}
-                  </span>
-                </div>
-                <div className="h-2 w-full bg-white rounded-full border border-amber-100 overflow-hidden">
-                  <div
-                    className="h-full bg-amber-400 transition-all"
-                    style={{ width: `${rewardProgress}%` }}
-                  />
-                </div>
-                <p className="text-xs text-primary-700">{activeNextAction}</p>
-                <div className="flex flex-wrap gap-2">
-                  {sortedFeedback.map(item => (
-                    <span
-                      key={item.service}
-                      className={`text-[11px] px-2 py-1 rounded-full border ${
-                        selectedFeedback?.service === item.service && serviceFilter !== ALL_SERVICES
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : 'bg-white text-primary-700 border-primary-100'
-                      }`}
-                    >
-                      {item.service}: +{item.kudos}
-                    </span>
-                  ))}
-                </div>
-              </div>
               <p className="text-xs text-primary-600">
-                Objectif : rendre visible ce qui marche déjà par service, le remonter aux équipes et récompenser les dynamiques positives sans attendre.
+                Objectif : rendre visible ce qui marche déjà par service et le remonter aux équipes sans attendre.
               </p>
             </div>
           </div>
