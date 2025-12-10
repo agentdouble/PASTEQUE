@@ -319,6 +319,12 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Indemnisation et Service au client',
   },
   {
+    title: 'Accompagnement indemnisation',
+    summary: 'Coaching simple pour préparer les pièces et éviter les retours.',
+    quote: '« J’ai su quelles preuves fournir du premier coup, aucun aller-retour. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
     title: 'Contrats clairs',
     summary: 'DocuSign fluide et garanties mieux présentées.',
     quote: '« Signature simple et rapide, les garanties sont limpides. »',
@@ -328,6 +334,12 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     title: 'Parcours adhésion guidé',
     summary: 'Checklist d’entrée pour éviter les oublis de pièces.',
     quote: '« On sait exactement quoi fournir, pas de ping-pong de mails. »',
+    service: 'Contrats IARD-Vie-Santé',
+  },
+  {
+    title: 'Simulateur de garanties',
+    summary: 'Visualisation instantanée des options avant signature.',
+    quote: '« J’ai comparé en 2 minutes et choisi la formule adaptée sans aide. »',
     service: 'Contrats IARD-Vie-Santé',
   },
   {
@@ -343,6 +355,12 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: "Systèmes d'information Back-office",
   },
   {
+    title: 'Monitoring proactif',
+    summary: 'Alertes techniques avant impact métier.',
+    quote: '« Nous avons été prévenus avant la moindre interruption, aucune remontée client. »',
+    service: "Systèmes d'information Back-office",
+  },
+  {
     title: 'Surveillance rassurante',
     summary: 'Alertes claires et recouvrement perçu comme constructif.',
     quote: '« Les notifications sont claires, on sait exactement quoi faire. »',
@@ -352,6 +370,12 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     title: 'Relances pédagogiques',
     summary: 'Scénarios de rappel gradués et toujours cordiaux.',
     quote: '« Les relances restent courtoises, on se sent accompagné plutôt que pressé. »',
+    service: 'Surveillance et Comptabilité clients',
+  },
+  {
+    title: 'Portail self-service',
+    summary: 'Tableau de bord de régularisation avec échéances nettes.',
+    quote: '« Je vois d’un coup d’œil ce qui reste à régler, sans appeler. »',
     service: 'Surveillance et Comptabilité clients',
   },
   {
@@ -367,6 +391,12 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Executive office',
   },
   {
+    title: 'Stand-up décisionnel',
+    summary: 'Points flash de 10 minutes avec décisions datées.',
+    quote: '« En un quart d’heure on repart avec des actions claires, sans rework. »',
+    service: 'Executive office',
+  },
+  {
     title: 'Appui transverse',
     summary: 'Réponses transverses rapides, documentation prête à l’emploi.',
     quote: '« On a obtenu la bonne ressource en quelques minutes. »',
@@ -376,6 +406,12 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     title: 'Playbooks prêts à l’usage',
     summary: 'Guides cross-team mis à jour après chaque incident réussi.',
     quote: '« On gagne du temps grâce aux checklists partagées. »',
+    service: 'Support transverse Opérations',
+  },
+  {
+    title: 'Hotline expertise',
+    summary: 'Canal dédié pour débloquer un sujet en moins de 15 minutes.',
+    quote: '« J’ai eu l’expert au téléphone immédiatement, incident clos dans l’heure. »',
     service: 'Support transverse Opérations',
   },
 ]
