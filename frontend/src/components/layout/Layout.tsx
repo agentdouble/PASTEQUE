@@ -57,6 +57,14 @@ export default function Layout() {
               <Button variant="secondary" size="sm" onClick={goTo('/ia')} className="!rounded-full">
                 Explorer
               </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={goTo('/success')}
+                className="!rounded-full !bg-teal-500 !border-teal-500 !text-white hover:!bg-teal-400 focus:!ring-teal-500"
+              >
+                Success
+              </Button>
               <Button variant="secondary" size="sm" onClick={goTo('/radar')} className="!rounded-full">
                 Radar
               </Button>

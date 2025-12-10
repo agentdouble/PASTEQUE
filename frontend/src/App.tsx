@@ -7,6 +7,7 @@ import Dashboard from '@/features/dashboard/Dashboard'
 import AdminPanel from '@/features/admin/AdminPanel'
 import Loop from '@/features/loop/Loop'
 import IaView from '@/features/ai/IaView'
+import Success from '@/features/success/Success'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="chat" element={<Chat />} />
           <Route path="ia" element={<IaView />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="success" element={<Success />} />
           <Route path="radar" element={<Loop />} />
           <Route
             path="admin"

@@ -150,6 +150,10 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Panneau Admin → section « Radar »: configurer plusieurs tables (colonnes texte/date), puis relancer la génération pour une table donnée ou pour toutes (`POST /api/v1/loop/regenerate?table_name=...`). Résultats persistés et visibles via `GET /api/v1/loop/overview`.
 - L’agent suit `LLM_MODE` (local vLLM ou API OpenAI‑compatible) et peut être borné via `AGENT_MAX_REQUESTS` (clé `looper`). Les garde‑fous de contexte sont décrits dans `backend/README.md` (`LOOP_MAX_TICKETS`, `LOOP_TICKET_TEXT_MAX_CHARS`, `LOOP_MAX_DAYS/WEEKS/MONTHS` par défaut à 1, `LOOP_MAX_TICKETS_PER_CALL`, `LOOP_MAX_INPUT_CHARS`, etc.).
 
+### Success – feedback positifs (concept)
+
+- Bouton turquoise « Success » dans le header : vue conceptuelle (données fictives) avec un radar des feedbacks positifs par service pour mettre en avant ce qui fonctionne déjà et doit être amplifié.
+
 ## Principes d’architecture
 
 - Routes HTTP minces -> délèguent à des services.
