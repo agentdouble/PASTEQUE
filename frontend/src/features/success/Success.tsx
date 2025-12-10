@@ -12,7 +12,7 @@ import {
   type ChartOptions,
 } from 'chart.js'
 import { Card } from '@/components/ui'
-import { HiSparkles, HiArrowTrendingUp } from 'react-icons/hi2'
+import { HiArrowTrendingUp } from 'react-icons/hi2'
 
 type ServiceFeedback = {
   service: string
@@ -238,10 +238,6 @@ export default function Success() {
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-6">
       <div className="flex flex-col gap-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-teal-700 w-fit">
-          <HiSparkles className="w-4 h-4" />
-          <span className="text-xs font-semibold uppercase tracking-wide">Concept assurance</span>
-        </div>
         <h2 className="text-3xl font-bold text-primary-950">Success</h2>
       </div>
 
