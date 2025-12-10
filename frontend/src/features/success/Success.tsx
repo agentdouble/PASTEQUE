@@ -705,11 +705,7 @@ export default function Success() {
         <Card variant="elevated" className="p-5 border-primary-100 bg-white/95">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-wide text-primary-500">Exemples AQA positifs</p>
               <h3 className="text-lg font-semibold text-primary-950">Moments forts appréciés par les assurés</h3>
-              <p className="text-sm text-primary-600 max-w-3xl">
-                Illustrations factuelles (données fictives) des réussites qui renforcent la satisfaction et la confiance.
-              </p>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
