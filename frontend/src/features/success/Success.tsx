@@ -112,9 +112,21 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Indemnisation et Service au client',
   },
   {
+    title: 'Suivi proactif post-déclaration',
+    summary: 'Rappels clairs et empathiques jusqu’à la clôture.',
+    quote: '« On m’a relancé avant que j’aie besoin de demander, très rassurant. »',
+    service: 'Indemnisation et Service au client',
+  },
+  {
     title: 'Contrats clairs',
     summary: 'DocuSign fluide et garanties mieux présentées.',
     quote: '« Signature simple et rapide, les garanties sont limpides. »',
+    service: 'Contrats IARD-Vie-Santé',
+  },
+  {
+    title: 'Parcours adhésion guidé',
+    summary: 'Checklist d’entrée pour éviter les oublis de pièces.',
+    quote: '« On sait exactement quoi fournir, pas de ping-pong de mails. »',
     service: 'Contrats IARD-Vie-Santé',
   },
   {
@@ -124,9 +136,21 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: "Systèmes d'information Back-office",
   },
   {
+    title: 'Connecteurs stables',
+    summary: 'APIs internes disponibles et rapides pour les équipes front.',
+    quote: '« Les intégrations ne tombent plus, on peut promettre des délais fiables. »',
+    service: "Systèmes d'information Back-office",
+  },
+  {
     title: 'Surveillance rassurante',
     summary: 'Alertes claires et recouvrement perçu comme constructif.',
     quote: '« Les notifications sont claires, on sait exactement quoi faire. »',
+    service: 'Surveillance et Comptabilité clients',
+  },
+  {
+    title: 'Relances pédagogiques',
+    summary: 'Scénarios de rappel gradués et toujours cordiaux.',
+    quote: '« Les relances restent courtoises, on se sent accompagné plutôt que pressé. »',
     service: 'Surveillance et Comptabilité clients',
   },
   {
@@ -136,9 +160,21 @@ const POSITIVE_EXAMPLES: PositiveExample[] = [
     service: 'Executive office',
   },
   {
+    title: 'Roadmap lisible',
+    summary: 'Les priorités trimestrielles sont affichées et suivies.',
+    quote: '« On voit l’avancement semaine après semaine, c’est motivant. »',
+    service: 'Executive office',
+  },
+  {
     title: 'Appui transverse',
     summary: 'Réponses transverses rapides, documentation prête à l’emploi.',
     quote: '« On a obtenu la bonne ressource en quelques minutes. »',
+    service: 'Support transverse Opérations',
+  },
+  {
+    title: 'Playbooks prêts à l’usage',
+    summary: 'Guides cross-team mis à jour après chaque incident réussi.',
+    quote: '« On gagne du temps grâce aux checklists partagées. »',
     service: 'Support transverse Opérations',
   },
 ]
