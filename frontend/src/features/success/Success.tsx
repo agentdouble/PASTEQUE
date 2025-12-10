@@ -825,13 +825,6 @@ export default function Success() {
                 <button
                   type="button"
                   onClick={() => setShowTeamsApp(false)}
-                  className="px-4 py-2 rounded-full bg-[#2f2f2f] text-sm font-semibold text-neutral-100 hover:bg-[#3a3a3a]"
-                >
-                  Aperçu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowTeamsApp(false)}
                   className="px-4 py-2 rounded-full bg-[#4f46e5] text-sm font-semibold text-white hover:bg-[#6366f1] shadow"
                 >
                   Envoyer
