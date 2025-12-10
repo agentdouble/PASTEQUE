@@ -28,7 +28,7 @@ type PositiveExample = {
   service: string
 }
 
-type TabKey = 'radar' | 'moments' | 'services'
+type TabKey = 'radar' | 'moments'
 
 type ServiceRadar = {
   service: string
@@ -282,11 +282,6 @@ export default function Success() {
       ? POSITIVE_EXAMPLES
       : POSITIVE_EXAMPLES.filter(example => example.service === serviceFilter)
 
-  const filteredServices =
-    serviceFilter === ALL_SERVICES
-      ? POSITIVE_FEEDBACK
-      : POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter)
-
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-6">
       <div className="flex flex-col gap-2">
@@ -295,14 +290,14 @@ export default function Success() {
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 border-b border-primary-100 pb-2">
-          {(['radar', 'moments', 'services'] as TabKey[]).map(key => (
+          {(['radar', 'moments'] as TabKey[]).map(key => (
             <button
               key={key}
               type="button"
               onClick={() => setActiveTab(key)}
               className={tabButtonClass(key)}
             >
-              {key === 'radar' ? 'Radar' : key === 'moments' ? 'Moments forts' : 'Services'}
+              {key === 'radar' ? 'Radar' : 'Moments forts'}
             </button>
           ))}
         </div>
@@ -396,35 +391,6 @@ export default function Success() {
         </Card>
       )}
 
-      {activeTab === 'services' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(filteredServices.length ? filteredServices : POSITIVE_FEEDBACK).map(item => (
-            <Card
-              key={item.service}
-              variant="elevated"
-              className="p-4 border-primary-100 bg-white/90"
-            >
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-primary-500">Service</p>
-                  <h3 className="text-lg font-semibold text-primary-950">{item.service}</h3>
-                </div>
-                <span className="inline-flex items-center justify-center rounded-full bg-teal-500 text-white text-sm font-semibold px-3 py-1">
-                  {item.score}/100
-                </span>
-              </div>
-              <ul className="list-disc pl-5 space-y-1 text-sm text-primary-800">
-                {item.highlights.map(point => (
-                  <li key={point}>{point}</li>
-                ))}
-              </ul>
-              <div className="mt-3 text-xs text-teal-700 font-semibold">
-                {item.momentum}
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
