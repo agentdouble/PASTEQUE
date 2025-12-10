@@ -198,6 +198,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 90 },
       { label: 'Rapidité perçue', value: 93 },
       { label: 'Clarté', value: 91 },
+      { label: 'Proactivité', value: 92 },
     ],
   },
   {
@@ -207,6 +208,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 88 },
       { label: 'Rapidité perçue', value: 89 },
       { label: 'Clarté', value: 90 },
+      { label: 'Proactivité', value: 88 },
     ],
   },
   {
@@ -216,6 +218,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 91 },
       { label: 'Rapidité perçue', value: 94 },
       { label: 'Clarté', value: 94 },
+      { label: 'Proactivité', value: 93 },
     ],
   },
   {
@@ -225,6 +228,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 92 },
       { label: 'Rapidité perçue', value: 92 },
       { label: 'Clarté', value: 90 },
+      { label: 'Proactivité', value: 93 },
     ],
   },
   {
@@ -234,6 +238,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 86 },
       { label: 'Rapidité perçue', value: 87 },
       { label: 'Clarté', value: 90 },
+      { label: 'Proactivité', value: 88 },
     ],
   },
   {
@@ -243,6 +248,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 88 },
       { label: 'Rapidité perçue', value: 91 },
       { label: 'Clarté', value: 92 },
+      { label: 'Proactivité', value: 90 },
     ],
   },
   {
@@ -252,6 +258,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 88 },
       { label: 'Rapidité perçue', value: 92 },
       { label: 'Clarté', value: 88 },
+      { label: 'Proactivité', value: 89 },
     ],
   },
   {
@@ -261,6 +268,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 87 },
       { label: 'Rapidité perçue', value: 90 },
       { label: 'Clarté', value: 89 },
+      { label: 'Proactivité', value: 88 },
     ],
   },
   {
@@ -270,6 +278,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 90 },
       { label: 'Rapidité perçue', value: 94 },
       { label: 'Clarté', value: 93 },
+      { label: 'Proactivité', value: 92 },
     ],
   },
   {
@@ -279,6 +288,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 89 },
       { label: 'Rapidité perçue', value: 90 },
       { label: 'Clarté', value: 92 },
+      { label: 'Proactivité', value: 89 },
     ],
   },
   {
@@ -288,6 +298,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 95 },
       { label: 'Rapidité perçue', value: 96 },
       { label: 'Clarté', value: 94 },
+      { label: 'Proactivité', value: 96 },
     ],
   },
   {
@@ -297,6 +308,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 86 },
       { label: 'Rapidité perçue', value: 88 },
       { label: 'Clarté', value: 89 },
+      { label: 'Proactivité', value: 87 },
     ],
   },
   {
@@ -306,6 +318,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 85 },
       { label: 'Rapidité perçue', value: 88 },
       { label: 'Clarté', value: 90 },
+      { label: 'Proactivité', value: 86 },
     ],
   },
   {
@@ -315,6 +328,7 @@ const SERVICE_RADARS: ServiceRadar[] = [
       { label: 'Sourire', value: 89 },
       { label: 'Rapidité perçue', value: 92 },
       { label: 'Clarté', value: 93 },
+      { label: 'Proactivité', value: 91 },
     ],
   },
 ]
