@@ -126,61 +126,61 @@ const SERVICE_RADARS: ServiceRadar[] = [
   {
     service: 'Executive office',
     metrics: [
-      { label: 'Empathie', value: 93 },
-      { label: 'Sourire', value: 91 },
-      { label: 'Rapidité perçue', value: 94 },
-      { label: 'Clarté', value: 94 },
-      { label: 'Proactivité', value: 93 },
+      { label: 'Accueil chaleureux', value: 93 },
+      { label: 'Réactivité / délais', value: 91 },
+      { label: 'Clarté du parcours', value: 94 },
+      { label: 'Suivi proactif', value: 94 },
+      { label: 'Fiabilité / indemnisation', value: 93 },
     ],
   },
   {
     service: 'Contrats IARD-Vie-Santé',
     metrics: [
-      { label: 'Empathie', value: 90 },
-      { label: 'Sourire', value: 89 },
-      { label: 'Rapidité perçue', value: 90 },
-      { label: 'Clarté', value: 92 },
-      { label: 'Proactivité', value: 89 },
+      { label: 'Accueil chaleureux', value: 90 },
+      { label: 'Réactivité / délais', value: 89 },
+      { label: 'Clarté du parcours', value: 92 },
+      { label: 'Suivi proactif', value: 89 },
+      { label: 'Fiabilité / indemnisation', value: 90 },
     ],
   },
   {
     service: 'Indemnisation et Service au client',
     metrics: [
-      { label: 'Empathie', value: 97 },
-      { label: 'Sourire', value: 95 },
-      { label: 'Rapidité perçue', value: 96 },
-      { label: 'Clarté', value: 94 },
-      { label: 'Proactivité', value: 96 },
+      { label: 'Accueil chaleureux', value: 97 },
+      { label: 'Réactivité / délais', value: 95 },
+      { label: 'Clarté du parcours', value: 94 },
+      { label: 'Suivi proactif', value: 96 },
+      { label: 'Fiabilité / indemnisation', value: 96 },
     ],
   },
   {
     service: 'Support transverse Opérations',
     metrics: [
-      { label: 'Empathie', value: 88 },
-      { label: 'Sourire', value: 86 },
-      { label: 'Rapidité perçue', value: 88 },
-      { label: 'Clarté', value: 89 },
-      { label: 'Proactivité', value: 87 },
+      { label: 'Accueil chaleureux', value: 88 },
+      { label: 'Réactivité / délais', value: 86 },
+      { label: 'Clarté du parcours', value: 89 },
+      { label: 'Suivi proactif', value: 87 },
+      { label: 'Fiabilité / indemnisation', value: 88 },
     ],
   },
   {
     service: 'Surveillance et Comptabilité clients',
     metrics: [
-      { label: 'Empathie', value: 87 },
-      { label: 'Sourire', value: 85 },
-      { label: 'Rapidité perçue', value: 88 },
-      { label: 'Clarté', value: 90 },
-      { label: 'Proactivité', value: 86 },
+      { label: 'Accueil chaleureux', value: 87 },
+      { label: 'Réactivité / délais', value: 85 },
+      { label: 'Clarté du parcours', value: 90 },
+      { label: 'Suivi proactif', value: 86 },
+      { label: 'Fiabilité / indemnisation', value: 88 },
     ],
   },
   {
     service: "Systèmes d'information Back-office",
     metrics: [
-      { label: 'Empathie', value: 91 },
-      { label: 'Sourire', value: 89 },
-      { label: 'Rapidité perçue', value: 92 },
-      { label: 'Clarté', value: 93 },
-      { label: 'Proactivité', value: 91 },
+      { label: 'Accueil chaleureux', value: 91 },
+      { label: 'Réactivité / délais', value: 89 },
+      { label: 'Clarté du parcours', value: 93 },
+      { label: 'Suivi proactif', value: 91 },
+      { label: 'Fiabilité / indemnisation', value: 92 },
     ],
   },
 ]
@@ -326,7 +326,10 @@ export default function Success() {
           <div className="flex flex-col lg:flex-row gap-6">
             <div className="lg:w-2/3">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-primary-800">Radar des points forts par service</p>
+                <div>
+                  <p className="text-sm font-semibold text-primary-800">Feedback Positive Themes Map</p>
+                  <p className="text-xs text-primary-600">Ce que les clients ont adoré, regroupé par grands thèmes positifs.</p>
+                </div>
                 <span className="text-xs font-semibold text-teal-700 bg-white px-3 py-1 rounded-full border border-teal-100">
                   Continuer dans cette lancée
                 </span>
@@ -339,7 +342,7 @@ export default function Success() {
             <div className="lg:w-1/3 space-y-3">
               <div className="flex items-center gap-2 text-teal-800">
                 <HiArrowTrendingUp className="w-5 h-5" />
-                <p className="text-sm font-semibold">Moments à amplifier</p>
+                <p className="text-sm font-semibold">Ce que les clients ont adoré</p>
               </div>
               <div className="space-y-2">
                 {POSITIVE_FEEDBACK.filter(item => item.service === serviceFilter).map(item => (
