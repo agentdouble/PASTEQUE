@@ -650,6 +650,19 @@ export default function Success() {
                   </div>
                 ))}
               </div>
+              <div className="rounded-lg border border-primary-100 bg-white px-3 py-3 shadow-sm space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-primary-500">Cas de satisfaction client</p>
+                <p className="text-sm font-semibold text-primary-900">
+                  Rapidité et clarté dans le traitement des sinistres.
+                </p>
+                <p className="text-xs text-primary-700">
+                  Un client a exprimé sa satisfaction concernant la rapidité et l'efficacité du traitement de son sinistre.
+                  Le client a souligné la qualité de la communication et la clarté des informations fournies par le service client.
+                </p>
+                <p className="text-xs text-primary-700 italic">
+                  « Mon sinistre a été traité en moins de 48 heures, et j'ai reçu toutes les informations nécessaires pour comprendre le processus. »
+                </p>
+              </div>
             </div>
           </div>
         </Card>
