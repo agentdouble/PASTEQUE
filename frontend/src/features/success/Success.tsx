@@ -35,121 +35,291 @@ type ServiceRadar = {
   metrics: { label: string; value: number }[]
 }
 
+const SERVICES: string[] = [
+  'Direction des opérations',
+  'Employee benefits',
+  'Executive office',
+  'Grands comptes et Risques spéciaux',
+  'Marketing et Value Proposition',
+  'Product management',
+  "Réseau d'agents",
+  'Support aux réseaux de distribution',
+  "Systèmes d'information Front-office",
+  'Contrats IARD-Vie-Santé',
+  'Indemnisation et Service au client',
+  'Support transverse Opérations',
+  'Surveillance et Comptabilité clients',
+  "Systèmes d'information Back-office",
+]
+
 const POSITIVE_FEEDBACK: ServiceFeedback[] = [
   {
-    service: 'Relation client',
-    score: 92,
-    highlights: ['Résolutions dès le premier contact', 'Temps de réponse stabilisés sous 2 min', 'FAQ enrichie plébiscitée'],
-    momentum: 'Préserver l’accueil premium sur tous les canaux entrants',
+    service: 'Direction des opérations',
+    score: 93,
+    highlights: ['Coordination fluide entre équipes', 'Priorisation des dossiers clés', 'Décisions rapides en comité'],
+    momentum: 'Poursuivre les rituels courts qui sécurisent les jalons hebdo.',
   },
   {
-    service: 'Souscription & devis',
-    score: 86,
-    highlights: ['Parcours devis en 3 étapes', 'Signature électronique fluide', 'Tarification claire en mobilité'],
-    momentum: 'Continuer à proposer le devis instantané sur les nouveaux produits',
-  },
-  {
-    service: 'Gestion des sinistres',
-    score: 94,
-    highlights: ['Déclaration en 5 minutes', 'Suivi temps réel apprécié', 'Contacts proactifs après ouverture'],
-    momentum: 'Amplifier la dématérialisation totale des pièces jointes',
-  },
-  {
-    service: 'Indemnisation',
-    score: 88,
-    highlights: ['Décisions rapides', 'Explications claires des montants', 'Virements anticipés salués'],
-    momentum: 'Poursuivre les versements express qui rassurent les assurés',
-  },
-  {
-    service: 'Assistance 24/7',
+    service: 'Employee benefits',
     score: 90,
-    highlights: ['Prise en charge immédiate', 'Coordination prestataires efficace', 'Canal vidéo rassurant'],
-    momentum: 'Maintenir la réactivité 24/7 sur tous les segments',
+    highlights: ['Offres packagées appréciées', 'Parcours adhésion simplifié', 'Suivi employeur transparent'],
+    momentum: 'Maintenir la pédagogie claire sur les avantages différenciants.',
+  },
+  {
+    service: 'Executive office',
+    score: 94,
+    highlights: ['Alignement stratégique lisible', 'Communication positive aux équipes', 'Décisions validées rapidement'],
+    momentum: 'Continuer les points flash qui éclairent les priorités.',
+  },
+  {
+    service: 'Grands comptes et Risques spéciaux',
+    score: 91,
+    highlights: ['Montages sur-mesure salués', 'Réactivité sur les demandes complexes', 'Relationnel premium renforcé'],
+    momentum: 'Capitaliser sur les ateliers co-construction qui rassurent les clients clés.',
+  },
+  {
+    service: 'Marketing et Value Proposition',
+    score: 89,
+    highlights: ['Messages clairs sur les garanties', 'Campagnes perçues comme utiles', 'Supports simples à réutiliser'],
+    momentum: 'Amplifier les formats courts qui engagent les réseaux.',
+  },
+  {
+    service: 'Product management',
+    score: 90,
+    highlights: ['Roadmap lisible', 'Livraisons stables', 'Feedbacks intégrés en continu'],
+    momentum: 'Prolonger les démos courtes qui montrent les gains utilisateurs.',
+  },
+  {
+    service: "Réseau d'agents",
+    score: 88,
+    highlights: ['Devis rapides', 'Accès mobile apprécié', 'Support réactif aux questions terrain'],
+    momentum: 'Renforcer les kits express pour les rendez-vous clients.',
+  },
+  {
+    service: 'Support aux réseaux de distribution',
+    score: 87,
+    highlights: ['Hotline efficace', 'Guides mis à jour', 'Temps d’attente réduits'],
+    momentum: 'Maintenir les temps de prise en charge courts sur les pics.',
+  },
+  {
+    service: "Systèmes d'information Front-office",
+    score: 92,
+    highlights: ['Interface fluide MyFoyer', 'Stabilité en campagne', 'Parcours signature rapide'],
+    momentum: 'Pousser les micro-améliorations UX plébiscitées.',
+  },
+  {
+    service: 'Contrats IARD-Vie-Santé',
+    score: 89,
+    highlights: ['Garantie mieux présentée', 'DocuSign apprécié', 'Clarté des exclusions'],
+    momentum: 'Poursuivre la simplification contractuelle sans alourdir les parcours.',
+  },
+  {
+    service: 'Indemnisation et Service au client',
+    score: 95,
+    highlights: ['Traitements en <48h', 'Explications limpides', 'Versements anticipés rassurants'],
+    momentum: 'Continuer les contacts proactifs post-déclaration.',
+  },
+  {
+    service: 'Support transverse Opérations',
+    score: 88,
+    highlights: ['Appuis inter-équipes efficaces', 'Documentation claire', 'Outils partagés appréciés'],
+    momentum: 'Renforcer la capitalisation des bonnes pratiques communes.',
+  },
+  {
+    service: 'Surveillance et Comptabilité clients',
+    score: 86,
+    highlights: ['Suivi régulier des comptes', 'Alertes précises', 'Recouvrement perçu comme constructif'],
+    momentum: 'Maintenir les notifications claires pour anticiper les régularisations.',
+  },
+  {
+    service: "Systèmes d'information Back-office",
+    score: 90,
+    highlights: ['Automatisations fiables', 'Intégrations réussies', 'Données synchronisées'],
+    momentum: 'Étendre les automatisations qui réduisent les saisies.',
   },
 ]
 
 const POSITIVE_EXAMPLES: PositiveExample[] = [
   {
     title: 'Traitement éclair des sinistres',
-    summary: 'Dossiers clôturés en moins de 48h avec une communication claire à chaque étape.',
-    quote: '« Mon sinistre a été traité en moins de 48 heures, et j’ai reçu toutes les informations nécessaires pour comprendre le processus. »',
-    service: 'Gestion des sinistres',
+    summary: 'Dossiers clôturés en moins de 48h avec des explications limpides.',
+    quote: '« Mon sinistre a été traité en moins de 48 heures, avec un suivi rassurant. »',
+    service: 'Indemnisation et Service au client',
   },
   {
-    title: 'Réactivité MyFoyer',
-    summary: 'Incident applicatif résolu dans la journée, avec accompagnement proactif.',
-    quote: '« L’application MyFoyer a été remise en service en quelques heures, le support a été super réactif. »',
-    service: 'Assistance 24/7',
+    title: 'MyFoyer réactif',
+    summary: 'Incident résolu dans la journée, parcours fluide pour les assurés.',
+    quote: '« L’application MyFoyer a été remise en service en quelques heures, sans perturbation. »',
+    service: "Systèmes d'information Front-office",
   },
   {
-    title: 'Transparence sur les dossiers',
-    summary: 'Mises à jour régulières et réponses immédiates qui rassurent les assurés.',
-    quote: '« J’ai été tenu informé de l’avancement de mon dossier à chaque étape, c’était très rassurant. »',
-    service: 'Relation client',
+    title: 'Contrats clairs',
+    summary: 'DocuSign fluide et garanties mieux présentées.',
+    quote: '« Signature simple et rapide, les garanties sont limpides. »',
+    service: 'Contrats IARD-Vie-Santé',
   },
   {
-    title: 'Rapatriement orchestré',
-    summary: 'Prise en charge rapide et professionnelle, coordination fluide des équipes terrain.',
-    quote: '« Le service de rapatriement a été très efficace et rapide, avec des équipes très professionnelles. »',
-    service: 'Assistance 24/7',
+    title: 'Appui terrain agents',
+    summary: 'Devis express et réponses immédiates aux questions clients.',
+    quote: '« J’ai pu finaliser mon devis en quelques minutes chez le client. »',
+    service: "Réseau d'agents",
   },
   {
-    title: 'Parcours contractuel simplifié',
-    summary: 'Signature DocuSign fluide et affichage limpide des garanties.',
-    quote: '« La signature DocuSign a été simple et rapide, et les garanties de mon contrat sont maintenant clairement affichées. »',
-    service: 'Souscription & devis',
+    title: 'Montage grands comptes',
+    summary: 'Solutions sur-mesure validées sans aller-retour lourds.',
+    quote: '« Le montage a été construit rapidement, avec une posture très proactive. »',
+    service: 'Grands comptes et Risques spéciaux',
+  },
+  {
+    title: 'Automatisation back-office',
+    summary: 'Synchronisation comptable et saisies réduites.',
+    quote: '« Les flux sont fiables, on gagne du temps sur chaque clôture. »',
+    service: "Systèmes d'information Back-office",
+  },
+  {
+    title: 'Support distribution',
+    summary: 'Hotline sous 2 minutes et guides à jour.',
+    quote: '« J’ai eu ma réponse immédiatement, avec le bon guide prêt à l’emploi. »',
+    service: 'Support aux réseaux de distribution',
+  },
+  {
+    title: 'Surveillance rassurante',
+    summary: 'Alertes claires et recouvrement perçu comme constructif.',
+    quote: '« Les notifications sont claires, on sait exactement quoi faire. »',
+    service: 'Surveillance et Comptabilité clients',
   },
 ]
 
 const SERVICE_RADARS: ServiceRadar[] = [
   {
-    service: 'Relation client',
+    service: 'Direction des opérations',
     metrics: [
-      { label: 'Empathie', value: 95 },
-      { label: 'Sourire', value: 92 },
+      { label: 'Empathie', value: 92 },
+      { label: 'Sourire', value: 90 },
       { label: 'Rapidité perçue', value: 93 },
       { label: 'Clarté', value: 91 },
     ],
   },
   {
-    service: 'Souscription & devis',
+    service: 'Employee benefits',
     metrics: [
-      { label: 'Empathie', value: 89 },
-      { label: 'Sourire', value: 87 },
-      { label: 'Rapidité perçue', value: 90 },
+      { label: 'Empathie', value: 90 },
+      { label: 'Sourire', value: 88 },
+      { label: 'Rapidité perçue', value: 89 },
       { label: 'Clarté', value: 90 },
     ],
   },
   {
-    service: 'Gestion des sinistres',
+    service: 'Executive office',
     metrics: [
-      { label: 'Empathie', value: 97 },
-      { label: 'Sourire', value: 94 },
-      { label: 'Rapidité perçue', value: 95 },
-      { label: 'Clarté', value: 93 },
+      { label: 'Empathie', value: 93 },
+      { label: 'Sourire', value: 91 },
+      { label: 'Rapidité perçue', value: 94 },
+      { label: 'Clarté', value: 94 },
     ],
   },
   {
-    service: 'Indemnisation',
+    service: 'Grands comptes et Risques spéciaux',
     metrics: [
-      { label: 'Empathie', value: 90 },
-      { label: 'Sourire', value: 89 },
+      { label: 'Empathie', value: 94 },
+      { label: 'Sourire', value: 92 },
       { label: 'Rapidité perçue', value: 92 },
       { label: 'Clarté', value: 90 },
     ],
   },
   {
-    service: 'Assistance 24/7',
+    service: 'Marketing et Value Proposition',
     metrics: [
-      { label: 'Empathie', value: 96 },
-      { label: 'Sourire', value: 93 },
-      { label: 'Rapidité perçue', value: 94 },
+      { label: 'Empathie', value: 88 },
+      { label: 'Sourire', value: 86 },
+      { label: 'Rapidité perçue', value: 87 },
+      { label: 'Clarté', value: 90 },
+    ],
+  },
+  {
+    service: 'Product management',
+    metrics: [
+      { label: 'Empathie', value: 90 },
+      { label: 'Sourire', value: 88 },
+      { label: 'Rapidité perçue', value: 91 },
+      { label: 'Clarté', value: 92 },
+    ],
+  },
+  {
+    service: "Réseau d'agents",
+    metrics: [
+      { label: 'Empathie', value: 89 },
+      { label: 'Sourire', value: 88 },
+      { label: 'Rapidité perçue', value: 92 },
       { label: 'Clarté', value: 88 },
+    ],
+  },
+  {
+    service: 'Support aux réseaux de distribution',
+    metrics: [
+      { label: 'Empathie', value: 88 },
+      { label: 'Sourire', value: 87 },
+      { label: 'Rapidité perçue', value: 90 },
+      { label: 'Clarté', value: 89 },
+    ],
+  },
+  {
+    service: "Systèmes d'information Front-office",
+    metrics: [
+      { label: 'Empathie', value: 92 },
+      { label: 'Sourire', value: 90 },
+      { label: 'Rapidité perçue', value: 94 },
+      { label: 'Clarté', value: 93 },
+    ],
+  },
+  {
+    service: 'Contrats IARD-Vie-Santé',
+    metrics: [
+      { label: 'Empathie', value: 90 },
+      { label: 'Sourire', value: 89 },
+      { label: 'Rapidité perçue', value: 90 },
+      { label: 'Clarté', value: 92 },
+    ],
+  },
+  {
+    service: 'Indemnisation et Service au client',
+    metrics: [
+      { label: 'Empathie', value: 97 },
+      { label: 'Sourire', value: 95 },
+      { label: 'Rapidité perçue', value: 96 },
+      { label: 'Clarté', value: 94 },
+    ],
+  },
+  {
+    service: 'Support transverse Opérations',
+    metrics: [
+      { label: 'Empathie', value: 88 },
+      { label: 'Sourire', value: 86 },
+      { label: 'Rapidité perçue', value: 88 },
+      { label: 'Clarté', value: 89 },
+    ],
+  },
+  {
+    service: 'Surveillance et Comptabilité clients',
+    metrics: [
+      { label: 'Empathie', value: 87 },
+      { label: 'Sourire', value: 85 },
+      { label: 'Rapidité perçue', value: 88 },
+      { label: 'Clarté', value: 90 },
+    ],
+  },
+  {
+    service: "Systèmes d'information Back-office",
+    metrics: [
+      { label: 'Empathie', value: 91 },
+      { label: 'Sourire', value: 89 },
+      { label: 'Rapidité perçue', value: 92 },
+      { label: 'Clarté', value: 93 },
     ],
   },
 ]
 
-const SERVICE_OPTIONS = POSITIVE_FEEDBACK.map(item => item.service)
+const SERVICE_OPTIONS = SERVICES
 const ALL_SERVICES = 'Tous les services'
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
