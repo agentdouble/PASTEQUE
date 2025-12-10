@@ -240,7 +240,7 @@ export default function Success() {
       <div className="flex flex-col gap-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-teal-700 w-fit">
           <HiSparkles className="w-4 h-4" />
-          <span className="text-xs font-semibold uppercase tracking-wide">Vue hebdomadaire · données fictives</span>
+          <span className="text-xs font-semibold uppercase tracking-wide">Concept assurance</span>
         </div>
         <h2 className="text-3xl font-bold text-primary-950">Success</h2>
         <p className="text-primary-600 max-w-3xl">
