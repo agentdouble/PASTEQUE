@@ -74,6 +74,19 @@ def update_loop_config(  # type: ignore[valid-type]
     return LoopConfigResponse.from_model(config)
 
 
+@router.delete("/config/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_loop_config(  # type: ignore[valid-type]
+    config_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> None:
+    if not user_is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin requis")
+    service = _service(session)
+    service.delete_config(config_id=config_id)
+    session.commit()
+
+
 @router.post("/regenerate", response_model=LoopOverviewResponse)
 def regenerate_loop(  # type: ignore[valid-type]
     current_user: User = Depends(get_current_user),
