@@ -53,14 +53,28 @@ class OpenAICompatibleClient:
                 " Assurez-vous que vLLM est démarré ou que la configuration OPENAI_BASE_URL est correcte."
             ) from exc
         except httpx.HTTPStatusError as exc:
-            body = exc.response.text
-            log.error(
-                "LLM backend returned %s for %s: %s", exc.response.status_code, url, body
-            )
-            raise OpenAIBackendError(
-                f"Le backend LLM a retourné un statut {exc.response.status_code}."
-                " Consultez ses logs pour plus de détails."
-            ) from exc
+            response = exc.response
+            body = response.text
+            request_id = response.headers.get("x-request-id") or response.headers.get("cf-ray")
+            if request_id:
+                log.error(
+                    "LLM backend returned %s for %s (request_id=%s): %s",
+                    response.status_code,
+                    url,
+                    request_id,
+                    body,
+                )
+            else:
+                log.error(
+                    "LLM backend returned %s for %s: %s",
+                    response.status_code,
+                    url,
+                    body,
+                )
+            detail = f"Le backend LLM a retourné un statut {response.status_code}."
+            if request_id:
+                detail = f"{detail} request_id={request_id}."
+            raise OpenAIBackendError(f"{detail} Consultez ses logs pour plus de détails.") from exc
         except httpx.HTTPError as exc:
             log.error("LLM backend request failed for %s: %s", url, exc)
             raise OpenAIBackendError("Erreur lors de l'appel au backend LLM.") from exc
@@ -83,13 +97,28 @@ class OpenAICompatibleClient:
                 f"Impossible de joindre le backend d'embeddings ({self.base_url})."
             ) from exc
         except httpx.HTTPStatusError as exc:
-            body = exc.response.text
-            log.error(
-                "Embedding backend returned %s for %s: %s", exc.response.status_code, url, body
-            )
-            raise OpenAIBackendError(
-                f"Le backend d'embeddings a retourné un statut {exc.response.status_code}."
-            ) from exc
+            response = exc.response
+            body = response.text
+            request_id = response.headers.get("x-request-id") or response.headers.get("cf-ray")
+            if request_id:
+                log.error(
+                    "Embedding backend returned %s for %s (request_id=%s): %s",
+                    response.status_code,
+                    url,
+                    request_id,
+                    body,
+                )
+            else:
+                log.error(
+                    "Embedding backend returned %s for %s: %s",
+                    response.status_code,
+                    url,
+                    body,
+                )
+            detail = f"Le backend d'embeddings a retourné un statut {response.status_code}."
+            if request_id:
+                detail = f"{detail} request_id={request_id}."
+            raise OpenAIBackendError(detail) from exc
         except httpx.HTTPError as exc:
             log.error("Embedding backend request failed for %s: %s", url, exc)
             raise OpenAIBackendError("Erreur lors de l'appel au backend d'embeddings.") from exc

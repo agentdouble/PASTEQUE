@@ -150,6 +150,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Panneau Admin → section « Radar »: configurer plusieurs tables (colonnes texte/date), retirer une table si besoin (`DELETE /api/v1/loop/config/{config_id}`), puis relancer la génération pour une table donnée ou pour toutes (`POST /api/v1/loop/regenerate?table_name=...`). Résultats persistés et visibles via `GET /api/v1/loop/overview`.
 - Script Airflow: `airflow/dags/trigger_radar.sh` déclenche la regen via `POST /api/v1/loop/regenerate` avec auth admin. Le script charge `airflow/dags/.env` (exemple: `airflow/dags/.env.example`) avec `RADAR_API_BASE_URL`, `RADAR_ADMIN_USERNAME`, `RADAR_ADMIN_PASSWORD`, option `RADAR_TABLE_NAME`, `RADAR_TIMEOUT_S`.
 - L’agent suit `LLM_MODE` (local vLLM ou API OpenAI‑compatible) et peut être borné via `AGENT_MAX_REQUESTS` (clé `looper`). Les garde‑fous de contexte sont décrits dans `backend/README.md` (`LOOP_MAX_TICKETS`, `LOOP_TICKET_TEXT_MAX_CHARS`, `LOOP_MAX_DAYS/WEEKS/MONTHS` par défaut à 1, `LOOP_MAX_TOKENS`, `LOOP_MAX_TICKETS_PER_CALL`, `LOOP_MAX_INPUT_CHARS`, etc.). Si une synthèse est tronquée, augmenter `LOOP_MAX_TOKENS` (et si besoin `LLM_MAX_TOKENS`).
+- En cas d’erreur LLM lors d’une régénération, l’API renvoie un `502` avec un `request_id` si disponible pour faciliter le diagnostic.
 - UI Radar: page épurée (suppression des textes explicatifs et labels redondants).
 
 ## Principes d’architecture
