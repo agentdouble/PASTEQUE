@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, Button, Loader } from '@/components/ui'
 import { apiFetch } from '@/services/api'
-import type { LoopOverview, LoopSummary, LoopTableOverview } from '@/types/loop'
+import type { LoopKind, LoopOverview, LoopSummary, LoopTableOverview } from '@/types/loop'
 import { HiArrowPath } from 'react-icons/hi2'
 import { marked, Renderer } from 'marked'
 
@@ -35,18 +35,30 @@ function renderMarkdown(content: string) {
   )
 }
 
+const modeOptions: Array<{ key: LoopKind; label: string; title: string }> = [
+  { key: 'daily', label: 'Journalier', title: 'Flash du jour' },
+  { key: 'weekly', label: 'Hebdomadaire', title: 'Focus de la semaine' },
+  { key: 'monthly', label: 'Mensuel', title: 'Panorama du mois' },
+]
+
 function SummaryList({ title, summary }: { title: string; summary?: LoopSummary }) {
-  if (!summary) return null
+  const emptyText = 'Aucune synthèse disponible.'
 
   return (
     <div className="space-y-2">
       <h3 className="text-base font-semibold text-primary-900">{title}</h3>
-      <Card
-        variant="elevated"
-        className="p-5 space-y-3 bg-gradient-to-br from-white via-primary-50/50 to-primary-25 border border-primary-100"
-      >
-        {renderMarkdown(summary.content)}
-      </Card>
+      {summary ? (
+        <Card
+          variant="elevated"
+          className="p-5 space-y-3 bg-gradient-to-br from-white via-primary-50/50 to-primary-25 border border-primary-100"
+        >
+          {renderMarkdown(summary.content)}
+        </Card>
+      ) : (
+        <Card variant="elevated" className="p-4">
+          <p className="text-primary-600 text-sm">{emptyText}</p>
+        </Card>
+      )}
     </div>
   )
 }
@@ -56,6 +68,8 @@ export default function Loop() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedMode, setSelectedMode] = useState<LoopKind>('daily')
+  const [selectedTable, setSelectedTable] = useState('')
 
   const fetchOverview = useCallback(async () => {
     setError('')
@@ -74,6 +88,25 @@ export default function Loop() {
   useEffect(() => {
     void fetchOverview()
   }, [fetchOverview])
+
+  useEffect(() => {
+    const items = overview?.items ?? []
+    if (!items.length) return
+    if (!selectedTable || !items.some(item => item.config.table_name === selectedTable)) {
+      setSelectedTable(items[0].config.table_name)
+    }
+  }, [overview, selectedTable])
+
+  const items = overview?.items ?? []
+  const selectedItem = items.find(item => item.config.table_name === selectedTable)
+  const selectedModeMeta = modeOptions.find(option => option.key === selectedMode)
+  const selectedSummary = selectedItem
+    ? selectedMode === 'daily'
+      ? selectedItem.daily?.[0]
+      : selectedMode === 'weekly'
+        ? selectedItem.weekly?.[0]
+        : selectedItem.monthly?.[0]
+    : undefined
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in space-y-6">
@@ -105,7 +138,7 @@ export default function Loop() {
         </Card>
       ) : (
         <>
-          {(!overview?.items || overview.items.length === 0) ? (
+          {(items.length === 0) ? (
             <Card variant="elevated" className="p-6">
               <p className="text-primary-700 text-sm">
                 Aucune table Radar accessible.
@@ -113,28 +146,61 @@ export default function Loop() {
             </Card>
           ) : (
             <div className="space-y-6">
-              {overview.items.map((item: LoopTableOverview) => (
-                <Card key={item.config.id} variant="elevated" className="p-5 space-y-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-primary-950">{item.config.table_name}</h3>
+              <Card variant="elevated" className="p-5 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+                  <div className="flex-1 space-y-1">
+                    <label htmlFor="radar-table" className="text-xs uppercase tracking-wide text-primary-500">
+                      Table
+                    </label>
+                    <select
+                      id="radar-table"
+                      className="w-full rounded-md border border-primary-200 px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
+                      value={selectedTable}
+                      onChange={(event) => setSelectedTable(event.target.value)}
+                    >
+                      {items.map((item: LoopTableOverview) => (
+                        <option key={item.config.id} value={item.config.table_name}>
+                          {item.config.table_name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-primary-500">Mode</p>
+                    <div className="flex flex-wrap gap-2">
+                      {modeOptions.map(option => (
+                        <Button
+                          key={option.key}
+                          variant={selectedMode === option.key ? 'primary' : 'secondary'}
+                          size="sm"
+                          onClick={() => setSelectedMode(option.key)}
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
 
-                  <div className="space-y-4">
-                    <SummaryList
-                      title="Flash du jour"
-                      summary={item.daily?.[0]}
-                    />
-                    <SummaryList
-                      title="Focus de la semaine"
-                      summary={item.weekly?.[0]}
-                    />
-                    <SummaryList
-                      title="Panorama du mois"
-                      summary={item.monthly?.[0]}
-                    />
+              {selectedItem ? (
+                <Card variant="elevated" className="p-5 space-y-4">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs uppercase tracking-wide text-primary-500">Table sélectionnée</p>
+                    <h3 className="text-xl font-semibold text-primary-950">{selectedItem.config.table_name}</h3>
                   </div>
+                  <SummaryList
+                    title={selectedModeMeta?.title ?? 'Synthèse'}
+                    summary={selectedSummary}
+                  />
                 </Card>
-              ))}
+              ) : (
+                <Card variant="elevated" className="p-6">
+                  <p className="text-primary-700 text-sm">
+                    Aucune synthèse disponible pour cette table.
+                  </p>
+                </Card>
+              )}
             </div>
           )}
         </>
