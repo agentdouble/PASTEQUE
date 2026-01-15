@@ -26,26 +26,98 @@ import { renderMarkdown } from '@/utils/markdown'
 
 //
 
-const DEEPSEARCH_VARIANTS = [
+const DEEPSEARCH_OPENERS = [
   'Retraçage des données',
+  'Cartographie des irritants',
   'Clustering des problèmes',
   'Détection des signaux faibles',
-  'Cartographie des irritants',
-  'Corrélation des causes racines',
-  'Tri des priorités',
-  'Synthèse des tendances',
-  'Regroupement des motifs'
+  'Segmentation des parcours',
+  'Tri des anomalies',
+  'Filtrage des doublons',
+  'Repérage des pics'
 ]
 
-function pickDeepSearchVariant(previous: string): string {
-  if (DEEPSEARCH_VARIANTS.length === 0) return ''
-  if (DEEPSEARCH_VARIANTS.length === 1) return DEEPSEARCH_VARIANTS[0]
-  const prevIndex = DEEPSEARCH_VARIANTS.indexOf(previous)
-  if (prevIndex < 0) {
-    return DEEPSEARCH_VARIANTS[Math.floor(Math.random() * DEEPSEARCH_VARIANTS.length)]
-  }
-  const offset = 1 + Math.floor(Math.random() * (DEEPSEARCH_VARIANTS.length - 1))
-  return DEEPSEARCH_VARIANTS[(prevIndex + offset) % DEEPSEARCH_VARIANTS.length]
+const DEEPSEARCH_LATE = [
+  'Corrélation des causes racines',
+  'Hiérarchisation des urgences',
+  'Priorisation des actions',
+  'Synthèse des tendances',
+  'Consolidation des retours',
+  'Qualification des incidents',
+  'Profilage des usages',
+  'Alignement des recommandations',
+  'Mise en évidence des écarts',
+  'Fusion des enseignements',
+  'Calibration des seuils',
+  'Validation des hypothèses',
+  'Classification des motifs',
+  'Pondération des impacts',
+  'Normalisation des libellés',
+  'Rapprochement des sources',
+  'Distribution des volumes'
+]
+
+const DEEPSEARCH_VARIANTS = [...DEEPSEARCH_OPENERS, ...DEEPSEARCH_LATE]
+
+const DEEPSEARCH_STOPWORDS = new Set([
+  'de',
+  'des',
+  'du',
+  'la',
+  'le',
+  'les',
+  'un',
+  'une',
+  'et',
+  'en',
+  'aux',
+  'au',
+  'sur',
+  'pour',
+  'par',
+  'd',
+  'l',
+  'avec',
+  'sans',
+  'vers',
+  'dans',
+  'ou',
+  'que',
+  'qui',
+  'quoi',
+  'mise'
+])
+
+function extractDeepSearchWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-zà-ÿ0-9]+/gi, ' ')
+    .split(' ')
+    .map(word => word.trim())
+    .filter(word => word.length > 2 && !DEEPSEARCH_STOPWORDS.has(word))
+}
+
+function hasUsedWords(text: string, usedWords: Set<string>): boolean {
+  const words = extractDeepSearchWords(text)
+  return words.some(word => usedWords.has(word))
+}
+
+function markUsedWords(text: string, usedWords: Set<string>): void {
+  extractDeepSearchWords(text).forEach(word => usedWords.add(word))
+}
+
+function pickDeepSearchVariant(options: {
+  previous: string
+  usedWords: Set<string>
+  allowInitial: boolean
+}): string {
+  const { previous, usedWords, allowInitial } = options
+  const pool = allowInitial ? DEEPSEARCH_OPENERS : DEEPSEARCH_VARIANTS
+  const candidates = pool.filter(variant => variant !== previous && !hasUsedWords(variant, usedWords))
+  if (candidates.length === 0) return ''
+  const choice = candidates[Math.floor(Math.random() * candidates.length)]
+  markUsedWords(choice, usedWords)
+  return choice
 }
 
 function normaliseRows(columns: string[] = [], rows: any[] = []): Record<string, unknown>[] {
@@ -177,28 +249,43 @@ export default function Chat() {
   const abortRef = useRef<AbortController | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
+  const deepSearchStatusRef = useRef('')
+  const deepSearchUsedWordsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (!ticketMode || !awaitingFirstDelta) {
+      deepSearchStatusRef.current = ''
+      deepSearchUsedWordsRef.current.clear()
       setDeepSearchStatus('')
       return
     }
     let active = true
     let timeoutId: number | null = null
-    const scheduleNext = (previous: string) => {
-      const delayMs = 900 + Math.floor(Math.random() * 1200)
+    const scheduleNext = (allowInitial: boolean) => {
+      const delayMs = 3500 + Math.floor(Math.random() * 4200)
       timeoutId = window.setTimeout(() => {
         if (!active) return
-        const next = pickDeepSearchVariant(previous)
+        const next = pickDeepSearchVariant({
+          previous: deepSearchStatusRef.current,
+          usedWords: deepSearchUsedWordsRef.current,
+          allowInitial
+        })
+        if (!next) return
+        deepSearchStatusRef.current = next
         setDeepSearchStatus(next)
-        scheduleNext(next)
+        scheduleNext(false)
       }, delayMs)
     }
-    const initial = deepSearchStatus || pickDeepSearchVariant('')
-    if (initial !== deepSearchStatus) {
+    const initial = pickDeepSearchVariant({
+      previous: '',
+      usedWords: deepSearchUsedWordsRef.current,
+      allowInitial: true
+    })
+    if (initial) {
+      deepSearchStatusRef.current = initial
       setDeepSearchStatus(initial)
+      scheduleNext(false)
     }
-    scheduleNext(initial)
     return () => {
       active = false
       if (timeoutId) {
@@ -420,7 +507,11 @@ export default function Chat() {
     setInput('')
     setLoading(true)
     setAwaitingFirstDelta(ticketMode)
-    setDeepSearchStatus(ticketMode ? pickDeepSearchVariant(deepSearchStatus) : '')
+    if (ticketMode) {
+      deepSearchUsedWordsRef.current.clear()
+      deepSearchStatusRef.current = ''
+    }
+    setDeepSearchStatus('')
     // Reset uniquement l'état d'affichage du chat et du panneau Tickets
     setEvidenceSpec(null)
     setEvidenceData(null)
