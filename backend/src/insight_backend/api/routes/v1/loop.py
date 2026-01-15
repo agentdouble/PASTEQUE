@@ -12,6 +12,7 @@ from ....models.user import User
 from ....repositories.loop_repository import LoopRepository
 from ....repositories.data_repository import DataRepository
 from ....repositories.user_table_permission_repository import UserTablePermissionRepository
+from ....integrations.openai_client import OpenAIBackendError
 from ....schemas.loop import (
     LoopConfigRequest,
     LoopConfigResponse,
@@ -96,7 +97,20 @@ def regenerate_loop(  # type: ignore[valid-type]
     if not user_is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin requis")
     service = _service(session)
-    service.regenerate(table_name=table_name)
+    try:
+        service.regenerate(table_name=table_name)
+    except OpenAIBackendError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+    except RuntimeError as exc:
+        if isinstance(exc.__cause__, OpenAIBackendError):
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=str(exc),
+            ) from exc
+        raise
     session.commit()
     overviews = service.get_overview()
     items = [
