@@ -77,23 +77,15 @@ class TicketContextService:
         text_column: str | None = None,
         date_column: str | None = None,
     ) -> dict[str, Any]:
-        config = self._get_config(table=table, text_column=text_column, date_column=date_column)
-        self._ensure_allowed(config.table_name, allowed_tables)
-        entries = self._load_entries(config)
-        if not entries:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Aucun ticket exploitable avec cette configuration.",
-            )
-        parsed_periods = self._parse_periods(date_from=date_from, date_to=date_to, periods=periods)
-        filtered = self._filter_by_periods(entries, periods=parsed_periods)
-        if not filtered:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Aucun ticket dans cette plage de dates.",
-            )
-
-        period_label = self._period_label(filtered, periods=parsed_periods)
+        config, entries, filtered, parsed_periods, period_label = self._prepare_context(
+            allowed_tables=allowed_tables,
+            date_from=date_from,
+            date_to=date_to,
+            periods=periods,
+            table=table,
+            text_column=text_column,
+            date_column=date_column,
+        )
         chunks = self._build_chunks(filtered)
         summary = self.agent.summarize_chunks(period_label=period_label, chunks=chunks)
 
@@ -126,7 +118,71 @@ class TicketContextService:
             "evidence_rows": rows_payload,
         }
 
+    def build_preview(
+        self,
+        *,
+        allowed_tables: Iterable[str] | None,
+        date_from: str | None,
+        date_to: str | None,
+        periods: list[dict[str, str | None]] | None = None,
+        table: str | None = None,
+        text_column: str | None = None,
+        date_column: str | None = None,
+    ) -> dict[str, Any]:
+        config, entries, filtered, parsed_periods, period_label = self._prepare_context(
+            allowed_tables=allowed_tables,
+            date_from=date_from,
+            date_to=date_to,
+            periods=periods,
+            table=table,
+            text_column=text_column,
+            date_column=date_column,
+        )
+        columns = self._derive_columns(config=config, sample=filtered)
+        spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
+        rows_payload = self._build_rows_payload(
+            columns=columns,
+            items=filtered,
+            text_column=config.text_column,
+        )
+        return {
+            "period_label": period_label,
+            "count": len(filtered),
+            "total": len(entries),
+            "table": config.table_name,
+            "evidence_spec": spec,
+            "evidence_rows": rows_payload,
+        }
+
     # -------- Internals --------
+    def _prepare_context(
+        self,
+        *,
+        allowed_tables: Iterable[str] | None,
+        date_from: str | None,
+        date_to: str | None,
+        periods: list[dict[str, str | None]] | None,
+        table: str | None,
+        text_column: str | None,
+        date_column: str | None,
+    ) -> tuple[Any, list[dict[str, Any]], list[dict[str, Any]], list[tuple[date | None, date | None]], str]:
+        config = self._get_config(table=table, text_column=text_column, date_column=date_column)
+        self._ensure_allowed(config.table_name, allowed_tables)
+        entries = self._load_entries(config)
+        if not entries:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Aucun ticket exploitable avec cette configuration.",
+            )
+        parsed_periods = self._parse_periods(date_from=date_from, date_to=date_to, periods=periods)
+        filtered = self._filter_by_periods(entries, periods=parsed_periods)
+        if not filtered:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Aucun ticket dans cette plage de dates.",
+            )
+        period_label = self._period_label(filtered, periods=parsed_periods)
+        return config, entries, filtered, parsed_periods, period_label
     def _get_config(self, *, table: str | None, text_column: str | None, date_column: str | None):
         if table:
             canon = self._canonical_table(table, None)

@@ -182,6 +182,16 @@ export interface TicketContextMeta {
   date_to?: string
 }
 
+export interface TicketPreviewItem {
+  table?: string
+  period_label?: string
+  count?: number
+  total?: number
+  evidence_spec?: EvidenceSpec | null
+  evidence_rows?: EvidenceRowsPayload | null
+  error?: string
+}
+
 export interface FeedbackResponse {
   id: number
   conversation_id: number
