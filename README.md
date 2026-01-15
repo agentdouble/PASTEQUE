@@ -210,7 +210,7 @@ tables:
     # model: text-embedding-3-small    # optionnel, surcharge par table
 ```
 
-Le script `start.sh` génère alors la colonne d'embedding (JSON de floats) avant de pousser la table vers MindsDB. Les erreurs de configuration (table manquante, colonne absente…) stoppent le démarrage afin d'éviter toute incohérence silencieuse. Les embeddings peuvent désormais s'appuyer sur un backend dédié via `EMBEDDING_MODE` :
+Le script `start.sh` génère alors la colonne d'embedding (JSON de floats) avant de pousser la table vers MindsDB. Pour désactiver MindsDB au démarrage (et donc le calcul d'embeddings), définissez `MINDSDB_EMBEDDINGS_ENABLED=false` dans `backend/.env` : le script ne lance pas le conteneur et ne synchronise pas les tables. Si vous voulez garder MindsDB sans embeddings, laissez `MINDSDB_EMBEDDINGS_ENABLED=true` et retirez `MINDSDB_EMBEDDINGS_CONFIG_PATH`. Les erreurs de configuration (table manquante, colonne absente…) stoppent le démarrage afin d'éviter toute incohérence silencieuse. Les embeddings peuvent désormais s'appuyer sur un backend dédié via `EMBEDDING_MODE` :
 
 - `local` charge un modèle `sentence-transformers` (`EMBEDDING_LOCAL_MODEL` prioritaire, sinon `default_model` si défini).
 - `api` utilise un endpoint OpenAI‑compatible (`OPENAI_BASE_URL` + `OPENAI_API_KEY`) et le modèle `EMBEDDING_MODEL`.
