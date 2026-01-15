@@ -262,7 +262,7 @@ export default function Chat() {
     let active = true
     let timeoutId: number | null = null
     const scheduleNext = (allowInitial: boolean) => {
-      const delayMs = 3500 + Math.floor(Math.random() * 4200)
+      const delayMs = 8000 + Math.floor(Math.random() * 6000)
       timeoutId = window.setTimeout(() => {
         if (!active) return
         const next = pickDeepSearchVariant({
