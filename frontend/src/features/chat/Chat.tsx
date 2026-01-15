@@ -1499,7 +1499,9 @@ export default function Chat() {
             {ticketMode && awaitingFirstDelta && (
               <div className="flex items-center gap-2 text-xs text-primary-500 py-2 pl-1">
                 <span className="inline-block h-3 w-3 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-                Le modèle prépare sa réponse…
+                <span>
+                  <span className="font-semibold text-primary-700">DeepSearch</span> en action — on creuse pour la meilleure réponse.
+                </span>
               </div>
             )}
             {error && (
