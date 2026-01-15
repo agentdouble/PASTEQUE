@@ -58,14 +58,6 @@ class LoopService:
             self.repo.replace_summaries(config=config, items=[])
         return config
 
-    def delete_config(self, *, config_id: int) -> None:
-        deleted = self.repo.delete_config(config_id=config_id)
-        if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Configuration Loop introuvable.",
-            )
-
     def regenerate(
         self, *, table_name: str | None = None
     ) -> list[tuple[LoopConfig, list[LoopSummary], list[LoopSummary], list[LoopSummary]]]:

@@ -12,7 +12,6 @@ from ....models.user import User
 from ....repositories.loop_repository import LoopRepository
 from ....repositories.data_repository import DataRepository
 from ....repositories.user_table_permission_repository import UserTablePermissionRepository
-from ....integrations.openai_client import OpenAIBackendError
 from ....schemas.loop import (
     LoopConfigRequest,
     LoopConfigResponse,
@@ -75,19 +74,6 @@ def update_loop_config(  # type: ignore[valid-type]
     return LoopConfigResponse.from_model(config)
 
 
-@router.delete("/config/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_loop_config(  # type: ignore[valid-type]
-    config_id: int,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
-) -> None:
-    if not user_is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin requis")
-    service = _service(session)
-    service.delete_config(config_id=config_id)
-    session.commit()
-
-
 @router.post("/regenerate", response_model=LoopOverviewResponse)
 def regenerate_loop(  # type: ignore[valid-type]
     current_user: User = Depends(get_current_user),
@@ -97,20 +83,7 @@ def regenerate_loop(  # type: ignore[valid-type]
     if not user_is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin requis")
     service = _service(session)
-    try:
-        service.regenerate(table_name=table_name)
-    except OpenAIBackendError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        ) from exc
-    except RuntimeError as exc:
-        if isinstance(exc.__cause__, OpenAIBackendError):
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=str(exc),
-            ) from exc
-        raise
+    service.regenerate(table_name=table_name)
     session.commit()
     overviews = service.get_overview()
     items = [

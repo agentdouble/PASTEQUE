@@ -79,21 +79,12 @@ class TicketContextAgent:
             client.close()
 
         try:
-            choice = response["choices"][0]
-            content = choice["message"]["content"]
-            finish_reason = choice.get("finish_reason") if isinstance(choice, dict) else None
+            content = response["choices"][0]["message"]["content"]
         except Exception as exc:  # pragma: no cover - defensive
             raise RuntimeError("Réponse LLM tickets invalide.") from exc
         text = str(content or "").strip()
         if not text:
             raise RuntimeError("Réponse LLM tickets vide.")
-        if finish_reason == "length":
-            log.warning(
-                "TicketContextAgent response truncated (finish_reason=length, max_tokens=%d, provider=%s, period=%s)",
-                max_tokens,
-                provider,
-                period_label,
-            )
         return text
 
     def summarize_chunks(

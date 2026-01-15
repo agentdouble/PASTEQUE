@@ -12,7 +12,7 @@ import type {
   AdminResetPasswordResponse,
   AdminUsageStatsResponse,
 } from '@/types/user'
-import type { LoopConfig, LoopOverview, LoopConfigPayload, LoopTableOverview } from '@/types/loop'
+import type { LoopConfig, LoopOverview, LoopConfigPayload } from '@/types/loop'
 import type { DataOverviewResponse, ColumnRolesResponse, ExplorerEnabledResponse } from '@/types/data'
 import { HiCheckCircle, HiXCircle, HiArrowPath } from 'react-icons/hi2'
 import DictionaryManager from './DictionaryManager'
@@ -81,7 +81,7 @@ export default function AdminPanel() {
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState('')
   const [updatingUsers, setUpdatingUsers] = useState<Set<string>>(() => new Set())
-  const [loopItems, setLoopItems] = useState<LoopTableOverview[]>([])
+  const [loopConfig, setLoopConfig] = useState<LoopConfig | null>(null)
   const [loopTables, setLoopTables] = useState<TableInfo[]>([])
   const [loopColumns, setLoopColumns] = useState<ColumnInfo[]>([])
   const [selectedTable, setSelectedTable] = useState('')
@@ -91,8 +91,7 @@ export default function AdminPanel() {
   const [loopError, setLoopError] = useState('')
   const [loopLoading, setLoopLoading] = useState(true)
   const [loopSaving, setLoopSaving] = useState(false)
-  const [loopRegenerating, setLoopRegenerating] = useState<string | null>(null)
-  const [loopDeleting, setLoopDeleting] = useState<number | null>(null)
+  const [loopRegenerating, setLoopRegenerating] = useState(false)
   const [ticketTable, setTicketTable] = useState('')
   const [ticketDateColumn, setTicketDateColumn] = useState('')
   const [ticketColumns, setTicketColumns] = useState<ColumnInfo[]>([])
@@ -250,22 +249,26 @@ export default function AdminPanel() {
     []
   )
 
-  const loadLoopOverview = useCallback(async (withLoader = true) => {
-    if (withLoader) {
-      setLoopLoading(true)
-    }
+  const loadLoopOverview = useCallback(async () => {
+    setLoopLoading(true)
     setLoopError('')
     try {
       const response = await apiFetch<LoopOverview>('/loop/overview')
-      setLoopItems(response?.items ?? [])
-    } catch (err) {
-      setLoopError(err instanceof Error ? err.message : 'Chargement Radar impossible.')
-    } finally {
-      if (withLoader) {
-        setLoopLoading(false)
+      const first = response?.items?.[0]
+      const config = first?.config ?? null
+      setLoopConfig(config)
+      if (config) {
+        setSelectedTable(config.table_name)
+        setSelectedTextColumn(config.text_column)
+        setSelectedDateColumn(config.date_column)
+        await loadColumns(config.table_name)
       }
+    } catch (err) {
+      setLoopError(err instanceof Error ? err.message : 'Chargement Loop impossible.')
+    } finally {
+      setLoopLoading(false)
     }
-  }, [])
+  }, [loadColumns])
 
   useEffect(() => {
     void loadPermissions()
@@ -281,45 +284,22 @@ export default function AdminPanel() {
   }, [activeTab, explorerData, explorerLoading, loadExplorerOverview])
 
   useEffect(() => {
-    if (!selectedTable && loopItems.length > 0) {
-      const config = loopItems[0].config
-      setSelectedTable(config.table_name)
-      setSelectedTextColumn(config.text_column)
-      setSelectedDateColumn(config.date_column)
-      void loadColumns(config.table_name)
+    if (loopConfig && !ticketTable) {
+      setTicketTable(loopConfig.table_name)
+      void loadTicketConfig(loopConfig.table_name)
     }
-  }, [loopItems, selectedTable, loadColumns])
-
-  useEffect(() => {
-    if (!ticketTable && loopItems.length > 0) {
-      const config = loopItems[0].config
-      setTicketTable(config.table_name)
-      void loadTicketConfig(config.table_name)
-    }
-  }, [loopItems, ticketTable, loadTicketConfig])
-
-  const findLoopConfig = useCallback(
-    (tableName: string) =>
-      loopItems.find(item => item.config.table_name === tableName)?.config ?? null,
-    [loopItems]
-  )
+  }, [loopConfig, ticketTable, loadTicketConfig])
 
   const handleTableChange = useCallback(
     (value: string) => {
       setSelectedTable(value)
-      const config = findLoopConfig(value)
-      if (config) {
-        setSelectedTextColumn(config.text_column)
-        setSelectedDateColumn(config.date_column)
-      } else {
-        setSelectedTextColumn('')
-        setSelectedDateColumn('')
-      }
+      setSelectedTextColumn('')
+      setSelectedDateColumn('')
       setLoopStatus(null)
       setLoopError('')
       void loadColumns(value)
     },
-    [findLoopConfig, loadColumns]
+    [loadColumns]
   )
 
   const handleTicketTableChange = useCallback(
@@ -348,12 +328,12 @@ export default function AdminPanel() {
         text_column: selectedTextColumn,
         date_column: selectedDateColumn,
       }
-      await apiFetch<LoopConfig>('/loop/config', {
+      const response = await apiFetch<LoopConfig>('/loop/config', {
         method: 'PUT',
         body: JSON.stringify(payload),
       })
-      await loadLoopOverview(false)
-      setLoopStatus({ type: 'success', message: 'Configuration Radar enregistrée.' })
+      setLoopConfig(response ?? null)
+      setLoopStatus({ type: 'success', message: 'Configuration Loop enregistrée.' })
     } catch (err) {
       setLoopStatus({
         type: 'error',
@@ -364,59 +344,34 @@ export default function AdminPanel() {
     }
   }
 
-  async function handleRegenerateLoop(tableName?: string) {
-    if (loopItems.length === 0) {
-      setLoopStatus({ type: 'error', message: 'Configurez au moins une table avant de régénérer.' })
+  async function handleRegenerateLoop() {
+    if (!loopConfig) {
+      setLoopStatus({ type: 'error', message: 'Configurez Loop avant de régénérer.' })
       return
     }
     setLoopError('')
-    setLoopRegenerating(tableName ?? '*')
+    setLoopRegenerating(true)
     setLoopStatus(null)
     try {
-      const query = tableName ? `?table_name=${encodeURIComponent(tableName)}` : ''
-      const response = await apiFetch<LoopOverview>(`/loop/regenerate${query}`, {
+      const response = await apiFetch<LoopOverview>('/loop/regenerate', {
         method: 'POST',
       })
-      setLoopItems(response?.items ?? [])
-      setLoopStatus({
-        type: 'success',
-        message: tableName ? `Résumés Radar régénérés pour ${tableName}.` : 'Résumés Radar régénérés.',
-      })
+      const first = response?.items?.[0]
+      const config = first?.config ?? null
+      setLoopConfig(config)
+      if (config) {
+        setSelectedTable(config.table_name)
+        setSelectedTextColumn(config.text_column)
+        setSelectedDateColumn(config.date_column)
+      }
+      setLoopStatus({ type: 'success', message: 'Résumés Loop régénérés.' })
     } catch (err) {
       setLoopStatus({
         type: 'error',
         message: err instanceof Error ? err.message : 'Régénération impossible.',
       })
     } finally {
-      setLoopRegenerating(null)
-    }
-  }
-
-  async function handleDeleteLoopConfig(config: LoopConfig) {
-    const confirmed = window.confirm(
-      `Retirer la table "${config.table_name}" du Radar ? Les résumés associés seront supprimés.`
-    )
-    if (!confirmed) return
-    setLoopError('')
-    setLoopDeleting(config.id)
-    setLoopStatus(null)
-    try {
-      await apiFetch(`/loop/config/${config.id}`, { method: 'DELETE' })
-      setLoopItems(prev => prev.filter(item => item.config.id !== config.id))
-      if (selectedTable === config.table_name) {
-        setSelectedTable('')
-        setSelectedTextColumn('')
-        setSelectedDateColumn('')
-        setLoopColumns([])
-      }
-      setLoopStatus({ type: 'success', message: 'Table retirée du Radar.' })
-    } catch (err) {
-      setLoopStatus({
-        type: 'error',
-        message: err instanceof Error ? err.message : 'Suppression impossible.',
-      })
-    } finally {
-      setLoopDeleting(null)
+      setLoopRegenerating(false)
     }
   }
 
@@ -1090,15 +1045,15 @@ export default function AdminPanel() {
         <Card variant="elevated">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-primary-950">Radar – résumés tickets</h3>
+              <h3 className="text-lg font-semibold text-primary-950">Loop – résumés tickets</h3>
               <p className="text-sm text-primary-600">
-                Sélectionnez les tables et colonnes utilisées pour générer les synthèses Radar.
+                Sélectionnez la table et les colonnes utilisées pour générer les résumés hebdomadaires et mensuels.
               </p>
             </div>
             <div className="text-sm text-primary-600">
-              Tables configurées :{' '}
+              Dernière génération :{' '}
               <span className="font-medium text-primary-900">
-                {loopItems.length}
+                {formatDate(loopConfig?.last_generated_at)}
               </span>
             </div>
           </div>
@@ -1128,14 +1083,14 @@ export default function AdminPanel() {
 
           {loopLoading ? (
             <div className="py-8 flex justify-center">
-              <Loader text="Chargement des configurations Radar…" />
+              <Loader text="Chargement de la configuration Loop…" />
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-primary-800 mb-1">
-                    Table Radar
+                    Table de tickets
                   </label>
                   <select
                     value={selectedTable}
@@ -1194,107 +1149,46 @@ export default function AdminPanel() {
                     type="button"
                     variant="secondary"
                     onClick={handleSaveLoopConfig}
-                    disabled={loopSaving || loopTables.length === 0 || !selectedTable || !selectedTextColumn || !selectedDateColumn}
+                    disabled={loopSaving || loopTables.length === 0}
                   >
-                    {loopSaving ? 'Enregistrement…' : 'Enregistrer la table'}
+                    {loopSaving ? 'Enregistrement…' : 'Enregistrer la configuration'}
                   </Button>
                 </div>
               </div>
               <div className="space-y-3 md:border-l md:border-primary-100 md:pl-6 pt-4 md:pt-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm text-primary-700">Tables actives dans le Radar</p>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleRegenerateLoop()}
-                    disabled={loopRegenerating !== null || loopSaving || loopLoading}
-                    className="inline-flex items-center gap-2"
-                  >
-                    {loopRegenerating === '*' ? (
-                      <>
-                        <HiArrowPath className="w-4 h-4 animate-spin" />
-                        Régénération…
-                      </>
-                    ) : (
-                      <>
-                        <HiArrowPath className="w-4 h-4" />
-                        Régénérer tout
-                      </>
-                    )}
-                  </Button>
-                </div>
-                {loopItems.length === 0 ? (
+                <p className="text-sm text-primary-700">
+                  Régénérez les résumés hebdomadaires et mensuels à partir de la configuration courante.
+                  Les résultats seront visibles dans l&apos;onglet « Loop ».
+                </p>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleRegenerateLoop}
+                  disabled={loopRegenerating || loopSaving || loopLoading}
+                  className="inline-flex items-center gap-2"
+                >
+                  {loopRegenerating ? (
+                    <>
+                      <HiArrowPath className="w-4 h-4 animate-spin" />
+                      Régénération…
+                    </>
+                  ) : (
+                    <>
+                      <HiArrowPath className="w-4 h-4" />
+                      Régénérer les résumés
+                    </>
+                  )}
+                </Button>
+                {loopConfig ? (
                   <p className="text-xs text-primary-500">
-                    Aucune table n&apos;est encore configurée pour le Radar.
+                    Table : <span className="font-semibold text-primary-800">{loopConfig.table_name}</span> — texte :{' '}
+                    {loopConfig.text_column} — date : {loopConfig.date_column}
                   </p>
                 ) : (
-                  <div className="space-y-3">
-                    {loopItems.map(item => {
-                      const config = item.config
-                      const isRegenerating = loopRegenerating === config.table_name
-                      const isDeleting = loopDeleting === config.id
-                      return (
-                        <div key={config.id} className="rounded-lg border border-primary-100 bg-white p-3 space-y-2">
-                          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                            <div>
-                              <p className="text-sm font-semibold text-primary-900">{config.table_name}</p>
-                              <p className="text-xs text-primary-600">
-                                Texte : {config.text_column} — Date : {config.date_column}
-                              </p>
-                              <p className="text-xs text-primary-500">
-                                Dernière génération : {formatDate(config.last_generated_at)}
-                              </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleTableChange(config.table_name)}
-                                disabled={loopSaving || loopLoading}
-                              >
-                                Modifier
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleRegenerateLoop(config.table_name)}
-                                disabled={loopRegenerating !== null || loopSaving || loopLoading}
-                                className="inline-flex items-center gap-2"
-                              >
-                                {isRegenerating ? (
-                                  <>
-                                    <HiArrowPath className="w-4 h-4 animate-spin" />
-                                    Régénération…
-                                  </>
-                                ) : (
-                                  <>
-                                    <HiArrowPath className="w-4 h-4" />
-                                    Régénérer
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteLoopConfig(config)}
-                                disabled={loopDeleting !== null || loopSaving || loopLoading}
-                              >
-                                {isDeleting ? 'Suppression…' : 'Retirer'}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                  <p className="text-xs text-primary-500">
+                    Configurez Loop pour activer la génération.
+                  </p>
                 )}
-                <p className="text-xs text-primary-500">
-                  Les résultats apparaissent dans l&apos;onglet « Radar ».
-                </p>
               </div>
             </div>
           )}
