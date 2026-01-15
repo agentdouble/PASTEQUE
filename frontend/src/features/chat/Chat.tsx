@@ -26,6 +26,28 @@ import { renderMarkdown } from '@/utils/markdown'
 
 //
 
+const DEEPSEARCH_VARIANTS = [
+  'Retraçage des données',
+  'Clustering des problèmes',
+  'Détection des signaux faibles',
+  'Cartographie des irritants',
+  'Corrélation des causes racines',
+  'Tri des priorités',
+  'Synthèse des tendances',
+  'Regroupement des motifs'
+]
+
+function pickDeepSearchVariant(previous: string): string {
+  if (DEEPSEARCH_VARIANTS.length === 0) return ''
+  if (DEEPSEARCH_VARIANTS.length === 1) return DEEPSEARCH_VARIANTS[0]
+  const prevIndex = DEEPSEARCH_VARIANTS.indexOf(previous)
+  if (prevIndex < 0) {
+    return DEEPSEARCH_VARIANTS[Math.floor(Math.random() * DEEPSEARCH_VARIANTS.length)]
+  }
+  const offset = 1 + Math.floor(Math.random() * (DEEPSEARCH_VARIANTS.length - 1))
+  return DEEPSEARCH_VARIANTS[(prevIndex + offset) % DEEPSEARCH_VARIANTS.length]
+}
+
 function normaliseRows(columns: string[] = [], rows: any[] = []): Record<string, unknown>[] {
   const headings = columns.length > 0 ? columns : ['value']
   return rows.map(row => {
@@ -115,6 +137,7 @@ export default function Chat() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [awaitingFirstDelta, setAwaitingFirstDelta] = useState(false)
+  const [deepSearchStatus, setDeepSearchStatus] = useState('')
   const [error, setError] = useState('')
   // Statut éphémère en mode ANIMATION=true
   const [animStatus, setAnimStatus] = useState('')
@@ -154,6 +177,35 @@ export default function Chat() {
   const abortRef = useRef<AbortController | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!ticketMode || !awaitingFirstDelta) {
+      setDeepSearchStatus('')
+      return
+    }
+    let active = true
+    let timeoutId: number | null = null
+    const scheduleNext = (previous: string) => {
+      const delayMs = 900 + Math.floor(Math.random() * 1200)
+      timeoutId = window.setTimeout(() => {
+        if (!active) return
+        const next = pickDeepSearchVariant(previous)
+        setDeepSearchStatus(next)
+        scheduleNext(next)
+      }, delayMs)
+    }
+    const initial = deepSearchStatus || pickDeepSearchVariant('')
+    if (initial !== deepSearchStatus) {
+      setDeepSearchStatus(initial)
+    }
+    scheduleNext(initial)
+    return () => {
+      active = false
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [ticketMode, awaitingFirstDelta])
   
   // Helpers to open/close history while keeping URL in sync only on explicit actions
   const closeHistory = () => {
@@ -368,6 +420,7 @@ export default function Chat() {
     setInput('')
     setLoading(true)
     setAwaitingFirstDelta(ticketMode)
+    setDeepSearchStatus(ticketMode ? pickDeepSearchVariant(deepSearchStatus) : '')
     // Reset uniquement l'état d'affichage du chat et du panneau Tickets
     setEvidenceSpec(null)
     setEvidenceData(null)
@@ -1500,7 +1553,7 @@ export default function Chat() {
               <div className="flex items-center gap-2 text-xs text-primary-500 py-2 pl-1">
                 <span className="inline-block h-3 w-3 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
                 <span>
-                  <span className="font-semibold text-primary-700">DeepSearch</span> en action — on creuse pour la meilleure réponse.
+                  <span className="font-semibold text-primary-700">DeepSearch mode :</span> {deepSearchStatus}
                 </span>
               </div>
             )}

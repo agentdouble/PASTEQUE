@@ -61,7 +61,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Mode par défaut: le chat démarre en mode **tickets** (contexte injecté). Le bouton (icône étincelle) sert désormais à basculer vers le mode base (agents NL→SQL + RAG + rédaction). Quand le bouton n’est pas activé, le flux reste en mode tickets.
 - La synthèse du contexte tickets peut être parallélisée via `TICKET_CONTEXT_WORKERS` (défaut 1) pour accélérer les volumes importants.
 - Le backend journalise le nombre de workers actifs pour la synthèse tickets.
-- En mode tickets, l’UI affiche l’indicateur « DeepSearch en action » pendant la préparation de la réponse.
+- En mode tickets, l’UI affiche un indicateur « DeepSearch mode : … » avec variantes aléatoires pendant la préparation.
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées (ex.: septembre 2025 et octobre 2024) via le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
