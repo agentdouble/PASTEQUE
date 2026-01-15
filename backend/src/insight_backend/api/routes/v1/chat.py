@@ -415,8 +415,13 @@ def chat_stream(  # type: ignore[valid-type]
                     "date_to": ticket_context.get("date_to"),
                 }
             }
+            evidence_spec = ticket_context.get("evidence_spec")
+            evidence_rows = ticket_context.get("evidence_rows")
+            if isinstance(evidence_spec, dict):
+                ctx_meta["evidence_spec"] = evidence_spec
             ticket_events.append(("meta", ctx_meta))
-            # Evidence non diffusée pour ce mode: injection contextuelle uniquement
+            if isinstance(evidence_rows, dict):
+                ticket_events.append(("rows", evidence_rows))
         except HTTPException as exc:
             ticket_context_error = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
         except Exception as exc:  # pragma: no cover - defensive
