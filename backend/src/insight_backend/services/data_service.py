@@ -494,8 +494,6 @@ class DataService:
         category_breakdown: list[CategorySubCategoryCount] = []
         if category_pairs:
             items = sorted(category_pairs.items(), key=lambda item: (-item[1], item[0][0], item[0][1]))
-            if len(items) > MAX_VALUES_PER_FIELD:
-                items = items[:MAX_VALUES_PER_FIELD]
             category_breakdown = [
                 CategorySubCategoryCount(category=cat, sub_category=sub, count=count)
                 for (cat, sub), count in items
