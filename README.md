@@ -59,6 +59,8 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Endpoint: `POST /api/v1/chat/stream` (SSE `text/event-stream`).
 - Front: affichage en direct des tokens. Lorsqu’un mode NL→SQL est actif, la/les requêtes SQL exécutées s’affichent d’abord dans la bulle (grisé car provisoire), puis la bulle bascule automatiquement sur la réponse finale. Un lien « Afficher les détails de la requête » dans la bulle permet de revoir les SQL, les échantillons et désormais les lignes RAG récupérées (table, score, colonnes clés) pour expliquer la mise en avant.
 - Mode par défaut: le chat démarre en mode **tickets** (contexte injecté). Le bouton (icône étincelle) sert désormais à basculer vers le mode base (agents NL→SQL + RAG + rédaction). Quand le bouton n’est pas activé, le flux reste en mode tickets.
+- La synthèse du contexte tickets peut être parallélisée via `TICKET_CONTEXT_WORKERS` (défaut 1) pour accélérer les volumes importants.
+- Le backend journalise le nombre de workers actifs pour la synthèse tickets.
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées (ex.: septembre 2025 et octobre 2024) via le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
