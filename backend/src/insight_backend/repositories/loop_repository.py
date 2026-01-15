@@ -37,6 +37,9 @@ class LoopRepository:
                 return config
         return None
 
+    def get_config_by_id(self, config_id: int) -> LoopConfig | None:
+        return self.session.query(LoopConfig).filter(LoopConfig.id == config_id).first()
+
     def get_config(self) -> LoopConfig | None:
         """Return the most recently updated loop config, if any."""
         items = self.list_configs()
@@ -61,6 +64,15 @@ class LoopRepository:
             log.info("Loop config updated (table=%s, text=%s, date=%s)", table_name, text_column, date_column)
         self.session.flush()
         return config
+
+    def delete_config(self, *, config_id: int) -> bool:
+        config = self.get_config_by_id(config_id)
+        if config is None:
+            return False
+        self.session.delete(config)
+        self.session.flush()
+        log.info("Loop config deleted (config_id=%s, table=%s)", config.id, config.table_name)
+        return True
 
     def touch_generated(self, *, config_id: int, ts: datetime) -> None:
         self.session.query(LoopConfig).filter(LoopConfig.id == config_id).update(

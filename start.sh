@@ -153,27 +153,46 @@ if [[ ! -f "$BACKEND_ENV_FILE" ]]; then
   exit 1
 fi
 
-CONTAINER_RUNTIME_RAW="$(read_env_var "$BACKEND_ENV_FILE" "CONTAINER_RUNTIME")"
-
-if [[ -z "$CONTAINER_RUNTIME_RAW" ]]; then
-  echo "ERROR: CONTAINER_RUNTIME must be defined in '$BACKEND_ENV_FILE'." >&2
-  exit 1
+EMBEDDINGS_ENABLED_RAW="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_EMBEDDINGS_ENABLED")"
+EMBEDDINGS_ENABLED="true"
+if [[ -n "$EMBEDDINGS_ENABLED_RAW" ]]; then
+  case "$(printf '%s' "$EMBEDDINGS_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in
+    true|1)
+      EMBEDDINGS_ENABLED="true"
+      ;;
+    false|0)
+      EMBEDDINGS_ENABLED="false"
+      ;;
+    *)
+      echo "ERROR: MINDSDB_EMBEDDINGS_ENABLED must be true or false. Got '$EMBEDDINGS_ENABLED_RAW'." >&2
+      exit 1
+      ;;
+  esac
 fi
 
-# macOS ships Bash 3.2 (no ${var,,}); use POSIX tr instead
-CONTAINER_RUNTIME="$(printf '%s' "$CONTAINER_RUNTIME_RAW" | tr '[:upper:]' '[:lower:]')"
+if [[ "$EMBEDDINGS_ENABLED" == "true" ]]; then
+  CONTAINER_RUNTIME_RAW="$(read_env_var "$BACKEND_ENV_FILE" "CONTAINER_RUNTIME")"
 
-case "$CONTAINER_RUNTIME" in
-  docker|podman)
-    ;;
-  *)
-    echo "ERROR: Unsupported CONTAINER_RUNTIME '$CONTAINER_RUNTIME_RAW'. Use 'docker' or 'podman'." >&2
+  if [[ -z "$CONTAINER_RUNTIME_RAW" ]]; then
+    echo "ERROR: CONTAINER_RUNTIME must be defined in '$BACKEND_ENV_FILE'." >&2
     exit 1
-    ;;
-esac
+  fi
 
-require_command "$CONTAINER_RUNTIME"
-echo "[start] Container runtime -> $CONTAINER_RUNTIME"
+  # macOS ships Bash 3.2 (no ${var,,}); use POSIX tr instead
+  CONTAINER_RUNTIME="$(printf '%s' "$CONTAINER_RUNTIME_RAW" | tr '[:upper:]' '[:lower:]')"
+
+  case "$CONTAINER_RUNTIME" in
+    docker|podman)
+      ;;
+    *)
+      echo "ERROR: Unsupported CONTAINER_RUNTIME '$CONTAINER_RUNTIME_RAW'. Use 'docker' or 'podman'." >&2
+      exit 1
+      ;;
+  esac
+
+  require_command "$CONTAINER_RUNTIME"
+  echo "[start] Container runtime -> $CONTAINER_RUNTIME"
+fi
 
 BACKEND_DEV_URL="$(read_env_var "$BACKEND_ENV_FILE" "BACKEND_DEV_URL")"
 if [[ -z "$BACKEND_DEV_URL" ]]; then
@@ -244,82 +263,96 @@ echo "[start] frontend/.env.development -> VITE_API_URL=$VITE_API_URL_VALUE"
 echo "[start] backend CORS -> ALLOWED_ORIGINS=$ALLOWED_ORIGINS_VALUE"
 
 # MindsDB container configuration (from backend/.env)
-MINDSDB_CONTAINER_NAME="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_CONTAINER_NAME")"
-if [[ -z "$MINDSDB_CONTAINER_NAME" ]]; then
-  echo "ERROR: MINDSDB_CONTAINER_NAME must be defined in '$BACKEND_ENV_FILE'." >&2
-  exit 1
-fi
-
-MINDSDB_HTTP_PORT="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_HTTP_PORT")"
-MINDSDB_MYSQL_PORT="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_MYSQL_PORT")"
-
-if [[ -z "$MINDSDB_HTTP_PORT" || -z "$MINDSDB_MYSQL_PORT" ]]; then
-  echo "ERROR: MINDSDB_HTTP_PORT and MINDSDB_MYSQL_PORT must be defined in '$BACKEND_ENV_FILE'." >&2
-  exit 1
-fi
-
-if ! is_number "$MINDSDB_HTTP_PORT" || ! is_number "$MINDSDB_MYSQL_PORT"; then
-  echo "ERROR: MINDSDB_HTTP_PORT and MINDSDB_MYSQL_PORT must be numeric. Got HTTP='$MINDSDB_HTTP_PORT' MYSQL='$MINDSDB_MYSQL_PORT'." >&2
-  exit 1
-fi
-
-MINDSDB_BASE_URL_VAL="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_BASE_URL")"
-if [[ -z "$MINDSDB_BASE_URL_VAL" ]]; then
-  echo "ERROR: MINDSDB_BASE_URL must be defined in '$BACKEND_ENV_FILE'." >&2
-  exit 1
-fi
-
-if ! read -r MINDSDB_HOST_FROM_URL MINDSDB_PORT_FROM_URL MINDSDB_SCHEME_FROM_URL < <(parse_url_components "$MINDSDB_BASE_URL_VAL"); then
-  echo "ERROR: Unable to parse MINDSDB_BASE_URL '$MINDSDB_BASE_URL_VAL'." >&2
-  exit 1
-fi
-
-if ! is_number "$MINDSDB_PORT_FROM_URL"; then
-  echo "ERROR: MINDSDB_BASE_URL must include a numeric port. Got '$MINDSDB_BASE_URL_VAL'." >&2
-  exit 1
-fi
-
-if [[ "$MINDSDB_PORT_FROM_URL" -ne "$MINDSDB_HTTP_PORT" ]]; then
-  echo "ERROR: MINDSDB_BASE_URL port ($MINDSDB_PORT_FROM_URL) must match MINDSDB_HTTP_PORT ($MINDSDB_HTTP_PORT)." >&2
-  exit 1
-fi
-
-echo "[start] mindsdb container -> $MINDSDB_CONTAINER_NAME (http:$MINDSDB_HTTP_PORT mysql:$MINDSDB_MYSQL_PORT)"
-
-MINDSDB_RUNNING_ALREADY=false
-if "$CONTAINER_RUNTIME" inspect -f '{{.State.Running}}' "$MINDSDB_CONTAINER_NAME" >/dev/null 2>&1; then
-  if "$CONTAINER_RUNTIME" inspect -f '{{.State.Running}}' "$MINDSDB_CONTAINER_NAME" | grep -q "true"; then
-    MINDSDB_RUNNING_ALREADY=true
-    echo "[start] Reusing existing MindsDB container (already running)"
-  fi
-fi
-
-# Embeddings configuration visibility and validation
-EMBED_CFG_PATH="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_EMBEDDINGS_CONFIG_PATH")"
-if [[ -n "$EMBED_CFG_PATH" ]]; then
-  if [[ "$EMBED_CFG_PATH" != /* ]]; then
-    EMBED_CFG_PATH="$(cd "$(dirname "$BACKEND_ENV_FILE")" && pwd)/$EMBED_CFG_PATH"
-  fi
-  echo "[start] embeddings config -> $EMBED_CFG_PATH"
-  if [[ ! -f "$EMBED_CFG_PATH" ]]; then
-    echo "ERROR: MINDSDB_EMBEDDINGS_CONFIG_PATH points to a missing file: $EMBED_CFG_PATH" >&2
+if [[ "$EMBEDDINGS_ENABLED" == "true" ]]; then
+  MINDSDB_CONTAINER_NAME="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_CONTAINER_NAME")"
+  if [[ -z "$MINDSDB_CONTAINER_NAME" ]]; then
+    echo "ERROR: MINDSDB_CONTAINER_NAME must be defined in '$BACKEND_ENV_FILE'." >&2
     exit 1
   fi
+
+  MINDSDB_HTTP_PORT="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_HTTP_PORT")"
+  MINDSDB_MYSQL_PORT="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_MYSQL_PORT")"
+
+  if [[ -z "$MINDSDB_HTTP_PORT" || -z "$MINDSDB_MYSQL_PORT" ]]; then
+    echo "ERROR: MINDSDB_HTTP_PORT and MINDSDB_MYSQL_PORT must be defined in '$BACKEND_ENV_FILE'." >&2
+    exit 1
+  fi
+
+  if ! is_number "$MINDSDB_HTTP_PORT" || ! is_number "$MINDSDB_MYSQL_PORT"; then
+    echo "ERROR: MINDSDB_HTTP_PORT and MINDSDB_MYSQL_PORT must be numeric. Got HTTP='$MINDSDB_HTTP_PORT' MYSQL='$MINDSDB_MYSQL_PORT'." >&2
+    exit 1
+  fi
+
+  MINDSDB_BASE_URL_VAL="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_BASE_URL")"
+  if [[ -z "$MINDSDB_BASE_URL_VAL" ]]; then
+    echo "ERROR: MINDSDB_BASE_URL must be defined in '$BACKEND_ENV_FILE'." >&2
+    exit 1
+  fi
+
+  if ! read -r MINDSDB_HOST_FROM_URL MINDSDB_PORT_FROM_URL MINDSDB_SCHEME_FROM_URL < <(parse_url_components "$MINDSDB_BASE_URL_VAL"); then
+    echo "ERROR: Unable to parse MINDSDB_BASE_URL '$MINDSDB_BASE_URL_VAL'." >&2
+    exit 1
+  fi
+
+  if ! is_number "$MINDSDB_PORT_FROM_URL"; then
+    echo "ERROR: MINDSDB_BASE_URL must include a numeric port. Got '$MINDSDB_BASE_URL_VAL'." >&2
+    exit 1
+  fi
+
+  if [[ "$MINDSDB_PORT_FROM_URL" -ne "$MINDSDB_HTTP_PORT" ]]; then
+    echo "ERROR: MINDSDB_BASE_URL port ($MINDSDB_PORT_FROM_URL) must match MINDSDB_HTTP_PORT ($MINDSDB_HTTP_PORT)." >&2
+    exit 1
+  fi
+
+  echo "[start] mindsdb container -> $MINDSDB_CONTAINER_NAME (http:$MINDSDB_HTTP_PORT mysql:$MINDSDB_MYSQL_PORT)"
+
+  MINDSDB_RUNNING_ALREADY=false
+  if "$CONTAINER_RUNTIME" inspect -f '{{.State.Running}}' "$MINDSDB_CONTAINER_NAME" >/dev/null 2>&1; then
+    if "$CONTAINER_RUNTIME" inspect -f '{{.State.Running}}' "$MINDSDB_CONTAINER_NAME" | grep -q "true"; then
+      MINDSDB_RUNNING_ALREADY=true
+      echo "[start] Reusing existing MindsDB container (already running)"
+    fi
+  fi
+
+  # Embeddings configuration visibility and validation
+  EMBED_CFG_PATH="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_EMBEDDINGS_CONFIG_PATH")"
+  if [[ -n "$EMBED_CFG_PATH" ]]; then
+    if [[ "$EMBED_CFG_PATH" != /* ]]; then
+      EMBED_CFG_PATH="$(cd "$(dirname "$BACKEND_ENV_FILE")" && pwd)/$EMBED_CFG_PATH"
+    fi
+    echo "[start] embeddings config -> $EMBED_CFG_PATH"
+    if [[ ! -f "$EMBED_CFG_PATH" ]]; then
+      echo "ERROR: MINDSDB_EMBEDDINGS_CONFIG_PATH points to a missing file: $EMBED_CFG_PATH" >&2
+      exit 1
+    fi
+  else
+    echo "[start] embeddings config -> (disabled)"
+  fi
 else
-  echo "[start] embeddings config -> (disabled)"
+  echo "[start] MindsDB disabled (MINDSDB_EMBEDDINGS_ENABLED=false); skipping container startup, sync, and verification."
 fi
 
-for port in "$FRONTEND_PORT" "$BACKEND_PORT" "$MINDSDB_HTTP_PORT" "$MINDSDB_MYSQL_PORT"; do
+for port in "$FRONTEND_PORT" "$BACKEND_PORT"; do
   if ! is_number "$port"; then
     echo "ERROR: Ports must be numeric. Got '$port'." >&2
     exit 1
   fi
-  if [[ "$MINDSDB_RUNNING_ALREADY" == "true" && ( "$port" -eq "$MINDSDB_HTTP_PORT" || "$port" -eq "$MINDSDB_MYSQL_PORT" ) ]]; then
-    echo "[start] Skipping port $port (MindsDB already running)"
-    continue
-  fi
   free_port "$port"
 done
+
+if [[ "$EMBEDDINGS_ENABLED" == "true" ]]; then
+  for port in "$MINDSDB_HTTP_PORT" "$MINDSDB_MYSQL_PORT"; do
+    if ! is_number "$port"; then
+      echo "ERROR: Ports must be numeric. Got '$port'." >&2
+      exit 1
+    fi
+    if [[ "$MINDSDB_RUNNING_ALREADY" == "true" && ( "$port" -eq "$MINDSDB_HTTP_PORT" || "$port" -eq "$MINDSDB_MYSQL_PORT" ) ]]; then
+      echo "[start] Skipping port $port (MindsDB already running)"
+      continue
+    fi
+    free_port "$port"
+  done
+fi
 
 if [[ ! -d "$SSR_DIR" ]]; then
   echo "ERROR: SSR directory '$SSR_DIR' is missing." >&2
@@ -397,8 +430,10 @@ wait_for_mindsdb() {
   return 1
 }
 
-ensure_mindsdb
-wait_for_mindsdb
+if [[ "$EMBEDDINGS_ENABLED" == "true" ]]; then
+  ensure_mindsdb
+  wait_for_mindsdb
+fi
 
 echo "[start] Ensuring backend dependencies (uv sync)"
 (
@@ -406,10 +441,11 @@ echo "[start] Ensuring backend dependencies (uv sync)"
   uv sync
 )
 
-echo "[start] Syncing local tables into MindsDB"
-(
-  cd backend
-  uv run python - <<'PY'
+if [[ "$EMBEDDINGS_ENABLED" == "true" ]]; then
+  echo "[start] Syncing local tables into MindsDB"
+  (
+    cd backend
+    uv run python - <<'PY'
 from insight_backend.services.mindsdb_sync import sync_all_tables
 
 uploaded = sync_all_tables()
@@ -418,13 +454,14 @@ if uploaded:
 else:
     print("[start] MindsDB sync uploaded: (aucun fichier)")
 PY
-)
+  )
 
-echo "[start] Verifying MindsDB tables (row counts)"
-(
-  cd backend
-  uv run -m insight_backend.scripts.verify_mindsdb
-)
+  echo "[start] Verifying MindsDB tables (row counts)"
+  (
+    cd backend
+    uv run -m insight_backend.scripts.verify_mindsdb
+  )
+fi
 
 if [[ ! -d frontend/node_modules ]]; then
   echo "[start] Installing frontend dependencies (npm install)"
