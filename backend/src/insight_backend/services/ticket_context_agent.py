@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextvars
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from typing import List
 
@@ -102,17 +104,41 @@ class TicketContextAgent:
         period_label: str,
         chunks: List[List[dict]],
     ) -> str:
-        partials: list[str] = []
-        for idx, chunk in enumerate(chunks, start=1):
+        total_chunks = len(chunks)
+
+        def _summarize_chunk(idx: int, chunk: List[dict]) -> str:
             tickets = [item["line"] for item in chunk]
             total = sum(item.get("total_count", 0) or 0 for item in chunk) or len(chunk)
-            partials.append(
-                self._summarize(
-                    period_label=f"{period_label} (part {idx}/{len(chunks)})",
-                    tickets=tickets,
-                    total_tickets=total,
-                )
+            return self._summarize(
+                period_label=f"{period_label} (part {idx}/{total_chunks})",
+                tickets=tickets,
+                total_tickets=total,
             )
+
+        partials: list[str] = []
+        workers = max(1, int(settings.ticket_context_workers))
+        active_workers = min(workers, total_chunks) if total_chunks else 0
+        mode = "parallèle" if workers > 1 and total_chunks > 1 else "séquentiel"
+        log.info(
+            "TicketContextAgent: mode=%s (chunks=%d, workers=%d, actifs=%d)",
+            mode,
+            total_chunks,
+            workers,
+            active_workers,
+        )
+        if workers > 1 and total_chunks > 1:
+            results: list[str | None] = [None] * total_chunks
+            with ThreadPoolExecutor(max_workers=active_workers) as executor:
+                futures = []
+                for idx, chunk in enumerate(chunks, start=1):
+                    ctx = contextvars.copy_context()
+                    futures.append(executor.submit(ctx.run, _summarize_chunk, idx, chunk))
+                for idx, future in enumerate(futures):
+                    results[idx] = future.result()
+            partials = [text for text in results if text]
+        else:
+            for idx, chunk in enumerate(chunks, start=1):
+                partials.append(_summarize_chunk(idx, chunk))
 
         if len(partials) == 1:
             return partials[0]

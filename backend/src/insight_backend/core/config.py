@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     loop_max_tokens: int = Field(1024, alias="LOOP_MAX_TOKENS")
     loop_max_tickets_per_call: int = Field(400, alias="LOOP_MAX_TICKETS_PER_CALL")
     loop_max_input_chars: int = Field(300000, alias="LOOP_MAX_INPUT_CHARS")
+    ticket_context_workers: int = Field(1, alias="TICKET_CONTEXT_WORKERS")
 
     # Router gate (applied on every user message)
     router_mode: str = Field("rule", alias="ROUTER_MODE")  # "rule" | "local" | "api" | "false"
@@ -168,6 +169,13 @@ class Settings(BaseSettings):
     def _validate_loop_positive_ints(cls, v: int, info: ValidationInfo) -> int:
         if v <= 0:
             raise ValueError(f"{info.field_name.upper()} must be > 0")
+        return int(v)
+
+    @field_validator("ticket_context_workers")
+    @classmethod
+    def _validate_ticket_context_workers(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("TICKET_CONTEXT_WORKERS must be > 0")
         return int(v)
 
     @field_validator("llm_max_tokens")

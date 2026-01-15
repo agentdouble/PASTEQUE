@@ -17,6 +17,7 @@ import type {
   EvidenceSpec,
   EvidenceRowsPayload,
   RetrievalDetails,
+  TicketPreviewItem,
   FeedbackResponse,
   FeedbackValue
 } from '@/types/chat'
@@ -25,6 +26,100 @@ import clsx from 'clsx'
 import { renderMarkdown } from '@/utils/markdown'
 
 //
+
+const DEEPSEARCH_OPENERS = [
+  'Retraçage des données',
+  'Cartographie des irritants',
+  'Clustering des problèmes',
+  'Détection des signaux faibles',
+  'Segmentation des parcours',
+  'Tri des anomalies',
+  'Filtrage des doublons',
+  'Repérage des pics'
+]
+
+const DEEPSEARCH_LATE = [
+  'Corrélation des causes racines',
+  'Hiérarchisation des urgences',
+  'Priorisation des actions',
+  'Synthèse des tendances',
+  'Consolidation des retours',
+  'Qualification des incidents',
+  'Profilage des usages',
+  'Alignement des recommandations',
+  'Mise en évidence des écarts',
+  'Fusion des enseignements',
+  'Calibration des seuils',
+  'Validation des hypothèses',
+  'Classification des motifs',
+  'Pondération des impacts',
+  'Normalisation des libellés',
+  'Rapprochement des sources',
+  'Distribution des volumes'
+]
+
+const DEEPSEARCH_VARIANTS = [...DEEPSEARCH_OPENERS, ...DEEPSEARCH_LATE]
+
+const DEEPSEARCH_STOPWORDS = new Set([
+  'de',
+  'des',
+  'du',
+  'la',
+  'le',
+  'les',
+  'un',
+  'une',
+  'et',
+  'en',
+  'aux',
+  'au',
+  'sur',
+  'pour',
+  'par',
+  'd',
+  'l',
+  'avec',
+  'sans',
+  'vers',
+  'dans',
+  'ou',
+  'que',
+  'qui',
+  'quoi',
+  'mise'
+])
+
+function extractDeepSearchWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-zà-ÿ0-9]+/gi, ' ')
+    .split(' ')
+    .map(word => word.trim())
+    .filter(word => word.length > 2 && !DEEPSEARCH_STOPWORDS.has(word))
+}
+
+function hasUsedWords(text: string, usedWords: Set<string>): boolean {
+  const words = extractDeepSearchWords(text)
+  return words.some(word => usedWords.has(word))
+}
+
+function markUsedWords(text: string, usedWords: Set<string>): void {
+  extractDeepSearchWords(text).forEach(word => usedWords.add(word))
+}
+
+function pickDeepSearchVariant(options: {
+  previous: string
+  usedWords: Set<string>
+  allowInitial: boolean
+}): string {
+  const { previous, usedWords, allowInitial } = options
+  const pool = allowInitial ? DEEPSEARCH_OPENERS : DEEPSEARCH_VARIANTS
+  const candidates = pool.filter(variant => variant !== previous && !hasUsedWords(variant, usedWords))
+  if (candidates.length === 0) return ''
+  const choice = candidates[Math.floor(Math.random() * candidates.length)]
+  markUsedWords(choice, usedWords)
+  return choice
+}
 
 function normaliseRows(columns: string[] = [], rows: any[] = []): Record<string, unknown>[] {
   const headings = columns.length > 0 ? columns : ['value']
@@ -104,6 +199,15 @@ function createMessageId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+type TicketPanelItem = {
+  key: string
+  table?: string
+  periodLabel?: string
+  spec: EvidenceSpec | null
+  data: EvidenceRowsPayload | null
+  error?: string
+}
+
 export default function Chat() {
   const [_searchParams, setSearchParams] = useSearchParams()
   const { search } = useLocation()
@@ -115,6 +219,7 @@ export default function Chat() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [awaitingFirstDelta, setAwaitingFirstDelta] = useState(false)
+  const [deepSearchStatus, setDeepSearchStatus] = useState('')
   const [error, setError] = useState('')
   // Statut éphémère en mode ANIMATION=true
   const [animStatus, setAnimStatus] = useState('')
@@ -141,6 +246,10 @@ export default function Chat() {
   const [sqlMode, setSqlMode] = useState(false)
   const [evidenceSpec, setEvidenceSpec] = useState<EvidenceSpec | null>(null)
   const [evidenceData, setEvidenceData] = useState<EvidenceRowsPayload | null>(null)
+  const [ticketPreviewItems, setTicketPreviewItems] = useState<TicketPreviewItem[]>([])
+  const [ticketPreviewLoading, setTicketPreviewLoading] = useState(false)
+  const [ticketPreviewError, setTicketPreviewError] = useState('')
+  const [ticketPreviewTab, setTicketPreviewTab] = useState(0)
   const [showTicketsSheet, setShowTicketsSheet] = useState(false)
   // Données utilisées (tables accessibles au LLM)
   const [showDataPanel, setShowDataPanel] = useState(false)
@@ -152,8 +261,53 @@ export default function Chat() {
   const [saveAsDefault, setSaveAsDefault] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const ticketPreviewAbortRef = useRef<AbortController | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
+  const deepSearchStatusRef = useRef('')
+  const deepSearchUsedWordsRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!ticketMode || !awaitingFirstDelta) {
+      deepSearchStatusRef.current = ''
+      deepSearchUsedWordsRef.current.clear()
+      setDeepSearchStatus('')
+      return
+    }
+    let active = true
+    let timeoutId: number | null = null
+    const scheduleNext = (allowInitial: boolean) => {
+      const delayMs = 8000 + Math.floor(Math.random() * 6000)
+      timeoutId = window.setTimeout(() => {
+        if (!active) return
+        const next = pickDeepSearchVariant({
+          previous: deepSearchStatusRef.current,
+          usedWords: deepSearchUsedWordsRef.current,
+          allowInitial
+        })
+        if (!next) return
+        deepSearchStatusRef.current = next
+        setDeepSearchStatus(next)
+        scheduleNext(false)
+      }, delayMs)
+    }
+    const initial = pickDeepSearchVariant({
+      previous: '',
+      usedWords: deepSearchUsedWordsRef.current,
+      allowInitial: true
+    })
+    if (initial) {
+      deepSearchStatusRef.current = initial
+      setDeepSearchStatus(initial)
+      scheduleNext(false)
+    }
+    return () => {
+      active = false
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [ticketMode, awaitingFirstDelta])
   
   // Helpers to open/close history while keeping URL in sync only on explicit actions
   const closeHistory = () => {
@@ -330,6 +484,98 @@ export default function Chat() {
     }
   }
 
+  function buildTicketSources() {
+    const normalizePeriods = (ranges: Array<{ from?: string; to?: string }>) =>
+      ranges
+        .map(range => ({
+          from: range.from?.trim() || undefined,
+          to: range.to?.trim() || undefined,
+        }))
+        .filter(period => period.from || period.to)
+    const periods = normalizePeriods(ticketRanges)
+    const sources = [
+      { table: ticketTable || undefined, periods },
+      ...extraTicketSources.map(source => ({
+        table: source.table || undefined,
+        periods: normalizePeriods(source.ranges || []),
+      })),
+    ].filter(source => source.table || (source.periods && source.periods.length > 0))
+    return { periods, sources }
+  }
+
+  async function loadTicketPreview(
+    sources: Array<{ table?: string; periods?: Array<{ from?: string; to?: string }> }>
+  ) {
+    if (ticketPreviewAbortRef.current) {
+      ticketPreviewAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    ticketPreviewAbortRef.current = controller
+    setTicketPreviewLoading(true)
+    setTicketPreviewError('')
+    try {
+      const items = await apiFetch<TicketPreviewItem[]>('/tickets/context/preview', {
+        method: 'POST',
+        body: JSON.stringify({ sources }),
+        signal: controller.signal,
+      })
+      if (controller.signal.aborted) return
+      const normalized = (items || []).map(item => {
+        const rowsPayload = item?.evidence_rows
+        if (!rowsPayload || !Array.isArray(rowsPayload.rows)) {
+          return item
+        }
+        const cols = Array.isArray(rowsPayload.columns)
+          ? rowsPayload.columns.filter((col): col is string => typeof col === 'string')
+          : []
+        const rowsNorm = normaliseRows(cols, rowsPayload.rows as any[])
+        return {
+          ...item,
+          evidence_rows: {
+            ...rowsPayload,
+            columns: cols,
+            rows: rowsNorm,
+            row_count: typeof rowsPayload.row_count === 'number' ? rowsPayload.row_count : rowsNorm.length,
+          },
+        }
+      })
+      setTicketPreviewItems(normalized)
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      console.error('Failed to load ticket preview', err)
+      setTicketPreviewItems([])
+      setTicketPreviewError(err instanceof Error ? err.message : 'Aperçu tickets indisponible')
+    } finally {
+      if (!controller.signal.aborted) {
+        setTicketPreviewLoading(false)
+      }
+    }
+  }
+
+  const ticketSourcesForPreview = useMemo(
+    () => buildTicketSources().sources,
+    [ticketRanges, ticketTable, extraTicketSources]
+  )
+
+  useEffect(() => {
+    if (!ticketMode) {
+      if (ticketPreviewAbortRef.current) {
+        ticketPreviewAbortRef.current.abort()
+      }
+      setTicketPreviewItems([])
+      setTicketPreviewError('')
+      setTicketPreviewLoading(false)
+      return
+    }
+    if (ticketSourcesForPreview.length === 0) {
+      setTicketPreviewItems([])
+      setTicketPreviewError('')
+      return
+    }
+    void loadTicketPreview(ticketSourcesForPreview)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketMode, ticketSourcesForPreview])
+
   function onToggleChartModeClick() {
     setChartMode(v => {
       const next = !v
@@ -353,6 +599,10 @@ export default function Chat() {
         setSqlMode(true)
         setChartMode(false)
         setTicketStatus('')
+        setTicketPreviewItems([])
+        setTicketPreviewError('')
+        setTicketPreviewLoading(false)
+        setTicketPreviewTab(0)
       }
       return next
     })
@@ -368,6 +618,11 @@ export default function Chat() {
     setInput('')
     setLoading(true)
     setAwaitingFirstDelta(ticketMode)
+    if (ticketMode) {
+      deepSearchUsedWordsRef.current.clear()
+      deepSearchStatusRef.current = ''
+    }
+    setDeepSearchStatus('')
     // Reset uniquement l'état d'affichage du chat et du panneau Tickets
     setEvidenceSpec(null)
     setEvidenceData(null)
@@ -387,21 +642,7 @@ export default function Chat() {
       if (sqlMode || isChartMode) baseMeta.nl2sql = true
       if (ticketMode) {
         baseMeta.ticket_mode = true
-        const periods = ticketRanges
-          .map(p => ({ from: p.from?.trim() || undefined, to: p.to?.trim() || undefined }))
-          .filter(p => p.from || p.to)
-        const sources = [
-          {
-            table: ticketTable || undefined,
-            periods,
-          },
-          ...extraTicketSources.map(src => ({
-            table: src.table || undefined,
-            periods: (src.ranges || [])
-              .map(r => ({ from: r.from?.trim() || undefined, to: r.to?.trim() || undefined }))
-              .filter(r => r.from || r.to),
-          })),
-        ].filter(s => s.table || (s.periods && s.periods.length > 0))
+        const { periods, sources } = buildTicketSources()
         if (periods.length > 0) {
           baseMeta.ticket_periods = periods
           baseMeta.tickets_from = periods[0].from
@@ -821,6 +1062,10 @@ export default function Chat() {
     setMessages([])
     setEvidenceSpec(null)
     setEvidenceData(null)
+    setTicketPreviewItems([])
+    setTicketPreviewError('')
+    setTicketPreviewLoading(false)
+    setTicketPreviewTab(0)
     setError('')
     setHistoryOpen(false)
     setHighlightMessageId(null)
@@ -1118,15 +1363,156 @@ export default function Chat() {
     return total > 0 ? Math.max(total - excluded.size, 0) : 0
   }
 
+  const panelItems = useMemo<TicketPanelItem[]>(() => {
+    if (ticketMode) {
+      return ticketPreviewItems.map((item, idx) => ({
+        key: `${item.table ?? 'tickets'}-${item.period_label ?? ''}-${idx}`,
+        table: item.table,
+        periodLabel: item.period_label,
+        spec: item.evidence_spec ?? null,
+        data: item.evidence_rows ?? null,
+        error: item.error ?? undefined,
+      }))
+    }
+    if (evidenceSpec && evidenceData) {
+      return [
+        {
+          key: 'evidence',
+          spec: evidenceSpec,
+          data: evidenceData,
+        },
+      ]
+    }
+    return []
+  }, [ticketMode, ticketPreviewItems, evidenceSpec, evidenceData])
+
+  const panelCount = useMemo(
+    () =>
+      panelItems.reduce((acc, item) => {
+        if (!item.data) return acc
+        const count = typeof item.data.row_count === 'number'
+          ? item.data.row_count
+          : (item.data.rows?.length ?? 0)
+        return acc + count
+      }, 0),
+    [panelItems]
+  )
+
+  const panelTitle = panelItems.length === 1 && panelItems[0].spec?.entity_label
+    ? panelItems[0].spec!.entity_label
+    : 'Exploration'
+
+  useEffect(() => {
+    if (!ticketMode) return
+    if (panelItems.length === 0 && ticketPreviewTab !== 0) {
+      setTicketPreviewTab(0)
+      return
+    }
+    if (panelItems.length > 0 && ticketPreviewTab >= panelItems.length) {
+      setTicketPreviewTab(0)
+    }
+  }, [ticketMode, panelItems.length, ticketPreviewTab])
+
+  const activePanelItem = useMemo(() => {
+    if (panelItems.length === 0) return null
+    if (ticketMode && panelItems.length > 1) {
+      return panelItems[Math.min(ticketPreviewTab, panelItems.length - 1)]
+    }
+    return panelItems[0]
+  }, [panelItems, ticketMode, ticketPreviewTab])
+
+  function formatPeriodLabel(item: TicketPanelItem | null): string | null {
+    if (!item) return null
+    if (item.periodLabel) return item.periodLabel
+    const period = item.spec?.period
+    if (!period) return null
+    if (typeof period === 'string') return period
+    const from = period.from ?? ''
+    const to = period.to ?? ''
+    if (!from && !to) return null
+    return `${from}${to ? ` → ${to}` : ''}`
+  }
+
+  const panelPeriodLabel = useMemo(() => {
+    if (ticketMode && panelItems.length > 1) return null
+    return formatPeriodLabel(activePanelItem)
+  }, [ticketMode, panelItems.length, activePanelItem])
+
+  function renderTicketPanels(containerRef?: RefObject<HTMLDivElement>) {
+    if (panelItems.length === 0) {
+      if (ticketPreviewLoading && ticketMode) {
+        return <div className="text-sm text-primary-500">Chargement de l’aperçu…</div>
+      }
+      if (ticketPreviewError && ticketMode) {
+        return <div className="text-sm text-red-600">{ticketPreviewError}</div>
+      }
+      return (
+        <div className="text-sm text-primary-500">
+          {ticketMode ? 'Aucun ticket pour la sélection actuelle.' : 'Aucun ticket détecté. Posez une question pour afficher les éléments concernés.'}
+        </div>
+      )
+    }
+    const showTabs = ticketMode && panelItems.length > 1
+    const activeIndex = showTabs ? Math.min(ticketPreviewTab, panelItems.length - 1) : 0
+    const activeItem = showTabs ? panelItems[activeIndex] : panelItems[0]
+    const activeLabel = activeItem?.table || activeItem?.spec?.entity_label || 'Tickets'
+    const activePeriod = formatPeriodLabel(activeItem)
+    return (
+      <div className="space-y-3">
+        {showTabs && (
+          <div className="flex flex-wrap gap-2 border-b border-primary-100 pb-2">
+            {panelItems.map((item, idx) => {
+              const label = item.table || item.spec?.entity_label || `Tickets ${idx + 1}`
+              const isActive = idx === activeIndex
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setTicketPreviewTab(idx)}
+                  aria-pressed={isActive}
+                  className={clsx(
+                    'text-xs rounded-full border px-3 py-1 transition-colors',
+                    isActive
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
+                  )}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {activePeriod && (
+          <div className="text-[11px] text-primary-500">
+            {showTabs ? (
+              <>
+                <span className="font-semibold text-primary-800">{activeLabel}</span>
+                <span className="ml-2">{activePeriod}</span>
+              </>
+            ) : (
+              activePeriod
+            )}
+          </div>
+        )}
+        {activeItem?.error ? (
+          <div className="text-xs text-red-600">{activeItem.error}</div>
+        ) : (
+          <TicketPanel spec={activeItem?.spec ?? null} data={activeItem?.data ?? null} containerRef={containerRef} />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
       {/* Colonne gauche: Ticket exploration */}
       <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5">
         <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm p-3 sticky top-20 max-h-[calc(100vh-120px)] overflow-auto">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-primary-900">{evidenceSpec?.entity_label ?? 'Exploration'}</h2>
+            <h2 className="text-sm font-semibold text-primary-900">{panelTitle}</h2>
           </div>
-          <TicketPanel spec={evidenceSpec} data={evidenceData} containerRef={ticketPanelRef} />
+          {renderTicketPanels(ticketPanelRef)}
         </div>
       </aside>
 
@@ -1148,7 +1534,7 @@ export default function Chat() {
                     <HiBookmark className="w-4 h-4" />
                     Exploration
                     {(() => {
-                      const c = evidenceData?.row_count ?? evidenceData?.rows?.length ?? 0
+                      const c = panelCount
                       return c > 0 ? (
                         <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] px-1 bg-primary-600 text-white">{c}</span>
                       ) : null
@@ -1499,7 +1885,9 @@ export default function Chat() {
             {ticketMode && awaitingFirstDelta && (
               <div className="flex items-center gap-2 text-xs text-primary-500 py-2 pl-1">
                 <span className="inline-block h-3 w-3 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-                Le modèle prépare sa réponse…
+                <span>
+                  <span className="font-semibold text-primary-700">DeepSearch mode :</span> {deepSearchStatus}
+                </span>
               </div>
             )}
             {error && (
@@ -1671,11 +2059,9 @@ export default function Chat() {
           <div ref={mobileTicketsRef} className="absolute left-0 right-0 bottom-0 max-h-[70vh] bg-white rounded-t-2xl border-t shadow-lg p-3 overflow-auto">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-sm font-semibold text-primary-900">{evidenceSpec?.entity_label ?? 'Exploration'}</div>
-                {evidenceSpec?.period && (
-                  <div className="text-[11px] text-primary-500">
-                    {typeof evidenceSpec.period === 'string' ? evidenceSpec.period : `${evidenceSpec.period.from ?? ''}${evidenceSpec.period.to ? ` → ${evidenceSpec.period.to}` : ''}`}
-                  </div>
+                <div className="text-sm font-semibold text-primary-900">{panelTitle}</div>
+                {panelPeriodLabel && (
+                  <div className="text-[11px] text-primary-500">{panelPeriodLabel}</div>
                 )}
               </div>
               <button
@@ -1688,7 +2074,7 @@ export default function Chat() {
                 <HiXMark className="w-4 h-4" />
               </button>
             </div>
-            <TicketPanel spec={evidenceSpec} data={evidenceData} containerRef={mobileTicketsRef} />
+            {renderTicketPanels(mobileTicketsRef)}
           </div>
         </div>
       )}
