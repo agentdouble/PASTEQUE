@@ -295,18 +295,39 @@ if "$CONTAINER_RUNTIME" inspect -f '{{.State.Running}}' "$MINDSDB_CONTAINER_NAME
 fi
 
 # Embeddings configuration visibility and validation
-EMBED_CFG_PATH="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_EMBEDDINGS_CONFIG_PATH")"
-if [[ -n "$EMBED_CFG_PATH" ]]; then
-  if [[ "$EMBED_CFG_PATH" != /* ]]; then
-    EMBED_CFG_PATH="$(cd "$(dirname "$BACKEND_ENV_FILE")" && pwd)/$EMBED_CFG_PATH"
-  fi
-  echo "[start] embeddings config -> $EMBED_CFG_PATH"
-  if [[ ! -f "$EMBED_CFG_PATH" ]]; then
-    echo "ERROR: MINDSDB_EMBEDDINGS_CONFIG_PATH points to a missing file: $EMBED_CFG_PATH" >&2
-    exit 1
-  fi
+EMBEDDINGS_ENABLED_RAW="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_EMBEDDINGS_ENABLED")"
+EMBEDDINGS_ENABLED="true"
+if [[ -n "$EMBEDDINGS_ENABLED_RAW" ]]; then
+  case "$(printf '%s' "$EMBEDDINGS_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in
+    true|1)
+      EMBEDDINGS_ENABLED="true"
+      ;;
+    false|0)
+      EMBEDDINGS_ENABLED="false"
+      ;;
+    *)
+      echo "ERROR: MINDSDB_EMBEDDINGS_ENABLED must be true or false. Got '$EMBEDDINGS_ENABLED_RAW'." >&2
+      exit 1
+      ;;
+  esac
+fi
+
+if [[ "$EMBEDDINGS_ENABLED" == "false" ]]; then
+  echo "[start] embeddings config -> (disabled via MINDSDB_EMBEDDINGS_ENABLED=false)"
 else
-  echo "[start] embeddings config -> (disabled)"
+  EMBED_CFG_PATH="$(read_env_var "$BACKEND_ENV_FILE" "MINDSDB_EMBEDDINGS_CONFIG_PATH")"
+  if [[ -n "$EMBED_CFG_PATH" ]]; then
+    if [[ "$EMBED_CFG_PATH" != /* ]]; then
+      EMBED_CFG_PATH="$(cd "$(dirname "$BACKEND_ENV_FILE")" && pwd)/$EMBED_CFG_PATH"
+    fi
+    echo "[start] embeddings config -> $EMBED_CFG_PATH"
+    if [[ ! -f "$EMBED_CFG_PATH" ]]; then
+      echo "ERROR: MINDSDB_EMBEDDINGS_CONFIG_PATH points to a missing file: $EMBED_CFG_PATH" >&2
+      exit 1
+    fi
+  else
+    echo "[start] embeddings config -> (disabled)"
+  fi
 fi
 
 for port in "$FRONTEND_PORT" "$BACKEND_PORT" "$MINDSDB_HTTP_PORT" "$MINDSDB_MYSQL_PORT"; do

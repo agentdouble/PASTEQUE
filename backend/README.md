@@ -175,7 +175,7 @@ Les embeddings sont configurables indépendamment du LLM:
 
 En mode local, `EMBEDDING_LOCAL_MODEL` prime sur la clé `default_model` du YAML (et sur toute valeur `model` absente), afin de pouvoir surcharger rapidement le modèle depuis l'environnement.
 
-`MINDSDB_EMBEDDINGS_CONFIG_PATH` décrit toujours les tables/colonnes à vectoriser. Le script `start.sh` applique la configuration choisie avant chaque import vers MindsDB. Les logs `insight.services.mindsdb_embeddings` précisent le mode et le modèle utilisés.
+`MINDSDB_EMBEDDINGS_CONFIG_PATH` décrit toujours les tables/colonnes à vectoriser. Pour désactiver le calcul d'embeddings au démarrage sans retirer la config YAML, définissez `MINDSDB_EMBEDDINGS_ENABLED=false` (les tables sont importées sans colonne d'embedding). Le script `start.sh` applique la configuration choisie avant chaque import vers MindsDB. Les logs `insight.services.mindsdb_embeddings` précisent le mode et le modèle utilisés.
 
 ### Vérification TLS du backend LLM (LLM_VERIFY_SSL)
 
