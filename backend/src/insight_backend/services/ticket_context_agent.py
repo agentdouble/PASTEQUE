@@ -117,13 +117,16 @@ class TicketContextAgent:
 
         partials: list[str] = []
         workers = max(1, int(settings.ticket_context_workers))
+        active_workers = min(workers, total_chunks) if total_chunks else 0
+        mode = "parallèle" if workers > 1 and total_chunks > 1 else "séquentiel"
+        log.info(
+            "TicketContextAgent: mode=%s (chunks=%d, workers=%d, actifs=%d)",
+            mode,
+            total_chunks,
+            workers,
+            active_workers,
+        )
         if workers > 1 and total_chunks > 1:
-            active_workers = min(workers, total_chunks)
-            log.info(
-                "TicketContextAgent: synthèse en parallèle (%d chunks, %d workers)",
-                total_chunks,
-                active_workers,
-            )
             results: list[str | None] = [None] * total_chunks
             with ThreadPoolExecutor(max_workers=active_workers) as executor:
                 futures = []
