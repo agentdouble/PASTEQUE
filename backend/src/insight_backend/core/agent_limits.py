@@ -59,14 +59,12 @@ def check_and_increment(agent: str) -> None:
         counts = _counts_var.get()
         if counts is None:
             counts = {}
+            _counts_var.set(counts)
         current = int(counts.get(agent, 0))
         new_val = current + 1
         if new_val > cap:
             log.warning("Agent %s exceeded request cap (%d/%d)", agent, new_val, cap)
             # Do not persist the overflow attempt; keep the stored counter <= cap
-            _counts_var.set(counts)
             raise AgentBudgetExceeded(f"Limite de requêtes atteinte pour l'agent '{agent}' ({cap})")
-        # Persist updated counter atomically within the lock
-        new_counts = dict(counts)
-        new_counts[agent] = new_val
-        _counts_var.set(new_counts)
+        # Update in place to keep shared counters consistent across threads.
+        counts[agent] = new_val
