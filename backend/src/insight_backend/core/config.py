@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     loop_max_weeks: int = Field(1, alias="LOOP_MAX_WEEKS")
     loop_max_months: int = Field(1, alias="LOOP_MAX_MONTHS")
     loop_temperature: float = Field(0.3, alias="LOOP_TEMPERATURE")
-    loop_max_tokens: int = Field(1024, alias="LOOP_MAX_TOKENS")
+    loop_max_tokens: int = Field(800, alias="LOOP_MAX_TOKENS")
     loop_max_tickets_per_call: int = Field(400, alias="LOOP_MAX_TICKETS_PER_CALL")
     loop_max_input_chars: int = Field(300000, alias="LOOP_MAX_INPUT_CHARS")
 
@@ -109,7 +109,6 @@ class Settings(BaseSettings):
     # MindsDB (HTTP API)
     mindsdb_base_url: str = Field("http://127.0.0.1:47334/api", alias="MINDSDB_BASE_URL")
     mindsdb_token: str | None = Field(None, alias="MINDSDB_TOKEN")
-    mindsdb_embeddings_enabled: bool = Field(True, alias="MINDSDB_EMBEDDINGS_ENABLED")
     mindsdb_embeddings_config_path: str | None = Field(None, alias="MINDSDB_EMBEDDINGS_CONFIG_PATH")
     mindsdb_embedding_batch_size: int = Field(16, alias="MINDSDB_EMBEDDING_BATCH_SIZE")
     mindsdb_timeout_s: float = Field(120.0, alias="MINDSDB_TIMEOUT_S")

@@ -41,9 +41,6 @@ class EmbeddingConfig:
 
 def load_embedding_config(raw_path: str | None) -> EmbeddingConfig | None:
     """Parse the YAML configuration describing MindsDB embedding columns."""
-    if not settings.mindsdb_embeddings_enabled:
-        log.info("MINDSDB_EMBEDDINGS_ENABLED=false; embeddings are disabled.")
-        return None
     if not raw_path:
         log.info("MINDSDB_EMBEDDINGS_CONFIG_PATH not set; embeddings will be unavailable.")
         return None

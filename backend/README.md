@@ -175,7 +175,7 @@ Les embeddings sont configurables indépendamment du LLM:
 
 En mode local, `EMBEDDING_LOCAL_MODEL` prime sur la clé `default_model` du YAML (et sur toute valeur `model` absente), afin de pouvoir surcharger rapidement le modèle depuis l'environnement.
 
-`MINDSDB_EMBEDDINGS_CONFIG_PATH` décrit toujours les tables/colonnes à vectoriser. Pour désactiver MindsDB au démarrage (et donc le calcul d'embeddings), définissez `MINDSDB_EMBEDDINGS_ENABLED=false` : `start.sh` ne lance pas le conteneur et ne synchronise pas les tables. Si vous souhaitez garder MindsDB sans embeddings, laissez `MINDSDB_EMBEDDINGS_ENABLED=true` et retirez `MINDSDB_EMBEDDINGS_CONFIG_PATH`. Le script `start.sh` applique la configuration choisie avant chaque import vers MindsDB. Les logs `insight.services.mindsdb_embeddings` précisent le mode et le modèle utilisés.
+`MINDSDB_EMBEDDINGS_CONFIG_PATH` décrit toujours les tables/colonnes à vectoriser. Le script `start.sh` applique la configuration choisie avant chaque import vers MindsDB. Les logs `insight.services.mindsdb_embeddings` précisent le mode et le modèle utilisés.
 
 ### Vérification TLS du backend LLM (LLM_VERIFY_SSL)
 
@@ -266,12 +266,11 @@ ROUTER_MODE=rule   # rule | local | api | false
 ### Loop – résumés journaliers/hebdomadaires/mensuels
 
 - Endpoints:
-- `GET /api/v1/loop/overview` (auth): renvoie les tables configurées + leurs résumés jour/hebdo/mensuels. Les tables sont filtrées selon les droits d’accès de l’utilisateur (ACL `user_table_permissions`). Le résumé journalier indique explicitement lorsqu’aucun ticket n’est enregistré le jour courant.
-- `PUT /api/v1/loop/config` (admin): choisit la table + colonnes texte/date à utiliser (validées sur les CSV en `DATA_TABLES_DIR`). Plusieurs tables peuvent être configurées.
-- `DELETE /api/v1/loop/config/{config_id}` (admin): retire une table du Radar (supprime sa configuration et ses résumés).
-- `POST /api/v1/loop/regenerate` (admin): relance l’agent `looper` pour regénérer les résumés. Paramètre optionnel `table_name` pour cibler une table précise, sinon toutes les tables configurées sont recalculées.
+  - `GET /api/v1/loop/overview` (auth): renvoie les tables configurées + leurs résumés jour/hebdo/mensuels. Les tables sont filtrées selon les droits d’accès de l’utilisateur (ACL `user_table_permissions`). Le résumé journalier indique explicitement lorsqu’aucun ticket n’est enregistré le jour courant.
+  - `PUT /api/v1/loop/config` (admin): choisit la table + colonnes texte/date à utiliser (validées sur les CSV en `DATA_TABLES_DIR`). Plusieurs tables peuvent être configurées.
+  - `POST /api/v1/loop/regenerate` (admin): relance l’agent `looper` pour regénérer les résumés. Paramètre optionnel `table_name` pour cibler une table précise, sinon toutes les tables configurées sont recalculées.
 - L’agent `looper` injecte le contenu des tickets de chaque période et produit deux parties dans une réponse longue: problèmes majeurs à résoudre + plan d’action concret. Il respecte `LLM_MODE` (local vLLM ou API externe).
-- Garde‑fous configurables dans `.env.example`: `LOOP_MAX_TICKETS` (échantillon par période, défaut 60), `LOOP_TICKET_TEXT_MAX_CHARS` (tronque chaque ticket, 360), `LOOP_MAX_DAYS` (1), `LOOP_MAX_WEEKS` (1), `LOOP_MAX_MONTHS` (1), `LOOP_TEMPERATURE` (0.3), `LOOP_MAX_TOKENS` (1024), `LOOP_MAX_TICKETS_PER_CALL` (400) et `LOOP_MAX_INPUT_CHARS` (300000) pour forcer le découpage en sous-résumés avant fusion. Quota via `AGENT_MAX_REQUESTS` clé `looper`.
+- Garde‑fous configurables dans `.env.example`: `LOOP_MAX_TICKETS` (échantillon par période, défaut 60), `LOOP_TICKET_TEXT_MAX_CHARS` (tronque chaque ticket, 360), `LOOP_MAX_DAYS` (1), `LOOP_MAX_WEEKS` (1), `LOOP_MAX_MONTHS` (1), `LOOP_TEMPERATURE` (0.3), `LOOP_MAX_TOKENS` (800), `LOOP_MAX_TICKETS_PER_CALL` (400) et `LOOP_MAX_INPUT_CHARS` (300000) pour forcer le découpage en sous-résumés avant fusion. Quota via `AGENT_MAX_REQUESTS` clé `looper`.
 
 ### MCP – configuration déclarative
 
