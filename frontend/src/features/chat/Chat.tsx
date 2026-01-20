@@ -208,6 +208,12 @@ type TicketPanelItem = {
   error?: string
 }
 
+type TicketSelectionState = {
+  values: string[]
+  pk?: string
+  table?: string
+}
+
 export default function Chat() {
   const [_searchParams, setSearchParams] = useSearchParams()
   const { search } = useLocation()
@@ -250,6 +256,7 @@ export default function Chat() {
   const [ticketPreviewLoading, setTicketPreviewLoading] = useState(false)
   const [ticketPreviewError, setTicketPreviewError] = useState('')
   const [ticketPreviewTab, setTicketPreviewTab] = useState(0)
+  const [ticketSelections, setTicketSelections] = useState<Record<string, TicketSelectionState>>({})
   const [showTicketsSheet, setShowTicketsSheet] = useState(false)
   // Données utilisées (tables accessibles au LLM)
   const [showDataPanel, setShowDataPanel] = useState(false)
@@ -503,6 +510,33 @@ export default function Chat() {
     return { periods, sources }
   }
 
+  function updateTicketSelection(item: TicketPanelItem, values: string[]) {
+    const unique = Array.from(new Set(values.filter(value => value.trim() !== '')))
+    setTicketSelections(prev => {
+      const next = { ...prev }
+      if (unique.length === 0) {
+        if (!next[item.key]) return prev
+        delete next[item.key]
+        return next
+      }
+      next[item.key] = {
+        values: unique,
+        pk: item.spec?.pk,
+        table: item.table,
+      }
+      return next
+    })
+  }
+
+  function clearTicketSelection(panelKey: string) {
+    setTicketSelections(prev => {
+      if (!prev[panelKey]) return prev
+      const next = { ...prev }
+      delete next[panelKey]
+      return next
+    })
+  }
+
   async function loadTicketPreview(
     sources: Array<{ table?: string; periods?: Array<{ from?: string; to?: string }> }>
   ) {
@@ -603,6 +637,7 @@ export default function Chat() {
         setTicketPreviewError('')
         setTicketPreviewLoading(false)
         setTicketPreviewTab(0)
+        setTicketSelections({})
       }
       return next
     })
@@ -642,17 +677,31 @@ export default function Chat() {
       if (sqlMode || isChartMode) baseMeta.nl2sql = true
       if (ticketMode) {
         baseMeta.ticket_mode = true
-        const { periods, sources } = buildTicketSources()
-        if (periods.length > 0) {
-          baseMeta.ticket_periods = periods
-          baseMeta.tickets_from = periods[0].from
-          baseMeta.tickets_to = periods[0].to
+        const selection = activeSelection
+        if (selection) {
+          baseMeta.ticket_selection = {
+            pk: selection.pk,
+            values: selection.values,
+            table: selection.table,
+          }
+          const selectionTable = selection.table || ticketTable
+          if (selectionTable) {
+            baseMeta.ticket_table = selectionTable
+          }
+          setTicketStatus(`Sélection active (${selection.values.length} tickets)`)
+        } else {
+          const { periods, sources } = buildTicketSources()
+          if (periods.length > 0) {
+            baseMeta.ticket_periods = periods
+            baseMeta.tickets_from = periods[0].from
+            baseMeta.tickets_to = periods[0].to
+          }
+          if (ticketTable) baseMeta.ticket_table = ticketTable
+          if (sources.length > 0) {
+            baseMeta.ticket_sources = sources
+          }
+          setTicketStatus('Préparation du contexte tickets…')
         }
-        if (ticketTable) baseMeta.ticket_table = ticketTable
-        if (sources.length > 0) {
-          baseMeta.ticket_sources = sources
-        }
-        setTicketStatus('Préparation du contexte tickets…')
       } else {
         setTicketStatus('')
       }
@@ -1046,6 +1095,7 @@ export default function Chat() {
         : []
       setExcludedTables(new Set(ex))
       setEffectiveTables([])
+      setTicketSelections({})
       setHighlightMessageId(typeof opts?.highlightMessageId === 'number' ? opts?.highlightMessageId : null)
       closeHistory()
     } catch (e) {
@@ -1066,6 +1116,7 @@ export default function Chat() {
     setTicketPreviewError('')
     setTicketPreviewLoading(false)
     setTicketPreviewTab(0)
+    setTicketSelections({})
     setError('')
     setHistoryOpen(false)
     setHighlightMessageId(null)
@@ -1421,6 +1472,33 @@ export default function Chat() {
     return panelItems[0]
   }, [panelItems, ticketMode, ticketPreviewTab])
 
+  useEffect(() => {
+    if (!ticketMode) return
+    const validKeys = new Set(panelItems.map(item => item.key))
+    setTicketSelections(prev => {
+      let changed = false
+      const next: Record<string, TicketSelectionState> = {}
+      for (const [key, value] of Object.entries(prev)) {
+        if (!validKeys.has(key)) {
+          changed = true
+          continue
+        }
+        next[key] = value
+      }
+      return changed ? next : prev
+    })
+  }, [ticketMode, panelItems])
+
+  const activeSelection = useMemo(() => {
+    if (!ticketMode || !activePanelItem) return null
+    const selection = ticketSelections[activePanelItem.key]
+    if (!selection || selection.values.length === 0) return null
+    if (!selection.pk) return null
+    return selection
+  }, [ticketMode, activePanelItem, ticketSelections])
+
+  const activeSelectionCount = activeSelection?.values.length ?? 0
+
   function formatPeriodLabel(item: TicketPanelItem | null): string | null {
     if (!item) return null
     if (item.periodLabel) return item.periodLabel
@@ -1457,6 +1535,11 @@ export default function Chat() {
     const activeItem = showTabs ? panelItems[activeIndex] : panelItems[0]
     const activeLabel = activeItem?.table || activeItem?.spec?.entity_label || 'Tickets'
     const activePeriod = formatPeriodLabel(activeItem)
+    const selectionValues = ticketMode && activeItem ? ticketSelections[activeItem.key]?.values ?? [] : []
+    const selectionCount = selectionValues.length
+    const selectionLabel = selectionCount === 1
+      ? '1 ticket sélectionné'
+      : `${selectionCount} tickets sélectionnés`
     return (
       <div className="space-y-3">
         {showTabs && (
@@ -1483,6 +1566,18 @@ export default function Chat() {
             })}
           </div>
         )}
+        {ticketMode && selectionCount > 0 && activeItem && (
+          <div className="flex items-center justify-between text-[11px] text-primary-600">
+            <span>{selectionLabel}</span>
+            <button
+              type="button"
+              className="text-primary-700 underline"
+              onClick={() => clearTicketSelection(activeItem.key)}
+            >
+              Tout effacer
+            </button>
+          </div>
+        )}
         {activePeriod && (
           <div className="text-[11px] text-primary-500">
             {showTabs ? (
@@ -1498,7 +1593,19 @@ export default function Chat() {
         {activeItem?.error ? (
           <div className="text-xs text-red-600">{activeItem.error}</div>
         ) : (
-          <TicketPanel spec={activeItem?.spec ?? null} data={activeItem?.data ?? null} containerRef={containerRef} />
+          <TicketPanel
+            spec={activeItem?.spec ?? null}
+            data={activeItem?.data ?? null}
+            containerRef={containerRef}
+            selection={
+              ticketMode && activeItem?.spec?.pk
+                ? {
+                    values: selectionValues,
+                    onChange: values => activeItem && updateTicketSelection(activeItem, values),
+                  }
+                : undefined
+            }
+          />
         )}
       </div>
     )
@@ -1616,6 +1723,22 @@ export default function Chat() {
                         </button>
                       </div>
                     </div>
+                    {activeSelectionCount > 0 && activePanelItem && (
+                      <div className="flex items-center justify-between text-[11px] text-primary-600">
+                        <span>
+                          {activeSelectionCount === 1
+                            ? '1 ticket sélectionné'
+                            : `${activeSelectionCount} tickets sélectionnés`}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-primary-700 underline"
+                          onClick={() => clearTicketSelection(activePanelItem.key)}
+                        >
+                          Effacer
+                        </button>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 flex-wrap">
                       <label className="text-[11px] text-primary-600">Table</label>
                       <select
@@ -1853,6 +1976,11 @@ export default function Chat() {
                       <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                         {ticketMetaError || ticketStatus || (ticketMeta?.total ? `${ticketMeta.total} tickets` : '')}
                       </span>
+                      {activeSelectionCount > 0 && (
+                        <span className="text-[11px] text-primary-600">
+                          {activeSelectionCount === 1 ? '1 sélectionné' : `${activeSelectionCount} sélectionnés`}
+                        </span>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -2130,9 +2258,13 @@ type TicketPanelProps = {
   spec: EvidenceSpec | null
   data: EvidenceRowsPayload | null
   containerRef?: RefObject<HTMLDivElement>
+  selection?: {
+    values: string[]
+    onChange: (values: string[]) => void
+  }
 }
 
-function TicketPanel({ spec, data, containerRef }: TicketPanelProps) {
+function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) {
   // Preview caps (configurable)
   const PREVIEW_COL_MAX = TICKETS_CONFIG.PREVIEW_COL_MAX
   const PREVIEW_CHAR_MAX = TICKETS_CONFIG.PREVIEW_CHAR_MAX
@@ -2164,6 +2296,9 @@ function TicketPanel({ spec, data, containerRef }: TicketPanelProps) {
   const statusKey = spec?.display?.status
   const pkKey = spec?.pk
   const linkTpl = spec?.display?.link_template
+  const selectionEnabled = Boolean(selection && pkKey)
+  const selectedValues = selection?.values ?? []
+  const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues])
 
   if (import.meta?.env?.MODE !== 'production') {
     try {
@@ -2211,6 +2346,17 @@ function TicketPanel({ spec, data, containerRef }: TicketPanelProps) {
     const s = String(val ?? '')
     if (s.length <= max) return s
     return s.slice(0, Math.max(max - 1, 0)) + '…'
+  }
+
+  function toggleSelection(value: string, checked: boolean) {
+    if (!selection) return
+    const next = new Set(selectedSet)
+    if (checked) {
+      next.add(value)
+    } else {
+      next.delete(value)
+    }
+    selection.onChange(Array.from(next))
   }
 
   const sorted = useMemo(() => {
@@ -2337,6 +2483,9 @@ function TicketPanel({ spec, data, containerRef }: TicketPanelProps) {
         const pk = pkKey ? row[pkKey] : undefined
         const link = buildLink(linkTpl, row)
         const uniqueKey = pk != null ? String(pk) : `row-${idx}`
+        const rowId = pkKey && pk != null ? String(pk) : ''
+        const canSelect = selectionEnabled && Boolean(rowId)
+        const isSelected = canSelect && selectedSet.has(rowId)
         return (
           <div
             key={uniqueKey}
@@ -2344,39 +2493,56 @@ function TicketPanel({ spec, data, containerRef }: TicketPanelProps) {
             tabIndex={0}
             onClick={() => pkKey && pk != null && openDetail(pk)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pkKey && pk != null && openDetail(pk) } }}
-            className="border border-primary-100 rounded-md p-2 hover:bg-primary-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300"
+            className={clsx(
+              'border rounded-md p-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300',
+              isSelected ? 'border-primary-300 bg-primary-50' : 'border-primary-100 hover:bg-primary-50'
+            )}
             aria-label={`Voir le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-medium text-primary-900 truncate">
-                {String(title ?? (pk ?? `#${idx + 1}`))}
+            <div className="flex items-start gap-2">
+              {canSelect && (
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={isSelected}
+                  onChange={e => toggleSelection(rowId, e.target.checked)}
+                  onClick={e => e.stopPropagation()}
+                  aria-label={`Sélectionner le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-medium text-primary-900 truncate">
+                    {String(title ?? (pk ?? `#${idx + 1}`))}
+                  </div>
+                  {status != null ? (
+                    <span className="text-[11px] rounded-full border px-2 py-[2px] text-primary-600 border-primary-200">{String(status)}</span>
+                  ) : null}
+                </div>
+                <div className="mt-1 text-xs text-primary-500">
+                  {created ? new Date(String(created)).toLocaleString() : null}
+                </div>
+                {link && (
+                  <div className="mt-1 text-xs">
+                    <a href={link} target="_blank" rel="noopener noreferrer" className="underline text-primary-600 break-all" onClick={e => e.stopPropagation()}>{link}</a>
+                  </div>
+                )}
+                {previewColumns && previewColumns.length > 0 && (
+                  <div className="mt-2 overflow-auto">
+                    <table className="min-w-full text-[11px]">
+                      <tbody>
+                        {previewColumns.map((c) => (
+                          <tr key={c} className="border-t border-primary-100">
+                            <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
+                            <td className="py-1 text-primary-800 break-all" title={String(row[c] ?? '')}>{truncate(row[c])}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-              {status != null ? (
-                <span className="text-[11px] rounded-full border px-2 py-[2px] text-primary-600 border-primary-200">{String(status)}</span>
-              ) : null}
             </div>
-            <div className="mt-1 text-xs text-primary-500">
-              {created ? new Date(String(created)).toLocaleString() : null}
-            </div>
-            {link && (
-              <div className="mt-1 text-xs">
-                <a href={link} target="_blank" rel="noopener noreferrer" className="underline text-primary-600 break-all" onClick={e => e.stopPropagation()}>{link}</a>
-              </div>
-            )}
-            {previewColumns && previewColumns.length > 0 && (
-              <div className="mt-2 overflow-auto">
-                <table className="min-w-full text-[11px]">
-                  <tbody>
-                    {previewColumns.map((c) => (
-                      <tr key={c} className="border-t border-primary-100">
-                        <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
-                        <td className="py-1 text-primary-800 break-all" title={String(row[c] ?? '')}>{truncate(row[c])}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         )
       })}

@@ -76,6 +76,7 @@ class TicketContextService:
         table: str | None = None,
         text_column: str | None = None,
         date_column: str | None = None,
+        selection: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         config, entries, filtered, parsed_periods, period_label = self._prepare_context(
             allowed_tables=allowed_tables,
@@ -85,6 +86,7 @@ class TicketContextService:
             table=table,
             text_column=text_column,
             date_column=date_column,
+            selection=selection,
         )
         context_fields = self._get_context_fields(config=config)
         chunks = self._build_chunks(filtered, context_fields=context_fields, config=config)
@@ -136,6 +138,7 @@ class TicketContextService:
         table: str | None = None,
         text_column: str | None = None,
         date_column: str | None = None,
+        selection: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         config, entries, filtered, parsed_periods, period_label = self._prepare_context(
             allowed_tables=allowed_tables,
@@ -145,6 +148,7 @@ class TicketContextService:
             table=table,
             text_column=text_column,
             date_column=date_column,
+            selection=selection,
         )
         context_fields = self._get_context_fields(config=config)
         columns = self._derive_columns(context_fields=context_fields)
@@ -174,6 +178,7 @@ class TicketContextService:
         table: str | None,
         text_column: str | None,
         date_column: str | None,
+        selection: dict[str, Any] | None,
     ) -> tuple[Any, list[dict[str, Any]], list[dict[str, Any]], list[tuple[date | None, date | None]], str]:
         config = self._get_config(table=table, text_column=text_column, date_column=date_column)
         self._ensure_allowed(config.table_name, allowed_tables)
@@ -183,13 +188,24 @@ class TicketContextService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Aucun ticket exploitable avec cette configuration.",
             )
-        parsed_periods = self._parse_periods(date_from=date_from, date_to=date_to, periods=periods)
-        filtered = self._filter_by_periods(entries, periods=parsed_periods)
-        if not filtered:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Aucun ticket dans cette plage de dates.",
-            )
+        selection_spec = self._normalize_selection(selection)
+        if selection_spec:
+            pk, values = selection_spec
+            filtered = self._filter_by_selection(entries, pk=pk, values=values)
+            if not filtered:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Aucun ticket correspondant à la sélection.",
+                )
+            parsed_periods = [(None, None)]
+        else:
+            parsed_periods = self._parse_periods(date_from=date_from, date_to=date_to, periods=periods)
+            filtered = self._filter_by_periods(entries, periods=parsed_periods)
+            if not filtered:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Aucun ticket dans cette plage de dates.",
+                )
         period_label = self._period_label(filtered, periods=parsed_periods)
         return config, entries, filtered, parsed_periods, period_label
 
@@ -408,6 +424,57 @@ class TicketContextService:
             parsed.append((start, end))
         # If still empty, keep None to represent "all dates"
         return parsed or [(None, None)]
+
+    def _normalize_selection(self, selection: dict[str, Any] | None) -> tuple[str, set[str]] | None:
+        if selection is None:
+            return None
+        if not isinstance(selection, dict):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Sélection de tickets invalide.",
+            )
+        pk = selection.get("pk")
+        if not isinstance(pk, str) or not pk.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Colonne de sélection manquante.",
+            )
+        raw_values = selection.get("values")
+        if not isinstance(raw_values, list) or not raw_values:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Sélection de tickets vide.",
+            )
+        values = {str(value).strip() for value in raw_values if str(value).strip()}
+        if not values:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Sélection de tickets vide.",
+            )
+        return pk.strip(), values
+
+    def _filter_by_selection(
+        self,
+        entries: list[dict[str, Any]],
+        *,
+        pk: str,
+        values: set[str],
+    ) -> list[dict[str, Any]]:
+        pk_key = pk.casefold()
+        filtered: list[dict[str, Any]] = []
+        for item in entries:
+            raw = item.get("raw") or {}
+            value = raw.get(pk)
+            if value is None:
+                for key, candidate in raw.items():
+                    if key.casefold() == pk_key:
+                        value = candidate
+                        break
+            if value is None:
+                continue
+            if str(value) in values:
+                filtered.append(item)
+        return filtered
 
     def _filter_by_periods(
         self,

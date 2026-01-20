@@ -68,6 +68,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
 - Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l’espace du chat sans perdre la configuration active.
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l’aperçu des tickets filtrés par les périodes sélectionnées (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché.
+- L’exploration permet de sélectionner des tickets (checkboxes) pour limiter le contexte du chat aux éléments choisis, jusqu’à effacement manuel de la sélection.
 - Backend: deux modes LLM (`LLM_MODE=local|api`) — vLLM local via `VLLM_BASE_URL`, provider externe via `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `LLM_MODEL`.
 - Les réponses du chat sont formatées et rendues en Markdown (titres courts, listes, tableaux, blocs de code) pour une meilleure lisibilité.
 - `LLM_MAX_TOKENS` (défaut 1024) impose le plafond `max_tokens` sur tous les appels OpenAI-compatibles (explorateur, analyste, rédaction, router, chat) pour éviter les erreurs lorsque `model_max_tokens - context_tokens` devient négatif.
@@ -81,6 +82,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - `metadata.exclude_tables: string[]` — liste de tables à exclure pour la conversation en cours. Validée côté serveur (normalisation, limite de taille, filtrage sur tables connues/permises).
 - `metadata.conversation_id: number` — pour rattacher le message à une conversation existante (créée automatiquement sinon).
 - `metadata.save_as_default: boolean` — lorsqu’à `true`, enregistre également les exclusions comme valeur par défaut du compte utilisateur. Par défaut `false` (opt‑in) pour éviter les conditions de concurrence entre plusieurs onglets.
+- `metadata.ticket_selection: { pk: string, values: string[], table?: string }` — restreint le contexte tickets aux identifiants sélectionnés (colonne clé `pk`).
 
 #### Métadonnées de streaming (SSE)
 
