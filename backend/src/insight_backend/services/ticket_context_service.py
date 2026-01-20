@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 from datetime import date
+from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 from fastapi import HTTPException, status
 
-from ..core.config import settings
+from ..core.config import settings, resolve_project_path
+from ..repositories.dictionary_repository import DataDictionaryRepository
 from ..repositories.data_repository import DataRepository
 from ..repositories.data_source_preference_repository import (
     DataSourcePreferenceRepository,
@@ -38,6 +40,9 @@ class TicketContextService:
         self.data_pref_repo = data_pref_repo
         self.ticket_config_repo = ticket_config_repo
         self._cached_entries: dict[str, list[dict[str, Any]]] = {}
+        self._dictionary_repo = DataDictionaryRepository(
+            directory=Path(resolve_project_path(settings.data_dictionary_dir))
+        )
 
     # -------- Public API --------
     def get_metadata(
@@ -95,6 +100,10 @@ class TicketContextService:
             chunks=chunks,
             total_tickets=len(filtered),
         )
+        dictionary_note = self._build_dictionary_note(
+            table=config.table_name,
+            columns=context_fields,
+        )
 
         # Evidence spec + rows for UI side panel
         columns = self._derive_columns(context_fields=context_fields)
@@ -113,6 +122,8 @@ class TicketContextService:
                 "summary": summary,
             },
         )
+        if dictionary_note:
+            system_message = f"{system_message}\n\n{dictionary_note}"
 
         return {
             "summary": summary,
@@ -338,6 +349,32 @@ class TicketContextService:
             seen.add(key)
             cleaned.append(name)
         return cleaned
+
+    def _build_dictionary_note(self, *, table: str, columns: list[str]) -> str | None:
+        if not columns:
+            return None
+        try:
+            dico = self._dictionary_repo.load_table(table) or {}
+        except Exception:
+            log.debug("Unable to load data dictionary for %s", table, exc_info=True)
+            return None
+        items = dico.get("columns") or []
+        if not isinstance(items, list):
+            return None
+        wanted = {c.casefold() for c in columns}
+        parts: list[str] = []
+        for col in items:
+            try:
+                name = str(col.get("name") or "").strip()
+                desc = str(col.get("description") or "").strip()
+                if not name or name.casefold() not in wanted or not desc:
+                    continue
+                parts.append(f"- {name}: {desc}")
+            except Exception:
+                continue
+        if not parts:
+            return None
+        return "Dictionnaire colonnes (chat):\n" + "\n".join(parts)
 
     def _ensure_allowed(self, table_name: str, allowed_tables: Iterable[str] | None) -> None:
         if allowed_tables is None:
