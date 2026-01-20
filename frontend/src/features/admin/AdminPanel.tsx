@@ -102,6 +102,7 @@ export default function AdminPanel() {
   const [ticketError, setTicketError] = useState('')
   const [ticketSaving, setTicketSaving] = useState(false)
   const [ticketRoles, setTicketRoles] = useState<ColumnRolesResponse | null>(null)
+  const [ticketContextFields, setTicketContextFields] = useState<string[]>([])
   const [explorerData, setExplorerData] = useState<DataOverviewResponse | null>(null)
   const [explorerLoading, setExplorerLoading] = useState(false)
   const [explorerError, setExplorerError] = useState('')
@@ -192,6 +193,7 @@ export default function AdminPanel() {
         setTicketColumns([])
         setTicketRoles(null)
         setTicketDateColumn('')
+        setTicketContextFields([])
         return
       }
       setTicketError('')
@@ -203,18 +205,25 @@ export default function AdminPanel() {
         ])
         setTicketColumns(colsResponse ?? [])
         const match = overview?.sources?.find(src => src.source === tableName)
+        const columnLookup = new Set((colsResponse ?? []).map(col => col.name.toLowerCase()))
         const roles: ColumnRolesResponse = {
           source: tableName,
           date_field: match?.date_field ?? null,
           category_field: match?.category_field ?? null,
           sub_category_field: match?.sub_category_field ?? null,
+          ticket_context_fields: match?.ticket_context_fields ?? [],
         }
         setTicketRoles(roles)
         setTicketDateColumn(roles.date_field ?? '')
+        const contextFields = (roles.ticket_context_fields ?? []).filter(
+          name => columnLookup.has(name.toLowerCase())
+        )
+        setTicketContextFields(contextFields)
       } catch (err) {
         setTicketColumns([])
         setTicketRoles(null)
         setTicketDateColumn('')
+        setTicketContextFields([])
         setTicketError(err instanceof Error ? err.message : 'Chargement impossible.')
       }
     },
@@ -331,6 +340,7 @@ export default function AdminPanel() {
       setTicketError('')
       setTicketDateColumn('')
       setTicketRoles(null)
+      setTicketContextFields([])
       void loadTicketConfig(value)
     },
     [loadTicketConfig]
@@ -434,10 +444,15 @@ export default function AdminPanel() {
     setTicketSaving(true)
     setTicketStatus(null)
     try {
+      const columnLookup = new Set(ticketColumns.map(col => col.name))
+      const contextFields = ticketContextFields.filter(
+        name => columnLookup.has(name) && !excludedContextColumns.has(name.toLowerCase())
+      )
       const payload = {
         date_field: ticketDateColumn,
         category_field: ticketRoles?.category_field ?? null,
         sub_category_field: ticketRoles?.sub_category_field ?? null,
+        ticket_context_fields: contextFields,
       }
       const response = await apiFetch<ColumnRolesResponse>(
         `/data/overview/${encodeURIComponent(ticketTable)}/column-roles`,
@@ -449,6 +464,7 @@ export default function AdminPanel() {
       const updated = response ?? payload
       setTicketRoles(updated as ColumnRolesResponse)
       setTicketDateColumn(updated.date_field ?? '')
+      setTicketContextFields(updated.ticket_context_fields ?? contextFields)
       setTicketStatus({ type: 'success', message: 'Colonne date enregistrée pour le mode tickets.' })
     } catch (err) {
       setTicketStatus({
@@ -459,6 +475,17 @@ export default function AdminPanel() {
       setTicketSaving(false)
     }
   }
+
+  const ticketConfig = findLoopConfig(ticketTable)
+  const ticketTextColumn = ticketConfig?.text_column ?? ''
+  const excludedContextColumns = new Set(
+    [ticketTextColumn, ticketDateColumn, 'ticket_id', 'id', 'ref']
+      .filter(Boolean)
+      .map(name => name.toLowerCase())
+  )
+  const ticketContextOptions = ticketColumns
+    .map(col => col.name)
+    .filter(name => !excludedContextColumns.has(name.toLowerCase()))
 
   const handleExplorerRoleChange = (
     source: string,
@@ -1309,8 +1336,9 @@ export default function AdminPanel() {
             <div>
               <h3 className="text-lg font-semibold text-primary-950">Contexte tickets (chat)</h3>
               <p className="text-sm text-primary-600">
-                Choisissez la colonne date utilisée pour filtrer et trier les tickets dans le mode chat « tickets ».
-                Les choix s&apos;appuient sur les tables disponibles et restent alignés avec l&apos;Explorer.
+                Choisissez la colonne date utilisée pour filtrer et trier les tickets dans le mode chat « tickets »,
+                ainsi que les colonnes additionnelles injectées dans le contexte LLM. Les choix s&apos;appuient sur
+                les tables disponibles et restent alignés avec l&apos;Explorer.
               </p>
             </div>
           </div>
@@ -1378,6 +1406,44 @@ export default function AdminPanel() {
                 <p className="text-xs text-primary-500 mt-1">
                   Catégorie actuelle : {ticketRoles?.category_field || '—'} / Sous-catégorie :{' '}
                   {ticketRoles?.sub_category_field || '—'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-800 mb-1">
+                  Colonnes additionnelles (contexte LLM)
+                </label>
+                <div className="rounded-md border border-primary-200 bg-white p-2 max-h-48 overflow-auto">
+                  {ticketContextOptions.length === 0 ? (
+                    <p className="text-xs text-primary-500">Aucune colonne additionnelle disponible.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {ticketContextOptions.map(name => (
+                        <label key={name} className="flex items-center gap-2 text-xs text-primary-800">
+                          <input
+                            type="checkbox"
+                            className="accent-primary-600"
+                            checked={ticketContextFields.includes(name)}
+                            disabled={ticketSaving}
+                            onChange={() => {
+                              setTicketContextFields(prev => {
+                                const next = new Set(prev)
+                                if (next.has(name)) {
+                                  next.delete(name)
+                                } else {
+                                  next.add(name)
+                                }
+                                return ticketContextOptions.filter(option => next.has(option))
+                              })
+                            }}
+                          />
+                          <span>{name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-[11px] text-primary-500 mt-1">
+                  Texte, date et ID sont toujours inclus.
                 </p>
               </div>
               <div className="flex gap-2">

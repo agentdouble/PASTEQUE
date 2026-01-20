@@ -16,7 +16,6 @@ from ..repositories.data_source_preference_repository import (
 from ..services.ticket_context_agent import TicketContextAgent
 from ..services.ticket_utils import (
     chunk_ticket_items,
-    format_ticket_context,
     prepare_ticket_entries,
     truncate_text,
 )
@@ -87,7 +86,8 @@ class TicketContextService:
             text_column=text_column,
             date_column=date_column,
         )
-        chunks = self._build_chunks(filtered)
+        context_fields = self._get_context_fields(config=config)
+        chunks = self._build_chunks(filtered, context_fields=context_fields)
         summary = self.agent.summarize_chunks(
             period_label=period_label,
             chunks=chunks,
@@ -267,6 +267,22 @@ class TicketContextService:
             log.debug("Unable to load data source preferences for %s", table, exc_info=True)
             return None
 
+    def _get_context_fields(self, *, config) -> list[str]:
+        pref = self._get_preferences(config.table_name)
+        fields = pref.ticket_context_fields if pref else []
+        if not fields:
+            return []
+        exclude = {name.casefold() for name in [config.text_column, config.date_column, "ticket_id", "id", "ref"] if name}
+        cleaned: list[str] = []
+        seen: set[str] = set()
+        for name in fields:
+            key = name.casefold()
+            if key in exclude or key in seen:
+                continue
+            seen.add(key)
+            cleaned.append(name)
+        return cleaned
+
     def _ensure_allowed(self, table_name: str, allowed_tables: Iterable[str] | None) -> None:
         if allowed_tables is None:
             return
@@ -295,16 +311,28 @@ class TicketContextService:
         cached = self._cached_entries.get(config.table_name)
         if cached is not None:
             return cached
+        context_fields = self._get_context_fields(config=config)
+        columns: list[str] = []
+        seen: set[str] = set()
+        for name in [
+            config.text_column,
+            config.date_column,
+            "ticket_id",
+            "id",
+            "ref",
+            *context_fields,
+        ]:
+            if not name:
+                continue
+            key = name.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            columns.append(name)
         entries = prepare_ticket_entries(
             rows=self.data_repo.read_rows(
                 config.table_name,
-                columns=[
-                    config.text_column,
-                    config.date_column,
-                    "ticket_id",
-                    "id",
-                    "ref",
-                ],
+                columns=columns,
             ),
             text_column=config.text_column,
             date_column=config.date_column,
@@ -362,13 +390,46 @@ class TicketContextService:
                 break
         return filtered
 
-    def _build_chunks(self, entries: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    def _build_chunks(
+        self,
+        entries: list[dict[str, Any]],
+        *,
+        context_fields: list[str],
+    ) -> list[list[dict[str, Any]]]:
         # Pre-format ticket lines once for LLM payloads
         formatted: list[dict[str, Any]] = []
         for item in entries:
-            line = f"{item['date'].isoformat()}#{item.get('ticket_id') or ''} — {truncate_text(item['text'])}"
+            line = self._format_context_line(item, context_fields=context_fields)
             formatted.append({**item, "line": line})
         return chunk_ticket_items(formatted)
+
+    def _format_context_line(self, item: dict[str, Any], *, context_fields: list[str]) -> str:
+        text = truncate_text(item.get("text") or "")
+        prefix = f"{item['date'].isoformat()}"
+        ticket_id = item.get("ticket_id")
+        if ticket_id:
+            prefix = f"{prefix} #{ticket_id}"
+        details = self._format_context_details(item, context_fields=context_fields)
+        if details:
+            return f"{prefix} — {text} | {details}"
+        return f"{prefix} — {text}"
+
+    def _format_context_details(self, item: dict[str, Any], *, context_fields: list[str]) -> str:
+        if not context_fields:
+            return ""
+        raw = item.get("raw") or {}
+        parts: list[str] = []
+        for col in context_fields:
+            value = raw.get(col)
+            if value is None:
+                continue
+            text = str(value).strip()
+            if not text:
+                continue
+            parts.append(f"{col}={truncate_text(text)}")
+        if not parts:
+            return ""
+        return truncate_text(" | ".join(parts))
 
     def _period_label(self, entries: list[dict[str, Any]], *, periods: list[tuple[date | None, date | None]]) -> str:
         dates = [item["date"] for item in entries]

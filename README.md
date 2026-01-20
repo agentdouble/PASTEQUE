@@ -135,6 +135,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Admin : un onglet dédié dans l’espace « Admin » permet d’activer/désactiver les tables visibles dans l’Explorer et de fixer les colonnes Date / Category / Sub Category sans passer par l’UI Explorer.
 - `include_disabled=true` (admin uniquement) sur `GET /api/v1/data/overview` retourne aussi les tables désactivées pour préparer ou revoir leur configuration. `PUT /api/v1/data/overview/{source}/explorer-enabled` active/désactive explicitement une table pour l’Explorer.
 - Admin : les colonnes Date / Category / Sub Category sont configurables par table (persistées via `/data/overview/{source}/column-roles`) et pilotent les filtres date, la répartition Category/Sub Category et l’aperçu.
+- Admin : l’onglet « Contexte tickets (chat) » permet aussi de sélectionner des colonnes additionnelles injectées dans le contexte LLM (en plus du texte, de la date et de l’ID), persistées via `/data/overview/{source}/column-roles`.
 - Visualisations Chart.js (lignes + barres) avec palette colorée pour timelines et répartitions des valeurs à partir des colonnes détectées automatiquement.
 - Le jeu `tickets_jira` inclut désormais les colonnes `Category` et `Sub Category` (classification ITSM) pour alimenter la répartition affichée dans l’Explorer et les filtres associés.
 - Usage : vérifier la santé et la couverture des jeux de données avant d’ouvrir un chat ou de générer des graphiques.
