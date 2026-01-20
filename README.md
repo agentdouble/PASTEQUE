@@ -75,7 +75,6 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le mode NL→SQL enchaîne désormais les requêtes en conservant le contexte conversationnel (ex.: après « Combien de tickets en mai 2023 ? », la question « Et en juin ? » reste sur l’année 2023).
 - Le mode NL→SQL est maintenant actif par défaut (plus de bouton dédié dans le chat).
 - En mode tickets (chat sans NL→SQL), le contexte LLM n’injecte que les colonnes cochées dans l’admin (pas d’ajout automatique de texte/date/ID). Les colonnes texte/date restent nécessaires pour configurer et filtrer le mode tickets.
-- En mode tickets, le message système injecte désormais le dictionnaire de données (JSON) limité aux colonnes activées pour le chat (texte, date, champs cochés), tronqué à `DATA_DICTIONARY_MAX_CHARS` si besoin.
 
 #### Métadonnées de requête (API)
 
