@@ -49,16 +49,26 @@ function formatActivity(value: string | null): string {
   return formatDate(value)
 }
 
-type TabKey = 'stats' | 'dictionary' | 'prompts' | 'explorer' | 'loop' | 'users' | 'feedback'
+type TabKey = 'stats' | 'dictionary' | 'prompts' | 'explorer' | 'radar' | 'chat' | 'users' | 'feedback'
 
 const DEFAULT_TAB: TabKey = 'stats'
-const TAB_KEYS = new Set<TabKey>(['stats', 'dictionary', 'prompts', 'explorer', 'loop', 'users', 'feedback'])
+const TAB_KEYS = new Set<TabKey>([
+  'stats',
+  'dictionary',
+  'prompts',
+  'explorer',
+  'radar',
+  'chat',
+  'users',
+  'feedback',
+])
 const TAB_ITEMS: { key: TabKey; label: string }[] = [
   { key: 'stats', label: 'Statistiques' },
   { key: 'dictionary', label: 'Dictionnaire' },
   { key: 'prompts', label: 'Prompts' },
   { key: 'explorer', label: 'Explorer' },
-  { key: 'loop', label: 'Loop' },
+  { key: 'radar', label: 'Radar' },
+  { key: 'chat', label: 'Chat' },
   { key: 'users', label: 'Utilisateurs' },
   { key: 'feedback', label: 'Feedback' },
 ]
@@ -1116,8 +1126,7 @@ export default function AdminPanel() {
         </Card>
       )}
 
-      {activeTab === 'loop' && (
-      <>
+      {activeTab === 'radar' && (
         <Card variant="elevated">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
             <div>
@@ -1330,8 +1339,10 @@ export default function AdminPanel() {
             </div>
           )}
         </Card>
+      )}
 
-        <Card variant="elevated" className="mt-4">
+      {activeTab === 'chat' && (
+        <Card variant="elevated">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
             <div>
               <h3 className="text-lg font-semibold text-primary-950">Contexte tickets (chat)</h3>
@@ -1469,7 +1480,6 @@ export default function AdminPanel() {
             </div>
           </div>
         </Card>
-      </>
       )}
 
       {activeTab === 'users' && (

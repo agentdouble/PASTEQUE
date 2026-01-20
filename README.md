@@ -113,7 +113,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 ### Gestion des utilisateurs (admin)
 
 - Une fois connecté avec le compte administrateur, l’UI affiche l’onglet **Admin** permettant de créer de nouveaux couples utilisateur/mot de passe. L’interface a été simplifiée: **Chat**, **Explorer**, **Radar**, **Graph**, **Historique** et **Admin** sont accessibles via des boutons dans le header (top bar). La barre de navigation secondaire a été supprimée pour éviter les doublons.
-- L’espace admin est découpé en onglets (Statistiques, Dictionnaire, Radar, Utilisateurs, Feedback). L’ancien chemin `/feedback` redirige vers l’onglet Feedback pour centraliser la revue des avis.
+- L’espace admin est découpé en onglets (Statistiques, Dictionnaire, Prompts, Explorer, Radar, Chat, Utilisateurs, Feedback). L’ancien chemin `/feedback` redirige vers l’onglet Feedback pour centraliser la revue des avis.
 - Tout nouvel utilisateur (y compris l’administrateur initial) doit définir un mot de passe définitif lors de sa première connexion. Le backend retourne un code `PASSWORD_RESET_REQUIRED` si un utilisateur tente de se connecter avec son mot de passe provisoire: le frontend affiche alors un formulaire dédié qui impose la saisie du nouveau mot de passe deux fois avant de poursuivre.
 - L’endpoint backend `POST /api/v1/auth/users` (token Bearer requis) accepte `{ "username": "...", "password": "..." }` et renvoie les métadonnées de l’utilisateur créé. La réponse de connexion contient désormais `username` et `is_admin` pour que le frontend sélectionne l’onglet Admin uniquement pour l’administrateur.
 - L’API `POST /api/v1/auth/reset-password` (sans jeton) attend `{ username, current_password, new_password, confirm_password }`. En cas de succès elle renvoie `204` ; le frontend relance automatiquement la connexion avec le nouveau secret.
@@ -135,7 +135,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Admin : un onglet dédié dans l’espace « Admin » permet d’activer/désactiver les tables visibles dans l’Explorer et de fixer les colonnes Date / Category / Sub Category sans passer par l’UI Explorer.
 - `include_disabled=true` (admin uniquement) sur `GET /api/v1/data/overview` retourne aussi les tables désactivées pour préparer ou revoir leur configuration. `PUT /api/v1/data/overview/{source}/explorer-enabled` active/désactive explicitement une table pour l’Explorer.
 - Admin : les colonnes Date / Category / Sub Category sont configurables par table (persistées via `/data/overview/{source}/column-roles`) et pilotent les filtres date, la répartition Category/Sub Category et l’aperçu.
-- Admin : l’onglet « Contexte tickets (chat) » permet aussi de sélectionner des colonnes additionnelles injectées dans le contexte LLM (en plus du texte, de la date et de l’ID), persistées via `/data/overview/{source}/column-roles`.
+- Admin : l’onglet « Chat » permet de sélectionner les colonnes additionnelles injectées dans le contexte LLM (en plus du texte, de la date et de l’ID), persistées via `/data/overview/{source}/column-roles`.
 - Visualisations Chart.js (lignes + barres) avec palette colorée pour timelines et répartitions des valeurs à partir des colonnes détectées automatiquement.
 - Le jeu `tickets_jira` inclut désormais les colonnes `Category` et `Sub Category` (classification ITSM) pour alimenter la répartition affichée dans l’Explorer et les filtres associés.
 - Usage : vérifier la santé et la couverture des jeux de données avant d’ouvrir un chat ou de générer des graphiques.
