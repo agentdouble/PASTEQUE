@@ -288,16 +288,7 @@ class TicketContextService:
         if cached is not None:
             return cached
         entries = prepare_ticket_entries(
-            rows=self.data_repo.read_rows(
-                config.table_name,
-                columns=[
-                    config.text_column,
-                    config.date_column,
-                    "ticket_id",
-                    "id",
-                    "ref",
-                ],
-            ),
+            rows=self.data_repo.read_rows(config.table_name),
             text_column=config.text_column,
             date_column=config.date_column,
         )
