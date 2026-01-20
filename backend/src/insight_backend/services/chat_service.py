@@ -1,4 +1,5 @@
 import logging
+import json
 import re
 
 from sqlglot import parse_one, exp
@@ -29,6 +30,49 @@ def _preview_text(text: str, *, limit: int = 160) -> str:
         return compact
     cutoff = max(limit - 3, 1)
     return f"{compact[:cutoff]}..."
+
+
+def _serialize_dico_compact(dico: Dict[str, Any], *, limit: int) -> tuple[str, bool, int, int]:
+    """Return a JSON string for ``dico`` within ``limit`` chars when possible.
+
+    Falls back to a compact subset while keeping valid JSON. Returns a tuple
+    of (json_str, truncated_flag, kept_tables, kept_cols_per_table_max).
+    """
+    def _dumps(obj: Any) -> str:
+        return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+
+    raw = _dumps(dico)
+    if len(raw) <= limit:
+        # no truncation
+        return raw, False, len(dico), max((len(v.get("columns", [])) for v in dico.values()), default=0)
+
+    # Try progressively smaller subsets: fewer columns per table, then fewer tables
+    tables = list(dico.items())
+    # Keep deterministic order by table name
+    tables.sort(key=lambda kv: kv[0])
+
+    for cols_cap in (5, 3, 1):
+        subset: Dict[str, Any] = {}
+        for name, spec in tables:
+            cols = list(spec.get("columns", []))
+            subset[name] = {k: v for k, v in spec.items() if k != "columns"}
+            subset[name]["columns"] = cols[:cols_cap]
+        s = _dumps(subset)
+        if len(s) <= limit:
+            return s, True, len(subset), cols_cap
+        # Also try reducing the number of tables for this cols_cap
+        for keep_tables in (3, 2, 1):
+            trimmed = {k: subset[k] for k in list(subset.keys())[:keep_tables]}
+            s2 = _dumps(trimmed)
+            if len(s2) <= limit:
+                return s2, True, keep_tables, cols_cap
+
+    # As a last resort, keep the first table and one column to remain valid JSON
+    if tables:
+        name, spec = tables[0]
+        minimal = {name: {"columns": list(spec.get("columns", []))[:1]}}
+        return _dumps(minimal), True, 1, 1
+    return _dumps({}), True, 0, 0
 
 
 class ChatEngine(Protocol):
@@ -295,8 +339,8 @@ class ChatService:
                         if pii_hits:
                             log.warning("PII columns included in dictionary: %s", pii_hits)
 
-                        blob, truncated, kept_tables, kept_cols = DataDictionaryRepository.serialize_compact(
-                            dico, limit=settings.data_dictionary_max_chars
+                        blob, truncated, kept_tables, kept_cols = _serialize_dico_compact(
+                            dico, limit=max(1, settings.data_dictionary_max_chars)
                         )
                         if truncated:
                             log.warning(
