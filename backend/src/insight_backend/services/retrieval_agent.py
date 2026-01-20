@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..core.config import settings
 from ..core.agent_limits import check_and_increment
-from ..core.prompts import get_prompt_store
 from ..integrations.openai_client import OpenAICompatibleClient, OpenAIBackendError
 from .retrieval_service import RetrievalService
 
@@ -106,15 +105,11 @@ class RetrievalAgent:
             )
 
         rows_blob = "\n".join(lines)
-        store = get_prompt_store()
-        system_prompt = store.get("retrieval_system").template
-        user_prompt = store.render(
-            "retrieval_user",
-            {
-                "question": q,
-                "rows_blob": rows_blob,
-            },
+        system_prompt = (
+            "Given the user question and the retrieved related informations, give the user some insights. "
+            "Answer in French with une ou deux phrases concises."
         )
+        user_prompt = f"Question:\n{q}\n\nInformations récupérées:\n{rows_blob}"
 
         # Enforce per-agent cap (retrieval synthesis)
         check_and_increment("retrieval")
@@ -145,3 +140,4 @@ class RetrievalAgent:
         if not text:
             raise RuntimeError("Réponse LLM vide pour la mise en avant.")
         return text
+

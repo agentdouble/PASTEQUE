@@ -31,7 +31,6 @@ import mcp.types as mcp_types
 
 from ..core.config import settings
 from ..core.agent_limits import check_and_increment, AgentBudgetExceeded
-from ..core.prompts import get_prompt_store
 from ..integrations.mcp_manager import MCPManager, MCPServerSpec
 from ..schemas.mcp_chart import ChartDataset
 
@@ -445,12 +444,21 @@ class ChartGenerationService:
         if len(dataset.columns) > 6:
             summary_cols += ", …"
         answer_hint = f"\nSynthèse NL→SQL à respecter: {answer.strip()}" if answer else ""
-        return get_prompt_store().render(
-            "mcp_chart_base_instructions",
-            {
-                "prefix_hint": prefix_hint,
-                "summary_cols": summary_cols,
-                "total_rows": total_rows,
-                "answer_hint": answer_hint,
-            },
+        return (
+            "Tu es un analyste data. Une réponse NL→SQL a déjà produit un résultat SQL précis."
+            " Tu dois créer un graphique basé UNIQUEMENT sur ces données."
+            f" {prefix_hint}\n"
+            "Processus obligatoire :\n"
+            "1. Récupérer le résultat SQL avec l'outil `get_sql_result` (colonnes et lignes disponibles).\n"
+            "2. Déterminer un graphique cohérent avec la question utilisateur et les colonnes disponibles"
+            f" (colonnes principales: {summary_cols} — {total_rows} lignes en tout).\n"
+            "3. Appeler l'outil MCP adéquat en lui transmettant les données structurées (type de graphique,"
+            " axes, mesures, filtres éventuels).\n"
+            "4. Retourner un ChartAgentOutput strictement valide avec :\n"
+            "   - chart_url : URL livrée par le MCP\n"
+            "   - tool_name : nom exact de l'outil MCP utilisé\n"
+            "   - chart_title / chart_description : résumé concis et fidèle\n"
+            "   - chart_spec : payload JSON envoyé au MCP (type, data, options).\n"
+            "N'invente ni colonnes ni données supplémentaires; utilise uniquement ce que `get_sql_result` fournit."
+            + answer_hint
         )

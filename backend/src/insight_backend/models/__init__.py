@@ -5,7 +5,6 @@ from .conversation import Conversation, ConversationMessage, ConversationEvent
 from .loop import LoopConfig, LoopSummary
 from .feedback import MessageFeedback
 from .data_source_preference import DataSourcePreference
-from .ticket_context_config import TicketContextConfig
 
 __all__ = [
     "User",
@@ -18,5 +17,4 @@ __all__ = [
     "LoopSummary",
     "MessageFeedback",
     "DataSourcePreference",
-    "TicketContextConfig",
 ]

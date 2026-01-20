@@ -95,7 +95,6 @@ def get_data_overview(  # type: ignore[valid-type]
             date_field=pref.date_field,
             category_field=pref.category_field,
             sub_category_field=pref.sub_category_field,
-            ticket_context_fields=pref.ticket_context_fields,
         )
         for source, pref in preferences.items()
     }
@@ -207,35 +206,9 @@ def update_column_roles(  # type: ignore[valid-type]
             )
         return trimmed
 
-    def _validate_context_fields(values: list[str] | None) -> list[str] | None:
-        if values is None:
-            return None
-        cleaned: list[str] = []
-        seen: set[str] = set()
-        unknown: list[str] = []
-        for name in values:
-            trimmed = name.strip()
-            if not trimmed:
-                continue
-            if trimmed not in available_fields:
-                unknown.append(trimmed)
-                continue
-            key = trimmed.casefold()
-            if key in seen:
-                continue
-            seen.add(key)
-            cleaned.append(trimmed)
-        if unknown:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Colonnes inconnues pour {table_name}: {', '.join(sorted(set(unknown)))}",
-            )
-        return cleaned
-
     date_field = _validate(payload.date_field, "date_field")
     category_field = _validate(payload.category_field, "category_field")
     sub_category_field = _validate(payload.sub_category_field, "sub_category_field")
-    ticket_context_fields = _validate_context_fields(payload.ticket_context_fields)
 
     if (category_field and not sub_category_field) or (sub_category_field and not category_field):
         raise HTTPException(
@@ -249,7 +222,6 @@ def update_column_roles(  # type: ignore[valid-type]
         date_field=date_field,
         category_field=category_field,
         sub_category_field=sub_category_field,
-        ticket_context_fields=ticket_context_fields,
     )
     session.commit()
 
@@ -258,7 +230,6 @@ def update_column_roles(  # type: ignore[valid-type]
         date_field=updated.date_field,
         category_field=updated.category_field,
         sub_category_field=updated.sub_category_field,
-        ticket_context_fields=updated.ticket_context_fields,
     )
 
 

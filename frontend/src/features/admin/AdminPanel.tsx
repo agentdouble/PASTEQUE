@@ -14,11 +14,9 @@ import type {
 } from '@/types/user'
 import type { LoopConfig, LoopOverview, LoopConfigPayload, LoopTableOverview } from '@/types/loop'
 import type { DataOverviewResponse, ColumnRolesResponse, ExplorerEnabledResponse } from '@/types/data'
-import type { TicketContextConfig } from '@/types/tickets'
 import { HiCheckCircle, HiXCircle, HiArrowPath } from 'react-icons/hi2'
 import DictionaryManager from './DictionaryManager'
 import FeedbackAdmin from './FeedbackAdmin'
-import PromptsManager from './PromptsManager'
 
 interface Status {
   type: 'success' | 'error'
@@ -50,26 +48,15 @@ function formatActivity(value: string | null): string {
   return formatDate(value)
 }
 
-type TabKey = 'stats' | 'dictionary' | 'prompts' | 'explorer' | 'radar' | 'chat' | 'users' | 'feedback'
+type TabKey = 'stats' | 'dictionary' | 'explorer' | 'loop' | 'users' | 'feedback'
 
 const DEFAULT_TAB: TabKey = 'stats'
-const TAB_KEYS = new Set<TabKey>([
-  'stats',
-  'dictionary',
-  'prompts',
-  'explorer',
-  'radar',
-  'chat',
-  'users',
-  'feedback',
-])
+const TAB_KEYS = new Set<TabKey>(['stats', 'dictionary', 'explorer', 'loop', 'users', 'feedback'])
 const TAB_ITEMS: { key: TabKey; label: string }[] = [
   { key: 'stats', label: 'Statistiques' },
   { key: 'dictionary', label: 'Dictionnaire' },
-  { key: 'prompts', label: 'Prompts' },
   { key: 'explorer', label: 'Explorer' },
-  { key: 'radar', label: 'Radar' },
-  { key: 'chat', label: 'Chat' },
+  { key: 'loop', label: 'Loop' },
   { key: 'users', label: 'Utilisateurs' },
   { key: 'feedback', label: 'Feedback' },
 ]
@@ -107,15 +94,12 @@ export default function AdminPanel() {
   const [loopRegenerating, setLoopRegenerating] = useState<string | null>(null)
   const [loopDeleting, setLoopDeleting] = useState<number | null>(null)
   const [ticketTable, setTicketTable] = useState('')
-  const [ticketTextColumn, setTicketTextColumn] = useState('')
   const [ticketDateColumn, setTicketDateColumn] = useState('')
   const [ticketColumns, setTicketColumns] = useState<ColumnInfo[]>([])
   const [ticketStatus, setTicketStatus] = useState<Status | null>(null)
   const [ticketError, setTicketError] = useState('')
   const [ticketSaving, setTicketSaving] = useState(false)
   const [ticketRoles, setTicketRoles] = useState<ColumnRolesResponse | null>(null)
-  const [ticketContextFields, setTicketContextFields] = useState<string[]>([])
-  const [ticketConfigLoaded, setTicketConfigLoaded] = useState(false)
   const [explorerData, setExplorerData] = useState<DataOverviewResponse | null>(null)
   const [explorerLoading, setExplorerLoading] = useState(false)
   const [explorerError, setExplorerError] = useState('')
@@ -201,13 +185,11 @@ export default function AdminPanel() {
   }, [])
 
   const loadTicketConfig = useCallback(
-    async (tableName: string, opts?: { textColumn?: string; dateColumn?: string }) => {
+    async (tableName: string) => {
       if (!tableName) {
         setTicketColumns([])
         setTicketRoles(null)
-        setTicketTextColumn('')
         setTicketDateColumn('')
-        setTicketContextFields([])
         return
       }
       setTicketError('')
@@ -219,60 +201,23 @@ export default function AdminPanel() {
         ])
         setTicketColumns(colsResponse ?? [])
         const match = overview?.sources?.find(src => src.source === tableName)
-        const columnLookup = new Set((colsResponse ?? []).map(col => col.name.toLowerCase()))
         const roles: ColumnRolesResponse = {
           source: tableName,
           date_field: match?.date_field ?? null,
           category_field: match?.category_field ?? null,
           sub_category_field: match?.sub_category_field ?? null,
-          ticket_context_fields: match?.ticket_context_fields ?? [],
         }
         setTicketRoles(roles)
-        const textFromConfig =
-          opts?.textColumn && columnLookup.has(opts.textColumn.toLowerCase()) ? opts.textColumn : ''
-        const dateFromConfig =
-          opts?.dateColumn && columnLookup.has(opts.dateColumn.toLowerCase()) ? opts.dateColumn : ''
-        setTicketTextColumn(textFromConfig)
-        setTicketDateColumn(dateFromConfig || roles.date_field || '')
-        const contextFields = (roles.ticket_context_fields ?? []).filter(
-          name => columnLookup.has(name.toLowerCase())
-        )
-        setTicketContextFields(contextFields)
+        setTicketDateColumn(roles.date_field ?? '')
       } catch (err) {
         setTicketColumns([])
         setTicketRoles(null)
-        setTicketTextColumn('')
         setTicketDateColumn('')
-        setTicketContextFields([])
         setTicketError(err instanceof Error ? err.message : 'Chargement impossible.')
       }
     },
     []
   )
-
-  const loadTicketContextConfig = useCallback(async () => {
-    setTicketError('')
-    setTicketStatus(null)
-    try {
-      const config = await apiFetch<TicketContextConfig>('/tickets/context/config')
-      if (!config?.table_name) {
-        setTicketError('Configuration chat introuvable.')
-        return
-      }
-      setTicketTable(config.table_name)
-      await loadTicketConfig(config.table_name, {
-        textColumn: config.text_column,
-        dateColumn: config.date_column,
-      })
-    } catch (err) {
-      setTicketError(err instanceof Error ? err.message : 'Configuration chat introuvable.')
-      setTicketTable('')
-      setTicketTextColumn('')
-      setTicketDateColumn('')
-      setTicketContextFields([])
-      setTicketRoles(null)
-    }
-  }, [loadTicketConfig])
 
   const loadExplorerOverview = useCallback(
     async (withLoader = true) => {
@@ -346,10 +291,12 @@ export default function AdminPanel() {
   }, [loopItems, selectedTable, loadColumns])
 
   useEffect(() => {
-    if (activeTab !== 'chat' || ticketConfigLoaded) return
-    setTicketConfigLoaded(true)
-    void loadTicketContextConfig()
-  }, [activeTab, ticketConfigLoaded, loadTicketContextConfig])
+    if (!ticketTable && loopItems.length > 0) {
+      const config = loopItems[0].config
+      setTicketTable(config.table_name)
+      void loadTicketConfig(config.table_name)
+    }
+  }, [loopItems, ticketTable, loadTicketConfig])
 
   const findLoopConfig = useCallback(
     (tableName: string) =>
@@ -380,10 +327,8 @@ export default function AdminPanel() {
       setTicketTable(value)
       setTicketStatus(null)
       setTicketError('')
-      setTicketTextColumn('')
       setTicketDateColumn('')
       setTicketRoles(null)
-      setTicketContextFields([])
       void loadTicketConfig(value)
     },
     [loadTicketConfig]
@@ -480,10 +425,6 @@ export default function AdminPanel() {
       setTicketStatus({ type: 'error', message: 'Choisissez une table de tickets.' })
       return
     }
-    if (!ticketTextColumn) {
-      setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne texte.' })
-      return
-    }
     if (!ticketDateColumn) {
       setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne date.' })
       return
@@ -491,32 +432,22 @@ export default function AdminPanel() {
     setTicketSaving(true)
     setTicketStatus(null)
     try {
-      const columnLookup = new Set(ticketColumns.map(col => col.name))
-      const contextFields = ticketContextFields.filter(name => columnLookup.has(name))
       const payload = {
-        table_name: ticketTable,
-        text_column: ticketTextColumn,
-        date_column: ticketDateColumn,
-        ticket_context_fields: contextFields,
+        date_field: ticketDateColumn,
+        category_field: ticketRoles?.category_field ?? null,
+        sub_category_field: ticketRoles?.sub_category_field ?? null,
       }
-      const response = await apiFetch<TicketContextConfig>(
-        '/tickets/context/config',
+      const response = await apiFetch<ColumnRolesResponse>(
+        `/data/overview/${encodeURIComponent(ticketTable)}/column-roles`,
         {
           method: 'PUT',
           body: JSON.stringify(payload),
         }
       )
       const updated = response ?? payload
-      setTicketRoles(prev =>
-        prev
-          ? {
-              ...prev,
-              date_field: ticketDateColumn,
-            }
-          : prev
-      )
-      setTicketContextFields(updated.ticket_context_fields ?? contextFields)
-      setTicketStatus({ type: 'success', message: 'Configuration chat enregistrée.' })
+      setTicketRoles(updated as ColumnRolesResponse)
+      setTicketDateColumn(updated.date_field ?? '')
+      setTicketStatus({ type: 'success', message: 'Colonne date enregistrée pour le mode tickets.' })
     } catch (err) {
       setTicketStatus({
         type: 'error',
@@ -526,8 +457,6 @@ export default function AdminPanel() {
       setTicketSaving(false)
     }
   }
-
-  const ticketContextOptions = ticketColumns.map(col => col.name)
 
   const handleExplorerRoleChange = (
     source: string,
@@ -1019,8 +948,6 @@ export default function AdminPanel() {
 
       {activeTab === 'dictionary' && <DictionaryManager />}
 
-      {activeTab === 'prompts' && <PromptsManager />}
-
       {activeTab === 'explorer' && (
         <Card variant="elevated" className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -1158,7 +1085,8 @@ export default function AdminPanel() {
         </Card>
       )}
 
-      {activeTab === 'radar' && (
+      {activeTab === 'loop' && (
+      <>
         <Card variant="elevated">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
             <div>
@@ -1371,17 +1299,14 @@ export default function AdminPanel() {
             </div>
           )}
         </Card>
-      )}
 
-      {activeTab === 'chat' && (
-        <Card variant="elevated">
+        <Card variant="elevated" className="mt-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
             <div>
               <h3 className="text-lg font-semibold text-primary-950">Contexte tickets (chat)</h3>
               <p className="text-sm text-primary-600">
-                Configurez la table et les colonnes texte/date utilisées dans le mode chat « tickets », ainsi que les
-                colonnes injectées dans le contexte LLM. Les choix restent alignés avec l&apos;Explorer,
-                sans dépendre du Radar.
+                Choisissez la colonne date utilisée pour filtrer et trier les tickets dans le mode chat « tickets ».
+                Les choix s&apos;appuient sur les tables disponibles et restent alignés avec l&apos;Explorer.
               </p>
             </div>
           </div>
@@ -1431,24 +1356,6 @@ export default function AdminPanel() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-primary-800 mb-1">
-                  Colonne texte (mode tickets)
-                </label>
-                <select
-                  value={ticketTextColumn}
-                  onChange={(e) => setTicketTextColumn(e.target.value)}
-                  className="w-full rounded-md border border-primary-200 px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
-                  disabled={ticketColumns.length === 0 || ticketSaving}
-                >
-                  <option value="">Choisir…</option>
-                  {ticketColumns.map(col => (
-                    <option key={col.name} value={col.name}>
-                      {col.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-primary-800 mb-1">
                   Colonne date (mode tickets)
                 </label>
                 <select
@@ -1469,44 +1376,6 @@ export default function AdminPanel() {
                   {ticketRoles?.sub_category_field || '—'}
                 </p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-primary-800 mb-1">
-                  Colonnes du contexte LLM
-                </label>
-                <div className="rounded-md border border-primary-200 bg-white p-2 max-h-48 overflow-auto">
-                  {ticketContextOptions.length === 0 ? (
-                    <p className="text-xs text-primary-500">Aucune colonne disponible.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {ticketContextOptions.map(name => (
-                        <label key={name} className="flex items-center gap-2 text-xs text-primary-800">
-                          <input
-                            type="checkbox"
-                            className="accent-primary-600"
-                            checked={ticketContextFields.includes(name)}
-                            disabled={ticketSaving}
-                            onChange={() => {
-                              setTicketContextFields(prev => {
-                                const next = new Set(prev)
-                                if (next.has(name)) {
-                                  next.delete(name)
-                                } else {
-                                  next.add(name)
-                                }
-                                return ticketContextOptions.filter(option => next.has(option))
-                              })
-                            }}
-                          />
-                          <span>{name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <p className="text-[11px] text-primary-500 mt-1">
-                  Seules les colonnes cochées sont injectées dans le contexte LLM.
-                </p>
-              </div>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -1514,14 +1383,14 @@ export default function AdminPanel() {
                   onClick={handleSaveTicketRoles}
                   disabled={ticketSaving || loopTables.length === 0}
                 >
-                  {ticketSaving ? 'Enregistrement…' : 'Enregistrer la configuration'}
+                  {ticketSaving ? 'Enregistrement…' : 'Enregistrer la colonne date'}
                 </Button>
               </div>
             </div>
             <div className="md:border-l md:border-primary-100 md:pl-6 pt-4 md:pt-0 space-y-2 text-sm text-primary-700">
               <p>
-                Cette configuration est utilisée par le mode chat « tickets » pour filtrer et ordonner les items.
-                Les colonnes du contexte restent alignées avec l&apos;Explorer (column-roles).
+                Cette sélection est utilisée par le mode chat « tickets » pour filtrer et ordonner les items. Elle
+                partage le même stockage que l&apos;Explorer (column-roles) afin de rester cohérente.
               </p>
               <p className="text-xs text-primary-500">
                 Pour éviter d&apos;écraser vos catégories existantes, elles sont conservées automatiquement lors de la
@@ -1530,6 +1399,7 @@ export default function AdminPanel() {
             </div>
           </div>
         </Card>
+      </>
       )}
 
       {activeTab === 'users' && (

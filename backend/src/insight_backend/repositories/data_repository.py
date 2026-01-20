@@ -73,40 +73,13 @@ class DataRepository:
         log.info("Schéma table '%s' (%d colonnes)", table_name, len(cols))
         return cols
 
-    def read_rows(self, table_name: str, *, columns: Iterable[str] | None = None) -> List[Dict[str, Any]]:
+    def read_rows(self, table_name: str) -> List[Dict[str, Any]]:
         path = self._resolve_table_path(table_name)
         if path is None:
             raise FileNotFoundError(f"Table introuvable: {table_name}")
         delimiter = "," if path.suffix.lower() == ".csv" else "\t"
         with path.open("r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f, delimiter=delimiter)
-            wanted: list[str] | None = None
-            if columns:
-                header = reader.fieldnames or []
-                lookup = {col.casefold(): col for col in header}
-                wanted = []
-                seen: set[str] = set()
-                for col in columns:
-                    key = (col or "").casefold()
-                    target = lookup.get(key)
-                    if target and target not in seen:
-                        wanted.append(target)
-                        seen.add(target)
-
-            rows: list[dict[str, Any]] = []
-            for row in reader:
-                if not row:
-                    continue
-                mapping = dict(row)
-                if wanted is not None:
-                    filtered = {name: mapping.get(name) for name in wanted}
-                    rows.append(filtered)
-                else:
-                    rows.append(mapping)
-        log.info(
-            "Chargé %d lignes depuis %s%s",
-            len(rows),
-            path.name,
-            f" (colonnes filtrées: {wanted})" if wanted is not None else "",
-        )
+            rows = [dict(row) for row in reader if row]
+        log.info("Chargé %d lignes depuis %s", len(rows), path.name)
         return rows
