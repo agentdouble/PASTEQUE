@@ -14,6 +14,7 @@ class DataSourcePreference(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     source: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
     hidden_fields: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    ticket_context_fields: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, default=list)
     date_field: Mapped[str | None] = mapped_column(String(255), nullable=True)
     category_field: Mapped[str | None] = mapped_column(String(255), nullable=True)
     sub_category_field: Mapped[str | None] = mapped_column(String(255), nullable=True)

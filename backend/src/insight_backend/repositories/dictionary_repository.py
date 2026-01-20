@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from pathlib import Path
 from functools import lru_cache
 import re
@@ -148,6 +149,49 @@ class DataDictionaryRepository:
         if removed:
             _load_table_from_root.cache_clear()
         return removed
+
+    @staticmethod
+    def serialize_compact(dico: Dict[str, Any], *, limit: int) -> tuple[str, bool, int, int]:
+        """Return a JSON string for ``dico`` within ``limit`` chars when possible.
+
+        Falls back to a compact subset while keeping valid JSON. Returns a tuple
+        of (json_str, truncated_flag, kept_tables, kept_cols_per_table_max).
+        """
+
+        def _dumps(obj: Any) -> str:
+            return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+
+        limit = max(1, int(limit))
+        raw = _dumps(dico)
+        if len(raw) <= limit:
+            return raw, False, len(dico), max((len(v.get("columns", [])) for v in dico.values()), default=0)
+
+        # Try progressively smaller subsets: fewer columns per table, then fewer tables
+        tables = list(dico.items())
+        tables.sort(key=lambda kv: kv[0])  # deterministic order by table name
+
+        for cols_cap in (5, 3, 1):
+            subset: Dict[str, Any] = {}
+            for name, spec in tables:
+                cols = list(spec.get("columns", []))
+                subset[name] = {k: v for k, v in spec.items() if k != "columns"}
+                subset[name]["columns"] = cols[:cols_cap]
+            s = _dumps(subset)
+            if len(s) <= limit:
+                return s, True, len(subset), cols_cap
+            # Also try reducing the number of tables for this cols_cap
+            for keep_tables in (3, 2, 1):
+                trimmed = {k: subset[k] for k in list(subset.keys())[:keep_tables]}
+                s2 = _dumps(trimmed)
+                if len(s2) <= limit:
+                    return s2, True, keep_tables, cols_cap
+
+        # As a last resort, keep the first table and one column to remain valid JSON
+        if tables:
+            name, spec = tables[0]
+            minimal = {name: {"columns": list(spec.get("columns", []))[:1]}}
+            return _dumps(minimal), True, 1, 1
+        return _dumps({}), True, 0, 0
 
     def for_schema(self, schema: Dict[str, List[str]]) -> Dict[str, Any]:
         """Return a compact dictionary (JSON-serializable) limited to the given schema.

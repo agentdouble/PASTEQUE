@@ -6,6 +6,7 @@ from typing import List
 
 from ..core.agent_limits import check_and_increment
 from ..core.config import settings
+from ..core.prompts import get_prompt_store
 from ..integrations.openai_client import OpenAICompatibleClient, OpenAIBackendError
 
 
@@ -48,21 +49,19 @@ class LooperAgent:
         max_tokens = min(int(settings.loop_max_tokens), int(settings.llm_max_tokens))
         client = OpenAICompatibleClient(base_url=base_url, api_key=api_key, timeout_s=settings.openai_timeout_s)
 
-        system_prompt = (
-            "Tu es en charge du suivi récurrent des tickets. "
-            "À partir des tickets fournis pour la période indiquée, rédige en français un résumé structuré et riche. "
-            "Commence par un bref paragraphe synthétique (3-4 phrases) qui capture l'état global, puis enchaîne avec "
-            "les problèmes majeurs à résoudre (2-4 points précis, avec fréquence si visible) et termine par un plan "
-            "d'action concret et priorisé. Mets en avant les points critiques (impact fort, récurrence élevée) de façon explicite. "
-            "Reste fidèle aux tickets et n'invente rien. "
-            "Format attendu: Markdown clair (titres ou sous-titres optionnels), listes à puces '-', sections en gras "
-            "(ex: **Problèmes majeurs**), pas de blocs de code ni de tableaux."
-        )
+        store = get_prompt_store()
+        system_prompt = store.get("looper_system").template
         formatted = "\n".join(tickets)
-        user_prompt = (
-            f"Période: {period_label} ({period_start.isoformat()} → {period_end.isoformat()})\n"
-            f"Tickets fournis: {len(tickets)} sur {total_tickets}\n"
-            f"{formatted}"
+        user_prompt = store.render(
+            "looper_user",
+            {
+                "period_label": period_label,
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "ticket_count": len(tickets),
+                "total_tickets": total_tickets,
+                "formatted": formatted,
+            },
         )
 
         log.info(
