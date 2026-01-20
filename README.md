@@ -64,7 +64,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le backend journalise le nombre de workers actifs pour la synthèse tickets.
 - En mode tickets, l’UI affiche un indicateur « DeepSearch mode : … » avec variantes aléatoires à cadence lente, sans répétition de mots, et avec certaines variantes exclues au démarrage.
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
-- Plusieurs périodes peuvent être sélectionnées (ex.: septembre 2025 et octobre 2024) via le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
+- Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
 - Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l’espace du chat sans perdre la configuration active.
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l’aperçu des tickets filtrés par les périodes sélectionnées (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché.
