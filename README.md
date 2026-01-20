@@ -124,6 +124,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Les droits sont stockés dans la table Postgres `user_table_permissions`. Les API `GET /api/v1/auth/users` (inventaire des tables + droits) et `PUT /api/v1/auth/users/{username}/table-permissions` (mise à jour atomique) pilotent ces ACL.
 - Le backend applique ces restrictions pour les listings/ schémas (`GET /api/v1/data/...`) ainsi que pour le NL→SQL et les graphiques via `/api/v1/chat/*`: un utilisateur ne voit ni n’utilise de table qui ne lui a pas été accordée.
 - Les administrateurs peuvent créer/éditer/supprimer les dictionnaires de données directement depuis l’onglet **Admin** → carte « Dictionnaire de données ». Les fichiers YAML sont persistés dans `DATA_DICTIONARY_DIR` (par défaut `data/dictionary`). API: `GET /api/v1/dictionary` (liste), `GET/PUT /api/v1/dictionary/{table}` (lecture/écriture), `DELETE /api/v1/dictionary/{table}` (suppression). Les colonnes sont validées contre le schéma réel, sans mécanismes de secours.
+- Un onglet **Prompts** permet d’éditer les templates LLM (tickets, NL→SQL, router, MCP chart, etc.). Les prompts sont stockés dans `data/prompts.yml` (chemin configurable via `PROMPTS_PATH`) et les variables sont écrites en `{{variable}}` avec validation des placeholders autorisés.
 
 ### Explorer (vision globale des sources)
 

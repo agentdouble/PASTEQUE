@@ -17,6 +17,7 @@ from .api.routes.v1.auth import router as auth_router
 from .api.routes.v1.feedback import router as feedback_router
 from .api.routes.v1.dictionary import router as dictionary_router
 from .api.routes.v1.loop import router as loop_router
+from .api.routes.v1.prompts import router as prompts_router
 from .api.routes.v1.tickets import router as tickets_router
 from .repositories.user_repository import UserRepository
 from .services.auth_service import AuthService
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(feedback_router, prefix=f"{settings.api_prefix}/v1", tags=["feedback"])
     app.include_router(dictionary_router, prefix=f"{settings.api_prefix}/v1", tags=["dictionary"])
     app.include_router(loop_router, prefix=f"{settings.api_prefix}/v1", tags=["loop"])
+    app.include_router(prompts_router, prefix=f"{settings.api_prefix}/v1", tags=["prompts"])
     app.include_router(tickets_router, prefix=f"{settings.api_prefix}/v1", tags=["tickets"])
 
     @app.on_event("startup")

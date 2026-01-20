@@ -20,6 +20,7 @@ from ..services.ticket_utils import (
     prepare_ticket_entries,
     truncate_text,
 )
+from ..core.prompts import get_prompt_store
 
 
 log = logging.getLogger("insight.services.ticket_context_service")
@@ -98,10 +99,13 @@ class TicketContextService:
             text_column=config.text_column,
         )
 
-        system_message = (
-            f"Contexte tickets ({period_label}) — {len(filtered)} éléments sélectionnés.\n"
-            f"{summary}\n"
-            "Utilise ce contexte uniquement pour répondre à l'utilisateur. Ne rajoute pas d'autres sources."
+        system_message = get_prompt_store().render(
+            "ticket_context_injected_system",
+            {
+                "period_label": period_label,
+                "selected_count": len(filtered),
+                "summary": summary,
+            },
         )
 
         return {

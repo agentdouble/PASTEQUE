@@ -17,6 +17,7 @@ import type { DataOverviewResponse, ColumnRolesResponse, ExplorerEnabledResponse
 import { HiCheckCircle, HiXCircle, HiArrowPath } from 'react-icons/hi2'
 import DictionaryManager from './DictionaryManager'
 import FeedbackAdmin from './FeedbackAdmin'
+import PromptsManager from './PromptsManager'
 
 interface Status {
   type: 'success' | 'error'
@@ -48,13 +49,14 @@ function formatActivity(value: string | null): string {
   return formatDate(value)
 }
 
-type TabKey = 'stats' | 'dictionary' | 'explorer' | 'loop' | 'users' | 'feedback'
+type TabKey = 'stats' | 'dictionary' | 'prompts' | 'explorer' | 'loop' | 'users' | 'feedback'
 
 const DEFAULT_TAB: TabKey = 'stats'
-const TAB_KEYS = new Set<TabKey>(['stats', 'dictionary', 'explorer', 'loop', 'users', 'feedback'])
+const TAB_KEYS = new Set<TabKey>(['stats', 'dictionary', 'prompts', 'explorer', 'loop', 'users', 'feedback'])
 const TAB_ITEMS: { key: TabKey; label: string }[] = [
   { key: 'stats', label: 'Statistiques' },
   { key: 'dictionary', label: 'Dictionnaire' },
+  { key: 'prompts', label: 'Prompts' },
   { key: 'explorer', label: 'Explorer' },
   { key: 'loop', label: 'Loop' },
   { key: 'users', label: 'Utilisateurs' },
@@ -947,6 +949,8 @@ export default function AdminPanel() {
       )}
 
       {activeTab === 'dictionary' && <DictionaryManager />}
+
+      {activeTab === 'prompts' && <PromptsManager />}
 
       {activeTab === 'explorer' && (
         <Card variant="elevated" className="space-y-4">

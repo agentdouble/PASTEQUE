@@ -8,6 +8,7 @@ from typing import List
 
 from ..core.agent_limits import check_and_increment
 from ..core.config import settings
+from ..core.prompts import get_prompt_store
 from ..integrations.openai_client import OpenAICompatibleClient, OpenAIBackendError
 
 
@@ -42,18 +43,17 @@ class TicketContextAgent:
         max_tokens = min(int(settings.loop_max_tokens), int(settings.llm_max_tokens))
         client = OpenAICompatibleClient(base_url=base_url, api_key=api_key, timeout_s=settings.openai_timeout_s)
 
-        system_prompt = (
-            "Tu aides un agent de chat à répondre aux utilisateurs en synthétisant des tickets. "
-            "Rédige en français, sans inventer, en restant concis mais riche. "
-            "Structure attendue: bref paragraphe d'ouverture (contexte + volume), "
-            "puis puces '-' pour les signaux clés ou tendances, puis actions concrètes/priorisées. "
-            "Ne produis pas de tableau ni de code. Mentionne explicitement la période."
-        )
+        store = get_prompt_store()
+        system_prompt = store.get("ticket_context_system").template
         formatted = "\n".join(tickets)
-        user_prompt = (
-            f"Période: {period_label}\n"
-            f"Tickets fournis: {len(tickets)} sur {total_tickets}\n"
-            f"{formatted}"
+        user_prompt = store.render(
+            "ticket_context_user",
+            {
+                "period_label": period_label,
+                "ticket_count": len(tickets),
+                "total_tickets": total_tickets,
+                "formatted": formatted,
+            },
         )
 
         log.info(
