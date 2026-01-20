@@ -92,6 +92,7 @@ class TicketContextService:
             date_column=date_column,
         )
         context_fields = self._get_context_fields(config=config)
+        dictionary_columns = self._dictionary_columns(config=config, context_fields=context_fields)
         chunks = self._build_chunks(filtered, context_fields=context_fields, config=config)
         summary = self.agent.summarize_chunks(
             period_label=period_label,
@@ -100,7 +101,7 @@ class TicketContextService:
         )
         dictionary_note = self._build_dictionary_note(
             table=config.table_name,
-            columns=context_fields,
+            columns=dictionary_columns,
         )
 
         # Evidence spec + rows for UI side panel
@@ -334,31 +335,54 @@ class TicketContextService:
             cleaned.append(name)
         return cleaned
 
+    def _dictionary_columns(self, *, config, context_fields: list[str]) -> list[str]:
+        cols: list[str] = []
+        seen: set[str] = set()
+        for name in [config.text_column, config.date_column, *context_fields]:
+            if not name:
+                continue
+            key = name.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            cols.append(name)
+        return cols
+
     def _build_dictionary_note(self, *, table: str, columns: list[str]) -> str | None:
         if not columns:
             return None
         try:
-            dico = self._dictionary_repo.load_table(table) or {}
+            dico = self._dictionary_repo.for_schema({table: columns})
         except Exception:
             log.debug("Unable to load data dictionary for %s", table, exc_info=True)
             return None
-        items = dico.get("columns") or []
-        if not isinstance(items, list):
+        if not dico:
             return None
-        wanted = {c.casefold() for c in columns}
-        parts: list[str] = []
-        for col in items:
-            try:
-                name = str(col.get("name") or "").strip()
-                desc = str(col.get("description") or "").strip()
-                if not name or name.casefold() not in wanted or not desc:
-                    continue
-                parts.append(f"- {name}: {desc}")
-            except Exception:
-                continue
-        if not parts:
+
+        # Log if PII columns are present in the prompt material
+        pii_hits: list[str] = []
+        for t, spec in dico.items():
+            for c in spec.get("columns", []):
+                if bool(c.get("pii")):
+                    pii_hits.append(f"{t}.{c.get('name')}")
+        if pii_hits:
+            log.warning("PII columns included in ticket dictionary: %s", pii_hits)
+
+        try:
+            blob, truncated, kept_tables, kept_cols = DataDictionaryRepository.serialize_compact(
+                dico, limit=settings.data_dictionary_max_chars
+            )
+        except Exception:
+            log.warning("Failed to serialize ticket data dictionary", exc_info=True)
             return None
-        return "Dictionnaire colonnes (chat):\n" + "\n".join(parts)
+        if truncated:
+            log.warning(
+                "Data dictionary (tickets) truncated to %d chars (kept %d tables, ≤ %d cols/table)",
+                settings.data_dictionary_max_chars,
+                kept_tables,
+                kept_cols,
+            )
+        return f"Data dictionary (JSON):\n{blob}"
 
     def _ensure_allowed(self, table_name: str, allowed_tables: Iterable[str] | None) -> None:
         if allowed_tables is None:
