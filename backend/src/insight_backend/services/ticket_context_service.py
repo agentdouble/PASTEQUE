@@ -8,11 +8,11 @@ from fastapi import HTTPException, status
 
 from ..core.config import settings
 from ..repositories.data_repository import DataRepository
-from ..repositories.loop_repository import LoopRepository
 from ..repositories.data_source_preference_repository import (
     DataSourcePreferenceRepository,
     DataSourcePreferences,
 )
+from ..repositories.ticket_context_repository import TicketContextConfigRepository
 from ..services.ticket_context_agent import TicketContextAgent
 from ..services.ticket_utils import (
     chunk_ticket_items,
@@ -28,15 +28,15 @@ log = logging.getLogger("insight.services.ticket_context_service")
 class TicketContextService:
     def __init__(
         self,
-        loop_repo: LoopRepository,
         data_repo: DataRepository,
         agent: TicketContextAgent | None = None,
         data_pref_repo: DataSourcePreferenceRepository | None = None,
+        ticket_config_repo: TicketContextConfigRepository | None = None,
     ):
-        self.loop_repo = loop_repo
         self.data_repo = data_repo
         self.agent = agent or TicketContextAgent()
         self.data_pref_repo = data_pref_repo
+        self.ticket_config_repo = ticket_config_repo
         self._cached_entries: dict[str, list[dict[str, Any]]] = {}
 
     # -------- Public API --------
@@ -191,9 +191,14 @@ class TicketContextService:
             )
         period_label = self._period_label(filtered, periods=parsed_periods)
         return config, entries, filtered, parsed_periods, period_label
+
     def _get_config(self, *, table: str | None, text_column: str | None, date_column: str | None):
         if table:
             canon = self._canonical_table(table, None)
+            if self.ticket_config_repo is not None and not text_column and not date_column:
+                default = self.ticket_config_repo.get_config()
+                if default and default.table_name.casefold() == canon.casefold():
+                    return default
             inferred_text, inferred_date = self._infer_columns(canon)
             t_col = text_column or inferred_text
             d_col = date_column or inferred_date
@@ -204,13 +209,36 @@ class TicketContextService:
                 )
             return type("Cfg", (), {"table_name": canon, "text_column": t_col, "date_column": d_col})
 
-        config = self.loop_repo.get_config()
+        if self.ticket_config_repo is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Configuration contexte tickets indisponible.",
+            )
+        config = self.ticket_config_repo.get_config()
         if not config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Configuration loop/tickets manquante.",
+                detail="Configuration contexte tickets manquante.",
             )
         return config
+
+    def get_default_config(self):
+        if self.ticket_config_repo is None:
+            return None
+        return self.ticket_config_repo.get_config()
+
+    def save_default_config(self, *, table_name: str, text_column: str, date_column: str):
+        if self.ticket_config_repo is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Configuration contexte tickets indisponible.",
+            )
+        self._validate_columns(table_name=table_name, text_column=text_column, date_column=date_column)
+        return self.ticket_config_repo.save_config(
+            table_name=table_name,
+            text_column=text_column,
+            date_column=date_column,
+        )
 
     def _infer_columns(self, table: str) -> tuple[str | None, str | None]:
         try:
@@ -257,6 +285,18 @@ class TicketContextService:
         ) or next((c for c in schema if any(key in c.lower() for key in ["comment", "desc", "resume", "text"])), None)
 
         return text_col, date_col
+
+    def _validate_columns(self, *, table_name: str, text_column: str, date_column: str) -> None:
+        try:
+            cols = [name for name, _ in self.data_repo.get_schema(table_name)]
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        missing = [col for col in (text_column, date_column) if col not in cols]
+        if missing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Colonnes manquantes dans {table_name}: {', '.join(missing)}",
+            )
 
     def _get_preferences(self, table: str) -> DataSourcePreferences | None:
         if self.data_pref_repo is None:

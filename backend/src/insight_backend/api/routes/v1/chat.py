@@ -28,9 +28,9 @@ from ....repositories.user_table_permission_repository import UserTablePermissio
 from ....repositories.conversation_repository import ConversationRepository
 from ....repositories.user_repository import UserRepository
 from ....repositories.data_source_preference_repository import DataSourcePreferenceRepository
+from ....repositories.ticket_context_repository import TicketContextConfigRepository
 from ....utils.text import sanitize_title
 from ....repositories.data_repository import DataRepository
-from ....repositories.loop_repository import LoopRepository
 from ....services.ticket_context_service import TicketContextService
 
 log = logging.getLogger("insight.api.chat")
@@ -327,9 +327,9 @@ def chat_stream(  # type: ignore[valid-type]
     if not user_is_admin(current_user):
         allowed_tables = UserTablePermissionRepository(session).get_allowed_tables(current_user.id)
     ticket_service = TicketContextService(
-        loop_repo=LoopRepository(session),
         data_repo=DataRepository(tables_dir=Path(resolve_project_path(settings.tables_dir))),
         data_pref_repo=DataSourcePreferenceRepository(session),
+        ticket_config_repo=TicketContextConfigRepository(session),
     )
 
     trace_id = f"chat-{uuid.uuid4().hex[:8]}"

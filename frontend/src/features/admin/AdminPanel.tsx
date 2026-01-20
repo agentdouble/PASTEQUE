@@ -14,6 +14,7 @@ import type {
 } from '@/types/user'
 import type { LoopConfig, LoopOverview, LoopConfigPayload, LoopTableOverview } from '@/types/loop'
 import type { DataOverviewResponse, ColumnRolesResponse, ExplorerEnabledResponse } from '@/types/data'
+import type { TicketContextConfig } from '@/types/tickets'
 import { HiCheckCircle, HiXCircle, HiArrowPath } from 'react-icons/hi2'
 import DictionaryManager from './DictionaryManager'
 import FeedbackAdmin from './FeedbackAdmin'
@@ -106,6 +107,7 @@ export default function AdminPanel() {
   const [loopRegenerating, setLoopRegenerating] = useState<string | null>(null)
   const [loopDeleting, setLoopDeleting] = useState<number | null>(null)
   const [ticketTable, setTicketTable] = useState('')
+  const [ticketTextColumn, setTicketTextColumn] = useState('')
   const [ticketDateColumn, setTicketDateColumn] = useState('')
   const [ticketColumns, setTicketColumns] = useState<ColumnInfo[]>([])
   const [ticketStatus, setTicketStatus] = useState<Status | null>(null)
@@ -113,6 +115,7 @@ export default function AdminPanel() {
   const [ticketSaving, setTicketSaving] = useState(false)
   const [ticketRoles, setTicketRoles] = useState<ColumnRolesResponse | null>(null)
   const [ticketContextFields, setTicketContextFields] = useState<string[]>([])
+  const [ticketConfigLoaded, setTicketConfigLoaded] = useState(false)
   const [explorerData, setExplorerData] = useState<DataOverviewResponse | null>(null)
   const [explorerLoading, setExplorerLoading] = useState(false)
   const [explorerError, setExplorerError] = useState('')
@@ -198,10 +201,11 @@ export default function AdminPanel() {
   }, [])
 
   const loadTicketConfig = useCallback(
-    async (tableName: string) => {
+    async (tableName: string, opts?: { textColumn?: string; dateColumn?: string }) => {
       if (!tableName) {
         setTicketColumns([])
         setTicketRoles(null)
+        setTicketTextColumn('')
         setTicketDateColumn('')
         setTicketContextFields([])
         return
@@ -224,7 +228,12 @@ export default function AdminPanel() {
           ticket_context_fields: match?.ticket_context_fields ?? [],
         }
         setTicketRoles(roles)
-        setTicketDateColumn(roles.date_field ?? '')
+        const textFromConfig =
+          opts?.textColumn && columnLookup.has(opts.textColumn.toLowerCase()) ? opts.textColumn : ''
+        const dateFromConfig =
+          opts?.dateColumn && columnLookup.has(opts.dateColumn.toLowerCase()) ? opts.dateColumn : ''
+        setTicketTextColumn(textFromConfig)
+        setTicketDateColumn(dateFromConfig || roles.date_field || '')
         const contextFields = (roles.ticket_context_fields ?? []).filter(
           name => columnLookup.has(name.toLowerCase())
         )
@@ -232,6 +241,7 @@ export default function AdminPanel() {
       } catch (err) {
         setTicketColumns([])
         setTicketRoles(null)
+        setTicketTextColumn('')
         setTicketDateColumn('')
         setTicketContextFields([])
         setTicketError(err instanceof Error ? err.message : 'Chargement impossible.')
@@ -239,6 +249,30 @@ export default function AdminPanel() {
     },
     []
   )
+
+  const loadTicketContextConfig = useCallback(async () => {
+    setTicketError('')
+    setTicketStatus(null)
+    try {
+      const config = await apiFetch<TicketContextConfig>('/tickets/context/config')
+      if (!config?.table_name) {
+        setTicketError('Configuration chat introuvable.')
+        return
+      }
+      setTicketTable(config.table_name)
+      await loadTicketConfig(config.table_name, {
+        textColumn: config.text_column,
+        dateColumn: config.date_column,
+      })
+    } catch (err) {
+      setTicketError(err instanceof Error ? err.message : 'Configuration chat introuvable.')
+      setTicketTable('')
+      setTicketTextColumn('')
+      setTicketDateColumn('')
+      setTicketContextFields([])
+      setTicketRoles(null)
+    }
+  }, [loadTicketConfig])
 
   const loadExplorerOverview = useCallback(
     async (withLoader = true) => {
@@ -312,12 +346,10 @@ export default function AdminPanel() {
   }, [loopItems, selectedTable, loadColumns])
 
   useEffect(() => {
-    if (!ticketTable && loopItems.length > 0) {
-      const config = loopItems[0].config
-      setTicketTable(config.table_name)
-      void loadTicketConfig(config.table_name)
-    }
-  }, [loopItems, ticketTable, loadTicketConfig])
+    if (activeTab !== 'chat' || ticketConfigLoaded) return
+    setTicketConfigLoaded(true)
+    void loadTicketContextConfig()
+  }, [activeTab, ticketConfigLoaded, loadTicketContextConfig])
 
   const findLoopConfig = useCallback(
     (tableName: string) =>
@@ -348,6 +380,7 @@ export default function AdminPanel() {
       setTicketTable(value)
       setTicketStatus(null)
       setTicketError('')
+      setTicketTextColumn('')
       setTicketDateColumn('')
       setTicketRoles(null)
       setTicketContextFields([])
@@ -447,6 +480,10 @@ export default function AdminPanel() {
       setTicketStatus({ type: 'error', message: 'Choisissez une table de tickets.' })
       return
     }
+    if (!ticketTextColumn) {
+      setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne texte.' })
+      return
+    }
     if (!ticketDateColumn) {
       setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne date.' })
       return
@@ -459,23 +496,29 @@ export default function AdminPanel() {
         name => columnLookup.has(name) && !excludedContextColumns.has(name.toLowerCase())
       )
       const payload = {
-        date_field: ticketDateColumn,
-        category_field: ticketRoles?.category_field ?? null,
-        sub_category_field: ticketRoles?.sub_category_field ?? null,
+        table_name: ticketTable,
+        text_column: ticketTextColumn,
+        date_column: ticketDateColumn,
         ticket_context_fields: contextFields,
       }
-      const response = await apiFetch<ColumnRolesResponse>(
-        `/data/overview/${encodeURIComponent(ticketTable)}/column-roles`,
+      const response = await apiFetch<TicketContextConfig>(
+        '/tickets/context/config',
         {
           method: 'PUT',
           body: JSON.stringify(payload),
         }
       )
       const updated = response ?? payload
-      setTicketRoles(updated as ColumnRolesResponse)
-      setTicketDateColumn(updated.date_field ?? '')
+      setTicketRoles(prev =>
+        prev
+          ? {
+              ...prev,
+              date_field: ticketDateColumn,
+            }
+          : prev
+      )
       setTicketContextFields(updated.ticket_context_fields ?? contextFields)
-      setTicketStatus({ type: 'success', message: 'Colonne date enregistrée pour le mode tickets.' })
+      setTicketStatus({ type: 'success', message: 'Configuration chat enregistrée.' })
     } catch (err) {
       setTicketStatus({
         type: 'error',
@@ -486,8 +529,6 @@ export default function AdminPanel() {
     }
   }
 
-  const ticketConfig = findLoopConfig(ticketTable)
-  const ticketTextColumn = ticketConfig?.text_column ?? ''
   const excludedContextColumns = new Set(
     [ticketTextColumn, ticketDateColumn, 'ticket_id', 'id', 'ref']
       .filter(Boolean)
@@ -1347,9 +1388,9 @@ export default function AdminPanel() {
             <div>
               <h3 className="text-lg font-semibold text-primary-950">Contexte tickets (chat)</h3>
               <p className="text-sm text-primary-600">
-                Choisissez la colonne date utilisée pour filtrer et trier les tickets dans le mode chat « tickets »,
-                ainsi que les colonnes additionnelles injectées dans le contexte LLM. Les choix s&apos;appuient sur
-                les tables disponibles et restent alignés avec l&apos;Explorer.
+                Configurez la table et les colonnes texte/date utilisées dans le mode chat « tickets », ainsi que les
+                colonnes additionnelles injectées dans le contexte LLM. Les choix restent alignés avec l&apos;Explorer,
+                sans dépendre du Radar.
               </p>
             </div>
           </div>
@@ -1393,6 +1434,24 @@ export default function AdminPanel() {
                   {loopTables.map(table => (
                     <option key={table.name} value={table.name}>
                       {table.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-800 mb-1">
+                  Colonne texte (mode tickets)
+                </label>
+                <select
+                  value={ticketTextColumn}
+                  onChange={(e) => setTicketTextColumn(e.target.value)}
+                  className="w-full rounded-md border border-primary-200 px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
+                  disabled={ticketColumns.length === 0 || ticketSaving}
+                >
+                  <option value="">Choisir…</option>
+                  {ticketColumns.map(col => (
+                    <option key={col.name} value={col.name}>
+                      {col.name}
                     </option>
                   ))}
                 </select>
@@ -1464,14 +1523,14 @@ export default function AdminPanel() {
                   onClick={handleSaveTicketRoles}
                   disabled={ticketSaving || loopTables.length === 0}
                 >
-                  {ticketSaving ? 'Enregistrement…' : 'Enregistrer la colonne date'}
+                  {ticketSaving ? 'Enregistrement…' : 'Enregistrer la configuration'}
                 </Button>
               </div>
             </div>
             <div className="md:border-l md:border-primary-100 md:pl-6 pt-4 md:pt-0 space-y-2 text-sm text-primary-700">
               <p>
-                Cette sélection est utilisée par le mode chat « tickets » pour filtrer et ordonner les items. Elle
-                partage le même stockage que l&apos;Explorer (column-roles) afin de rester cohérente.
+                Cette configuration est utilisée par le mode chat « tickets » pour filtrer et ordonner les items.
+                Les colonnes additionnelles restent alignées avec l&apos;Explorer (column-roles).
               </p>
               <p className="text-xs text-primary-500">
                 Pour éviter d&apos;écraser vos catégories existantes, elles sont conservées automatiquement lors de la

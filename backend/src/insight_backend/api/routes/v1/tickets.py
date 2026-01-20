@@ -9,12 +9,14 @@ from ....core.config import settings, resolve_project_path
 from ....core.database import get_session
 from ....core.security import get_current_user, user_is_admin
 from ....models.user import User
-from ....repositories.loop_repository import LoopRepository
 from ....repositories.data_repository import DataRepository
 from ....repositories.user_table_permission_repository import UserTablePermissionRepository
 from ....repositories.data_source_preference_repository import DataSourcePreferenceRepository
+from ....repositories.ticket_context_repository import TicketContextConfigRepository
 from ....services.ticket_context_service import TicketContextService
 from ....schemas.tickets import (
+    TicketContextConfigRequest,
+    TicketContextConfigResponse,
     TicketContextMetadataResponse,
     TicketContextPreviewItem,
     TicketContextPreviewRequest,
@@ -26,9 +28,9 @@ router = APIRouter(prefix="/tickets")
 
 def _service(session: Session) -> TicketContextService:
     return TicketContextService(
-        loop_repo=LoopRepository(session),
         data_repo=DataRepository(tables_dir=Path(resolve_project_path(settings.tables_dir))),
         data_pref_repo=DataSourcePreferenceRepository(session),
+        ticket_config_repo=TicketContextConfigRepository(session),
     )
 
 
@@ -57,6 +59,51 @@ def get_ticket_context_metadata(  # type: ignore[valid-type]
         date_min=meta["date_min"],
         date_max=meta["date_max"],
         total_count=meta["total_count"],
+    )
+
+
+@router.get("/context/config", response_model=TicketContextConfigResponse)
+def get_ticket_context_config(  # type: ignore[valid-type]
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> TicketContextConfigResponse:
+    if not user_is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin requis")
+    service = _service(session)
+    config = service.get_default_config()
+    if not config:
+        raise HTTPException(status_code=404, detail="Configuration contexte tickets manquante.")
+    return TicketContextConfigResponse.from_model(config)
+
+
+@router.put("/context/config", response_model=TicketContextConfigResponse)
+def update_ticket_context_config(  # type: ignore[valid-type]
+    payload: TicketContextConfigRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> TicketContextConfigResponse:
+    if not user_is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin requis")
+    service = _service(session)
+    config = service.save_default_config(
+        table_name=payload.table_name,
+        text_column=payload.text_column,
+        date_column=payload.date_column,
+    )
+    pref_repo = DataSourcePreferenceRepository(session)
+    existing = pref_repo.get_preferences_for_source(source=payload.table_name)
+    updated_pref = pref_repo.set_column_roles(
+        source=payload.table_name,
+        date_field=payload.date_column,
+        category_field=existing.category_field if existing else None,
+        sub_category_field=existing.sub_category_field if existing else None,
+        ticket_context_fields=payload.ticket_context_fields or [],
+    )
+    session.commit()
+    session.refresh(config)
+    return TicketContextConfigResponse.from_model(
+        config,
+        ticket_context_fields=updated_pref.ticket_context_fields,
     )
 
 
