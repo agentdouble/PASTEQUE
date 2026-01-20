@@ -32,6 +32,7 @@ export interface DataSourceOverview {
   date_field?: string | null
   category_field?: string | null
   sub_category_field?: string | null
+  ticket_context_fields?: string[]
    explorer_enabled?: boolean
   field_count: number
   fields: FieldBreakdown[]
@@ -53,6 +54,7 @@ export interface ColumnRolesResponse {
   date_field?: string | null
   category_field?: string | null
   sub_category_field?: string | null
+  ticket_context_fields?: string[]
 }
 
 export interface UpdateExplorerEnabledRequest {
@@ -68,6 +70,7 @@ export interface UpdateColumnRolesRequest {
   date_field?: string | null
   category_field?: string | null
   sub_category_field?: string | null
+  ticket_context_fields?: string[]
 }
 
 export type TableRow = Record<string, string | number | boolean | null>

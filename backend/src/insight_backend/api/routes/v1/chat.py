@@ -17,6 +17,7 @@ from ....core.config import settings, resolve_project_path
 from ....core.agent_limits import reset_from_settings, AgentBudgetExceeded
 from ....core.database import get_session, transactional
 from ....core.security import get_current_user, user_is_admin
+from ....core.prompts import get_prompt_store
 from ....models.user import User
 from ....services.chat_service import ChatService
 from ....services.animator_agent import AnimatorAgent
@@ -27,9 +28,9 @@ from ....repositories.user_table_permission_repository import UserTablePermissio
 from ....repositories.conversation_repository import ConversationRepository
 from ....repositories.user_repository import UserRepository
 from ....repositories.data_source_preference_repository import DataSourcePreferenceRepository
+from ....repositories.ticket_context_repository import TicketContextConfigRepository
 from ....utils.text import sanitize_title
 from ....repositories.data_repository import DataRepository
-from ....repositories.loop_repository import LoopRepository
 from ....services.ticket_context_service import TicketContextService
 
 log = logging.getLogger("insight.api.chat")
@@ -42,17 +43,18 @@ from ....utils.validation import normalize_table_names
 
 _last_settings_update_ts_by_user: dict[int, float] = {}
 
-_MARKDOWN_SYSTEM_PROMPT = ChatMessage(
-    role="system",
-    content=(
-        "Formate toutes tes réponses en Markdown clair avec une structure lisible :\n"
-        "- Titre concis pour poser le contexte\n"
-        "- 3 à 7 puces en phrases complètes et explicites (pas de mots-clés secs)\n"
-        "- Ajoute des précisions utiles (détails, conséquences, exemples) pour chaque idée\n"
-        "- Tableaux ou blocs de code uniquement si cela améliore vraiment la lisibilité\n"
-        "Reste synthétique mais pas télégraphique. Évite le HTML brut."
-    ),
-)
+def _markdown_system_prompt() -> ChatMessage:
+    prompt = get_prompt_store().get("chat_markdown_system").template
+    return ChatMessage(role="system", content=prompt)
+
+
+def _ensure_markdown_prompt(msgs: list[ChatMessage]) -> list[ChatMessage]:
+    prompt = _markdown_system_prompt()
+    has_prompt = any(
+        m.role == "system" and isinstance(m.content, str) and m.content == prompt.content
+        for m in msgs
+    )
+    return [prompt] + msgs if not has_prompt else msgs
 
 
 def _apply_exclusions_and_defaults(
@@ -211,14 +213,7 @@ def chat_completion(  # type: ignore[valid-type]
             payload.metadata["exclude_tables"] = saved
 
     msgs = list(payload.messages or [])
-    has_markdown_prompt = any(
-        m.role == "system" and isinstance(m.content, str) and "markdown" in m.content.casefold()
-        for m in msgs
-    )
-    if not has_markdown_prompt:
-        payload.messages = [_MARKDOWN_SYSTEM_PROMPT] + msgs
-    else:
-        payload.messages = msgs
+    payload.messages = _ensure_markdown_prompt(msgs)
 
     # Router gate on every user message (avoid useless SQL/NL2SQL work)
     last = payload.messages[-1] if payload.messages else None
@@ -332,9 +327,9 @@ def chat_stream(  # type: ignore[valid-type]
     if not user_is_admin(current_user):
         allowed_tables = UserTablePermissionRepository(session).get_allowed_tables(current_user.id)
     ticket_service = TicketContextService(
-        loop_repo=LoopRepository(session),
         data_repo=DataRepository(tables_dir=Path(resolve_project_path(settings.tables_dir))),
         data_pref_repo=DataSourcePreferenceRepository(session),
+        ticket_config_repo=TicketContextConfigRepository(session),
     )
 
     trace_id = f"chat-{uuid.uuid4().hex[:8]}"
@@ -431,14 +426,7 @@ def chat_stream(  # type: ignore[valid-type]
 
     # Toujours préfixer par une consigne Markdown si aucune consigne similaire n'est présente
     msgs = list(payload.messages or [])
-    has_markdown_prompt = any(
-        m.role == "system" and isinstance(m.content, str) and "markdown" in m.content.casefold()
-        for m in msgs
-    )
-    if not has_markdown_prompt:
-        payload.messages = [_MARKDOWN_SYSTEM_PROMPT] + msgs
-    else:
-        payload.messages = msgs
+    payload.messages = _ensure_markdown_prompt(msgs)
 
     def generate() -> Iterator[bytes]:
         nonlocal assistant_msg_id

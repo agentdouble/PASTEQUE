@@ -45,6 +45,7 @@ class ColumnRoles:
     date_field: str | None = None
     category_field: str | None = None
     sub_category_field: str | None = None
+    ticket_context_fields: list[str] | None = None
 
 
 def _clean_text(value: object | None) -> str | None:
@@ -247,6 +248,7 @@ class DataService:
                         date_field=roles.date_field if roles else None,
                         category_field=roles.category_field if roles else None,
                         sub_category_field=roles.sub_category_field if roles else None,
+                        ticket_context_fields=roles.ticket_context_fields if roles and roles.ticket_context_fields else [],
                         explorer_enabled=False,
                     )
                 )
@@ -301,6 +303,7 @@ class DataService:
                     field_count=0,
                     fields=[],
                     explorer_enabled=explorer_enabled,
+                    ticket_context_fields=(column_roles.ticket_context_fields if column_roles and column_roles.ticket_context_fields else []),
                 )
 
             roles = column_roles or ColumnRoles()
@@ -343,6 +346,7 @@ class DataService:
                 date_field=date_field,
                 category_field=category_field,
                 sub_category_field=sub_category_field,
+                ticket_context_fields=roles.ticket_context_fields if roles and roles.ticket_context_fields else [],
                 field_count=total_field_count,
                 fields=fields,
                 category_breakdown=[],
@@ -364,6 +368,7 @@ class DataService:
                     field_count=0,
                     fields=[],
                     explorer_enabled=explorer_enabled,
+                    ticket_context_fields=(column_roles.ticket_context_fields if column_roles and column_roles.ticket_context_fields else []),
                 )
             fields = [
                 FieldBreakdown(
@@ -385,6 +390,7 @@ class DataService:
                 fields=fields,
                 category_breakdown=[],
                 explorer_enabled=explorer_enabled,
+                ticket_context_fields=(column_roles.ticket_context_fields if column_roles and column_roles.ticket_context_fields else []),
             )
 
         delimiter = "," if path.suffix.lower() == ".csv" else "\t"
@@ -530,6 +536,7 @@ class DataService:
             category_field=category_field,
             sub_category_field=sub_category_field,
             explorer_enabled=explorer_enabled,
+            ticket_context_fields=roles.ticket_context_fields if roles and roles.ticket_context_fields else [],
         )
 
     def explore_table(

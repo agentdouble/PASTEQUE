@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     data_dictionary_dir: str = Field("../data/dictionary", alias="DATA_DICTIONARY_DIR")
     # Cap for injected data dictionary JSON in prompts
     data_dictionary_max_chars: int = Field(6000, alias="DATA_DICTIONARY_MAX_CHARS")
+    prompts_path: str = Field("../data/prompts.yml", alias="PROMPTS_PATH")
 
     # LLM configuration
     llm_mode: str = Field("local", alias="LLM_MODE")  # "local" | "api"

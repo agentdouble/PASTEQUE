@@ -6,6 +6,7 @@ import json
 from ..core.config import settings
 from ..integrations.openai_client import OpenAICompatibleClient, OpenAIBackendError
 from ..core.agent_limits import check_and_increment
+from ..core.prompts import get_prompt_store
 
 
 class AnimatorAgent:
@@ -69,21 +70,7 @@ class AnimatorAgent:
         client, model = self._client_and_model()
         facts = self._facts(kind, payload)
         # Short, French, slightly playful. Never disclose SQL, columns or code.
-        system = (
-            "Tu es 'Animator', un narrateur d'interface.\n"
-            "Mission: expliquer brièvement ce que fait la pipeline (exploration, comptage, chargement).\n"
-            "Contraintes: 1 phrase courte (≤ 14 mots), français, claire, avec parfois une touche amusante.\n"
-            "Jamais de SQL, ni de noms de colonnes, ni de détails techniques (pas de 'SSE'/'evidence').\n"
-            "Pas de balises, pas de code, pas d'emoji. Réponds UNIQUEMENT par la phrase.\n"
-            "Adapte la phrase à hint.event/hint.purpose si présents (ex: explore, answer, evidence).\n"
-            "Exemples de style (non obligatoires):\n"
-            "- Analyse des données pas nettoyées…\n"
-            "- Anonymisation des données\n"
-            "- Récupération des colonnes\n"
-            "- Comptage par catégorie\n"
-            "- Échantillonnage en douceur\n"
-            "- Filtrage par période"
-        )
+        system = get_prompt_store().get("animator_system").template
         user = json.dumps({"hint": facts}, ensure_ascii=False)
         try:
             # Enforce per-request cap if configured for 'animator'

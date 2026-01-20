@@ -1627,7 +1627,7 @@ export default function Chat() {
                         }}
                         className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
                       >
-                        <option value="">Auto (config loop)</option>
+                        <option value="">Auto (config chat)</option>
                         {ticketTables.map(name => (
                           <option key={name} value={name}>{name}</option>
                         ))}
@@ -1731,7 +1731,7 @@ export default function Chat() {
                           }}
                           className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
                         >
-                          <option value="">Auto (config loop)</option>
+                          <option value="">Auto (config chat)</option>
                           {ticketTables.map(name => (
                             <option key={name} value={name}>{name}</option>
                           ))}
