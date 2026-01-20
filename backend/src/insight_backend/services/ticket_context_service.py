@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 from datetime import date
+from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 from fastapi import HTTPException, status
 
-from ..core.config import settings
+from ..core.config import settings, resolve_project_path
+from ..repositories.dictionary_repository import DataDictionaryRepository
 from ..repositories.data_repository import DataRepository
 from ..repositories.data_source_preference_repository import (
     DataSourcePreferenceRepository,
@@ -38,6 +40,9 @@ class TicketContextService:
         self.data_pref_repo = data_pref_repo
         self.ticket_config_repo = ticket_config_repo
         self._cached_entries: dict[str, list[dict[str, Any]]] = {}
+        self._dictionary_repo = DataDictionaryRepository(
+            directory=Path(resolve_project_path(settings.data_dictionary_dir))
+        )
 
     # -------- Public API --------
     def get_metadata(
@@ -87,11 +92,16 @@ class TicketContextService:
             date_column=date_column,
         )
         context_fields = self._get_context_fields(config=config)
+        dictionary_columns = self._dictionary_columns(config=config, context_fields=context_fields)
         chunks = self._build_chunks(filtered, context_fields=context_fields, config=config)
         summary = self.agent.summarize_chunks(
             period_label=period_label,
             chunks=chunks,
             total_tickets=len(filtered),
+        )
+        dictionary_note = self._build_dictionary_note(
+            table=config.table_name,
+            columns=dictionary_columns,
         )
 
         # Evidence spec + rows for UI side panel
@@ -111,6 +121,8 @@ class TicketContextService:
                 "summary": summary,
             },
         )
+        if dictionary_note:
+            system_message = f"{system_message}\n\n{dictionary_note}"
 
         return {
             "summary": summary,
@@ -322,6 +334,55 @@ class TicketContextService:
             seen.add(key)
             cleaned.append(name)
         return cleaned
+
+    def _dictionary_columns(self, *, config, context_fields: list[str]) -> list[str]:
+        cols: list[str] = []
+        seen: set[str] = set()
+        for name in [config.text_column, config.date_column, *context_fields]:
+            if not name:
+                continue
+            key = name.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            cols.append(name)
+        return cols
+
+    def _build_dictionary_note(self, *, table: str, columns: list[str]) -> str | None:
+        if not columns:
+            return None
+        try:
+            dico = self._dictionary_repo.for_schema({table: columns})
+        except Exception:
+            log.debug("Unable to load data dictionary for %s", table, exc_info=True)
+            return None
+        if not dico:
+            return None
+
+        # Log if PII columns are present in the prompt material
+        pii_hits: list[str] = []
+        for t, spec in dico.items():
+            for c in spec.get("columns", []):
+                if bool(c.get("pii")):
+                    pii_hits.append(f"{t}.{c.get('name')}")
+        if pii_hits:
+            log.warning("PII columns included in ticket dictionary: %s", pii_hits)
+
+        try:
+            blob, truncated, kept_tables, kept_cols = DataDictionaryRepository.serialize_compact(
+                dico, limit=settings.data_dictionary_max_chars
+            )
+        except Exception:
+            log.warning("Failed to serialize ticket data dictionary", exc_info=True)
+            return None
+        if truncated:
+            log.warning(
+                "Data dictionary (tickets) truncated to %d chars (kept %d tables, ≤ %d cols/table)",
+                settings.data_dictionary_max_chars,
+                kept_tables,
+                kept_cols,
+            )
+        return f"Data dictionary (JSON):\n{blob}"
 
     def _ensure_allowed(self, table_name: str, allowed_tables: Iterable[str] | None) -> None:
         if allowed_tables is None:
