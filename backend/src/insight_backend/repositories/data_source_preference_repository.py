@@ -15,7 +15,6 @@ log = logging.getLogger("insight.repositories.data_source_preference")
 @dataclass(frozen=True)
 class DataSourcePreferences:
     hidden_fields: list[str]
-    ticket_context_fields: list[str]
     date_field: str | None
     category_field: str | None
     sub_category_field: str | None
@@ -51,10 +50,6 @@ class DataSourcePreferenceRepository:
         return cleaned
 
     @staticmethod
-    def _clean_context_fields(fields: Iterable[str] | None) -> list[str]:
-        return DataSourcePreferenceRepository._clean_hidden_fields(fields)
-
-    @staticmethod
     def _clean_enabled_flag(value: object | None) -> bool:
         return bool(value) if value is not None else True
 
@@ -75,7 +70,6 @@ class DataSourcePreferenceRepository:
             hidden = self._clean_hidden_fields(pref.hidden_fields)
             result[pref.source] = DataSourcePreferences(
                 hidden_fields=hidden,
-                ticket_context_fields=self._clean_context_fields(getattr(pref, "ticket_context_fields", None)),
                 date_field=self._clean_optional_name(pref.date_field),
                 category_field=self._clean_optional_name(pref.category_field),
                 sub_category_field=self._clean_optional_name(pref.sub_category_field),
@@ -108,14 +102,10 @@ class DataSourcePreferenceRepository:
         date_field: str | None,
         category_field: str | None,
         sub_category_field: str | None,
-        ticket_context_fields: Iterable[str] | None = None,
     ) -> DataSourcePreferences:
         date_clean = self._clean_optional_name(date_field)
         category_clean = self._clean_optional_name(category_field)
         sub_category_clean = self._clean_optional_name(sub_category_field)
-        context_clean = (
-            self._clean_context_fields(ticket_context_fields) if ticket_context_fields is not None else None
-        )
 
         pref = (
             self.session.query(DataSourcePreference)
@@ -126,7 +116,6 @@ class DataSourcePreferenceRepository:
             pref = DataSourcePreference(
                 source=source,
                 hidden_fields=[],
-                ticket_context_fields=context_clean or [],
                 date_field=date_clean,
                 category_field=category_clean,
                 sub_category_field=sub_category_clean,
@@ -137,24 +126,20 @@ class DataSourcePreferenceRepository:
             pref.date_field = date_clean
             pref.category_field = category_clean
             pref.sub_category_field = sub_category_clean
-            if context_clean is not None:
-                pref.ticket_context_fields = context_clean
 
         updated = DataSourcePreferences(
             hidden_fields=self._clean_hidden_fields(pref.hidden_fields),
-            ticket_context_fields=self._clean_context_fields(getattr(pref, "ticket_context_fields", None)),
             date_field=date_clean,
             category_field=category_clean,
             sub_category_field=sub_category_clean,
             explorer_enabled=self._clean_enabled_flag(pref.explorer_enabled),
         )
         log.info(
-            "Updated column roles for source=%s (date=%s, category=%s, sub_category=%s, context_fields=%d)",
+            "Updated column roles for source=%s (date=%s, category=%s, sub_category=%s)",
             source,
             date_clean,
             category_clean,
             sub_category_clean,
-            len(updated.ticket_context_fields),
         )
         return updated
 
@@ -188,7 +173,6 @@ class DataSourcePreferenceRepository:
             return None
         return DataSourcePreferences(
             hidden_fields=self._clean_hidden_fields(pref.hidden_fields),
-            ticket_context_fields=self._clean_context_fields(getattr(pref, "ticket_context_fields", None)),
             date_field=self._clean_optional_name(pref.date_field),
             category_field=self._clean_optional_name(pref.category_field),
             sub_category_field=self._clean_optional_name(pref.sub_category_field),
