@@ -146,6 +146,7 @@ class TicketContextService:
             text_column=text_column,
             date_column=date_column,
         )
+        context_fields = self._get_context_fields(config=config)
         columns = self._derive_columns(context_fields=context_fields)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
