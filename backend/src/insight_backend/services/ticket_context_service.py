@@ -287,11 +287,8 @@ class TicketContextService:
         cached = self._cached_entries.get(config.table_name)
         if cached is not None:
             return cached
-        rows_raw = self.data_repo.read_rows(config.table_name)
-        keep = {config.text_column, config.date_column, "ticket_id", "id", "ref"}
-        projected = [{k: row.get(k) for k in keep if k} for row in rows_raw]
         entries = prepare_ticket_entries(
-            rows=projected,
+            rows=self.data_repo.read_rows(config.table_name),
             text_column=config.text_column,
             date_column=config.date_column,
         )
@@ -382,6 +379,13 @@ class TicketContextService:
             if key and key not in seen:
                 columns.append(key)
                 seen.add(key)
+        # Add remaining keys from sample raw rows to aid UI
+        for item in sample[: min(10, len(sample))]:
+            row = item.get("raw") or {}
+            for k in row.keys():
+                if k not in seen:
+                    seen.add(k)
+                    columns.append(k)
         return columns
 
     def _build_evidence_spec(self, *, config, columns: list[str], period_label: str) -> dict[str, Any]:
