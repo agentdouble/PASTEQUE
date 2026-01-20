@@ -88,7 +88,11 @@ class TicketContextService:
             date_column=date_column,
         )
         chunks = self._build_chunks(filtered)
-        summary = self.agent.summarize_chunks(period_label=period_label, chunks=chunks)
+        summary = self.agent.summarize_chunks(
+            period_label=period_label,
+            chunks=chunks,
+            total_tickets=len(filtered),
+        )
 
         # Evidence spec + rows for UI side panel
         columns = self._derive_columns(config=config, sample=filtered)
@@ -354,13 +358,7 @@ class TicketContextService:
         formatted: list[dict[str, Any]] = []
         for item in entries:
             line = f"{item['date'].isoformat()}#{item.get('ticket_id') or ''} — {truncate_text(item['text'])}"
-            formatted.append(
-                {
-                    **item,
-                    "line": line,
-                    "total_count": len(entries),
-                }
-            )
+            formatted.append({**item, "line": line})
         return chunk_ticket_items(formatted)
 
     def _period_label(self, entries: list[dict[str, Any]], *, periods: list[tuple[date | None, date | None]]) -> str:

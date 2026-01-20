@@ -103,16 +103,18 @@ class TicketContextAgent:
         *,
         period_label: str,
         chunks: List[List[dict]],
+        total_tickets: int,
     ) -> str:
         total_chunks = len(chunks)
+        if total_tickets <= 0:
+            raise ValueError("Total tickets invalide pour la synthèse.")
 
         def _summarize_chunk(idx: int, chunk: List[dict]) -> str:
             tickets = [item["line"] for item in chunk]
-            total = sum(item.get("total_count", 0) or 0 for item in chunk) or len(chunk)
             return self._summarize(
                 period_label=f"{period_label} (part {idx}/{total_chunks})",
                 tickets=tickets,
-                total_tickets=total,
+                total_tickets=total_tickets,
             )
 
         partials: list[str] = []
@@ -150,5 +152,5 @@ class TicketContextAgent:
         return self._summarize(
             period_label=f"{period_label} (fusion)",
             tickets=fused_inputs,
-            total_tickets=sum(len(chunk) for chunk in chunks),
+            total_tickets=total_tickets,
         )
