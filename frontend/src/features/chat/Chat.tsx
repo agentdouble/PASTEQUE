@@ -199,6 +199,163 @@ function createMessageId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+function toDateTimestamp(value?: string): number | undefined {
+  if (!value) return undefined
+  const ts = Date.parse(`${value}T00:00:00Z`)
+  return Number.isNaN(ts) ? undefined : ts
+}
+
+function toDateIso(value?: number): string | undefined {
+  if (value === undefined) return undefined
+  return new Date(value).toISOString().slice(0, 10)
+}
+
+function formatTicketDate(value?: string): string {
+  if (!value) return '—'
+  const date = new Date(`${value}T00:00:00Z`)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('fr-FR')
+}
+
+type DateRangeSliderProps = {
+  minDate?: string
+  maxDate?: string
+  range: { from?: string; to?: string }
+  onChange: (next: { from?: string; to?: string }) => void
+}
+
+function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderProps) {
+  const sliderRef = useRef<HTMLDivElement | null>(null)
+  const minTs = toDateTimestamp(minDate)
+  const maxTs = toDateTimestamp(maxDate)
+  const inactive = !range.from && !range.to
+
+  if (minTs === undefined || maxTs === undefined) {
+    return (
+      <div className="text-[11px] text-primary-500">
+        Bornes de dates indisponibles.
+      </div>
+    )
+  }
+
+  const startIso = range.from ?? minDate
+  const endIso = range.to ?? maxDate
+  const startTs =
+    startIso ? Math.max(minTs, toDateTimestamp(startIso) ?? minTs) : minTs
+  const endTs =
+    endIso ? Math.min(maxTs, toDateTimestamp(endIso) ?? maxTs) : maxTs
+  const totalSpan = Math.max(maxTs - minTs, 1)
+  const startPercent = Math.max(0, Math.min(100, ((startTs - minTs) / totalSpan) * 100))
+  const endPercent = Math.max(startPercent, Math.min(100, ((endTs - minTs) / totalSpan) * 100))
+
+  const tsFromPointer = (clientX: number): number | undefined => {
+    const rect = sliderRef.current?.getBoundingClientRect()
+    if (!rect) return undefined
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    return Math.round(minTs + pct * (maxTs - minTs))
+  }
+
+  const handleRangeStartChange = (value: number) => {
+    const clamped = Math.min(Math.max(value, minTs), endTs)
+    onChange({
+      from: toDateIso(clamped),
+      to: toDateIso(endTs),
+    })
+  }
+
+  const handleRangeEndChange = (value: number) => {
+    const clamped = Math.max(Math.min(value, maxTs), startTs)
+    onChange({
+      from: toDateIso(startTs),
+      to: toDateIso(clamped),
+    })
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between text-[11px] text-primary-600">
+        <span>
+          Du <span className="font-semibold text-primary-900">{range.from ? formatTicketDate(range.from) : '…'}</span>
+        </span>
+        <span>
+          au <span className="font-semibold text-primary-900">{range.to ? formatTicketDate(range.to) : '…'}</span>
+        </span>
+      </div>
+      <div className="relative h-10" ref={sliderRef}>
+        <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-100" />
+        <div
+          className={clsx(
+            'absolute top-1/2 h-2 -translate-y-1/2 rounded-full transition-all duration-200',
+            inactive ? 'bg-primary-300/70' : 'bg-primary-900/60'
+          )}
+          style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
+        />
+        <div
+          className={clsx(
+            'absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 shadow-sm pointer-events-none transition-transform duration-150',
+            inactive ? 'bg-primary-600 border-primary-100' : 'bg-primary-950 border-primary-100'
+          )}
+          style={{ left: `calc(${startPercent}% - 8px)` }}
+        />
+        <div
+          className={clsx(
+            'absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 shadow-sm pointer-events-none transition-transform duration-150',
+            inactive ? 'bg-primary-600 border-primary-100' : 'bg-primary-900 border-primary-100'
+          )}
+          style={{ left: `calc(${endPercent}% - 8px)` }}
+        />
+        <button
+          type="button"
+          aria-label="Début de période"
+          className="absolute top-0 h-full w-11 -translate-x-1/2"
+          onPointerDown={event => {
+            event.preventDefault()
+            const ts = tsFromPointer(event.clientX)
+            if (ts !== undefined) handleRangeStartChange(ts)
+            const move = (evt: PointerEvent) => {
+              const next = tsFromPointer(evt.clientX)
+              if (next !== undefined) handleRangeStartChange(next)
+            }
+            const stop = () => {
+              window.removeEventListener('pointermove', move)
+              window.removeEventListener('pointerup', stop)
+            }
+            window.addEventListener('pointermove', move)
+            window.addEventListener('pointerup', stop, { once: true })
+          }}
+          style={{ zIndex: 30, background: 'transparent', left: `${startPercent}%` }}
+        />
+        <button
+          type="button"
+          aria-label="Fin de période"
+          className="absolute top-0 h-full w-11 -translate-x-1/2"
+          onPointerDown={event => {
+            event.preventDefault()
+            const ts = tsFromPointer(event.clientX)
+            if (ts !== undefined) handleRangeEndChange(ts)
+            const move = (evt: PointerEvent) => {
+              const next = tsFromPointer(evt.clientX)
+              if (next !== undefined) handleRangeEndChange(next)
+            }
+            const stop = () => {
+              window.removeEventListener('pointermove', move)
+              window.removeEventListener('pointerup', stop)
+            }
+            window.addEventListener('pointermove', move)
+            window.addEventListener('pointerup', stop, { once: true })
+          }}
+          style={{ zIndex: 31, background: 'transparent', left: `${endPercent}%` }}
+        />
+      </div>
+      {inactive ? (
+        <div className="text-[11px] text-primary-500">
+          Glissez pour définir une période.
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 type TicketPanelItem = {
   key: string
   table?: string
@@ -1759,50 +1916,37 @@ export default function Chat() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex flex-col gap-2 w-full">
                         {ticketRanges.map((range, idx) => (
-                          <div key={range.id} className="flex items-center gap-2 flex-wrap">
-                            <label className="text-[11px] text-primary-600">Du</label>
-                            <input
-                              type="date"
-                              value={range.from ?? ''}
-                              min={ticketMeta?.min}
-                              max={range.to || ticketMeta?.max}
-                              onChange={e => {
-                                const value = e.target.value || undefined
-                                setTicketRanges(prev => prev.map(r => r.id === range.id ? { ...r, from: value } : r))
-                              }}
-                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
+                          <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
+                            <DateRangeSlider
+                              minDate={ticketMeta?.min}
+                              maxDate={ticketMeta?.max}
+                              range={range}
+                              onChange={next =>
+                                setTicketRanges(prev =>
+                                  prev.map(r => (r.id === range.id ? { ...r, ...next } : r))
+                                )
+                              }
                             />
-                            <span className="text-primary-400 text-xs">→</span>
-                            <label className="text-[11px] text-primary-600">au</label>
-                            <input
-                              type="date"
-                              value={range.to ?? ''}
-                              min={range.from || ticketMeta?.min}
-                              max={ticketMeta?.max}
-                              onChange={e => {
-                                const value = e.target.value || undefined
-                                setTicketRanges(prev => prev.map(r => r.id === range.id ? { ...r, to: value } : r))
-                              }}
-                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
-                            />
-                            {ticketRanges.length > 1 && (
-                              <button
-                                type="button"
-                                className="text-xs text-red-600 underline"
-                                onClick={() => setTicketRanges(prev => prev.filter(r => r.id !== range.id))}
-                              >
-                                Supprimer
-                              </button>
-                            )}
-                            {idx === ticketRanges.length - 1 && (
-                              <button
-                                type="button"
-                                className="text-xs text-primary-700 underline"
-                                onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
-                              >
-                                + Ajouter une période
-                              </button>
-                            )}
+                            <div className="flex items-center gap-3">
+                              {ticketRanges.length > 1 && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-red-600 underline"
+                                  onClick={() => setTicketRanges(prev => prev.filter(r => r.id !== range.id))}
+                                >
+                                  Supprimer
+                                </button>
+                              )}
+                              {idx === ticketRanges.length - 1 && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-primary-700 underline"
+                                  onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
+                                >
+                                  + Ajouter une période
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                         <button
@@ -1862,78 +2006,57 @@ export default function Chat() {
                       </div>
                       <div className="flex flex-col gap-2 w-full mt-1">
                         {(source.ranges || []).map((range, idx) => (
-                          <div key={range.id} className="flex items-center gap-2 flex-wrap">
-                            <label className="text-[11px] text-primary-600">Du</label>
-                            <input
-                              type="date"
-                              value={range.from ?? ''}
-                              min={minDate}
-                              max={range.to || maxDate}
-                              onChange={e => {
-                                const value = e.target.value || undefined
+                          <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
+                            <DateRangeSlider
+                              minDate={minDate}
+                              maxDate={maxDate}
+                              range={range}
+                              onChange={next =>
                                 setExtraTicketSources(prev =>
                                   prev.map(s =>
                                     s.id === source.id
-                                      ? { ...s, ranges: s.ranges.map(r => r.id === range.id ? { ...r, from: value } : r) }
+                                      ? { ...s, ranges: s.ranges.map(r => (r.id === range.id ? { ...r, ...next } : r)) }
                                       : s
                                   )
                                 )
-                              }}
-                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
+                              }
                             />
-                            <span className="text-primary-400 text-xs">→</span>
-                            <label className="text-[11px] text-primary-600">au</label>
-                            <input
-                              type="date"
-                              value={range.to ?? ''}
-                              min={range.from || minDate}
-                              max={maxDate}
-                              onChange={e => {
-                                const value = e.target.value || undefined
-                                setExtraTicketSources(prev =>
-                                  prev.map(s =>
-                                    s.id === source.id
-                                      ? { ...s, ranges: s.ranges.map(r => r.id === range.id ? { ...r, to: value } : r) }
-                                      : s
-                                  )
-                                )
-                              }}
-                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
-                            />
-                            {(source.ranges?.length || 0) > 1 && (
-                              <button
-                                type="button"
-                                className="text-xs text-red-600 underline"
-                                onClick={() =>
-                                  setExtraTicketSources(prev =>
-                                    prev.map(s =>
-                                      s.id === source.id
-                                        ? { ...s, ranges: s.ranges.filter(r => r.id !== range.id) }
-                                        : s
+                            <div className="flex items-center gap-3">
+                              {(source.ranges?.length || 0) > 1 && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-red-600 underline"
+                                  onClick={() =>
+                                    setExtraTicketSources(prev =>
+                                      prev.map(s =>
+                                        s.id === source.id
+                                          ? { ...s, ranges: s.ranges.filter(r => r.id !== range.id) }
+                                          : s
+                                      )
                                     )
-                                  )
-                                }
-                              >
-                                Supprimer
-                              </button>
-                            )}
-                            {idx === (source.ranges?.length || 1) - 1 && (
-                              <button
-                                type="button"
-                                className="text-xs text-primary-700 underline"
-                                onClick={() =>
-                                  setExtraTicketSources(prev =>
-                                    prev.map(s =>
-                                      s.id === source.id
-                                        ? { ...s, ranges: [...s.ranges, { id: createMessageId() }] }
-                                        : s
+                                  }
+                                >
+                                  Supprimer
+                                </button>
+                              )}
+                              {idx === (source.ranges?.length || 1) - 1 && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-primary-700 underline"
+                                  onClick={() =>
+                                    setExtraTicketSources(prev =>
+                                      prev.map(s =>
+                                        s.id === source.id
+                                          ? { ...s, ranges: [...s.ranges, { id: createMessageId() }] }
+                                          : s
+                                      )
                                     )
-                                  )
-                                }
-                              >
-                                + Ajouter une période
-                              </button>
-                            )}
+                                  }
+                                >
+                                  + Ajouter une période
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                         <button
