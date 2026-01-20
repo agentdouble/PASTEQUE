@@ -87,7 +87,7 @@ class TicketContextService:
             date_column=date_column,
         )
         context_fields = self._get_context_fields(config=config)
-        chunks = self._build_chunks(filtered, context_fields=context_fields)
+        chunks = self._build_chunks(filtered, context_fields=context_fields, config=config)
         summary = self.agent.summarize_chunks(
             period_label=period_label,
             chunks=chunks,
@@ -95,7 +95,7 @@ class TicketContextService:
         )
 
         # Evidence spec + rows for UI side panel
-        columns = self._derive_columns(config=config, sample=filtered)
+        columns = self._derive_columns(context_fields=context_fields)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
             columns=columns,
@@ -146,7 +146,7 @@ class TicketContextService:
             text_column=text_column,
             date_column=date_column,
         )
-        columns = self._derive_columns(config=config, sample=filtered)
+        columns = self._derive_columns(context_fields=context_fields)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
             columns=columns,
@@ -312,12 +312,11 @@ class TicketContextService:
         fields = pref.ticket_context_fields if pref else []
         if not fields:
             return []
-        exclude = {name.casefold() for name in [config.text_column, config.date_column, "ticket_id", "id", "ref"] if name}
         cleaned: list[str] = []
         seen: set[str] = set()
         for name in fields:
             key = name.casefold()
-            if key in exclude or key in seen:
+            if key in seen:
                 continue
             seen.add(key)
             cleaned.append(name)
@@ -357,9 +356,6 @@ class TicketContextService:
         for name in [
             config.text_column,
             config.date_column,
-            "ticket_id",
-            "id",
-            "ref",
             *context_fields,
         ]:
             if not name:
@@ -435,31 +431,52 @@ class TicketContextService:
         entries: list[dict[str, Any]],
         *,
         context_fields: list[str],
+        config,
     ) -> list[list[dict[str, Any]]]:
         # Pre-format ticket lines once for LLM payloads
         formatted: list[dict[str, Any]] = []
         for item in entries:
-            line = self._format_context_line(item, context_fields=context_fields)
+            line = self._format_context_line(item, context_fields=context_fields, config=config)
             formatted.append({**item, "line": line})
         return chunk_ticket_items(formatted)
 
-    def _format_context_line(self, item: dict[str, Any], *, context_fields: list[str]) -> str:
-        text = truncate_text(item.get("text") or "")
-        prefix = f"{item['date'].isoformat()}"
-        ticket_id = item.get("ticket_id")
-        if ticket_id:
-            prefix = f"{prefix} #{ticket_id}"
-        details = self._format_context_details(item, context_fields=context_fields)
+    def _format_context_line(self, item: dict[str, Any], *, context_fields: list[str], config) -> str:
+        if not context_fields:
+            return ""
+        selected = {name.casefold() for name in context_fields}
+        text_key = config.text_column.casefold()
+        date_key = config.date_column.casefold()
+        prefix = ""
+        if date_key in selected:
+            prefix = f"{item['date'].isoformat()}"
+        if text_key in selected:
+            text = truncate_text(item.get("text") or "")
+            if text:
+                prefix = f"{prefix} — {text}" if prefix else text
+        details = self._format_context_details(
+            item,
+            context_fields=context_fields,
+            exclude={text_key, date_key},
+        )
         if details:
-            return f"{prefix} — {text} | {details}"
-        return f"{prefix} — {text}"
+            return f"{prefix} | {details}" if prefix else details
+        return prefix
 
-    def _format_context_details(self, item: dict[str, Any], *, context_fields: list[str]) -> str:
+    def _format_context_details(
+        self,
+        item: dict[str, Any],
+        *,
+        context_fields: list[str],
+        exclude: set[str],
+    ) -> str:
         if not context_fields:
             return ""
         raw = item.get("raw") or {}
         parts: list[str] = []
         for col in context_fields:
+            key = col.casefold()
+            if key in exclude:
+                continue
             value = raw.get(col)
             if value is None:
                 continue
@@ -484,31 +501,33 @@ class TicketContextService:
         uniq = list(dict.fromkeys(labels))
         return " ; ".join(uniq)
 
-    def _derive_columns(self, *, config, sample: list[dict[str, Any]]) -> list[str]:
+    def _derive_columns(self, *, context_fields: list[str]) -> list[str]:
         columns: list[str] = []
         seen: set[str] = set()
-        for key in (config.text_column, config.date_column, "ticket_id"):
-            if key and key not in seen:
-                columns.append(key)
-                seen.add(key)
-        # Add remaining keys from sample raw rows to aid UI
-        for item in sample[: min(10, len(sample))]:
-            row = item.get("raw") or {}
-            for k in row.keys():
-                if k not in seen:
-                    seen.add(k)
-                    columns.append(k)
+        for name in context_fields:
+            if not name:
+                continue
+            key = name.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            columns.append(name)
         return columns
 
     def _build_evidence_spec(self, *, config, columns: list[str], period_label: str) -> dict[str, Any]:
-        pk = "ticket_id" if "ticket_id" in columns else (columns[0] if columns else "id")
+        columns_set = {col.casefold() for col in columns}
+        title = config.text_column if config.text_column.casefold() in columns_set else None
+        created_at = config.date_column if config.date_column.casefold() in columns_set else None
+        pk = next((col for col in columns if col.casefold() in {"ticket_id", "id", "ref"}), columns[0] if columns else "")
+        display: dict[str, str] = {}
+        if title:
+            display["title"] = title
+        if created_at:
+            display["created_at"] = created_at
         spec = {
             "entity_label": "Tickets",
             "pk": pk,
-            "display": {
-                "title": config.text_column,
-                "created_at": config.date_column,
-            },
+            "display": display,
             "columns": columns,
             "limit": settings.evidence_limit_default,
             "period": period_label,

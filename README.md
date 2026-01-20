@@ -74,7 +74,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - `AGENT_OUTPUT_MAX_ROWS`/`AGENT_OUTPUT_MAX_COLUMNS` (défauts 200/20) bornent le volume de lignes/colonnes envoyé par les agents NL→SQL dans les événements SSE afin d’éviter des payloads géants.
 - Le mode NL→SQL enchaîne désormais les requêtes en conservant le contexte conversationnel (ex.: après « Combien de tickets en mai 2023 ? », la question « Et en juin ? » reste sur l’année 2023).
 - Le mode NL→SQL est maintenant actif par défaut (plus de bouton dédié dans le chat).
-- En mode tickets (chat sans NL→SQL), seules les colonnes configurées (texte, date, identifiants ticket/id/ref + colonnes additionnelles sélectionnées) sont lues pour éviter de charger les autres colonnes du fichier.
+- En mode tickets (chat sans NL→SQL), le contexte LLM n’injecte que les colonnes cochées dans l’admin (pas d’ajout automatique de texte/date/ID). Les colonnes texte/date restent nécessaires pour configurer et filtrer le mode tickets.
 
 #### Métadonnées de requête (API)
 

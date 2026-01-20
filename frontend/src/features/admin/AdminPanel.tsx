@@ -492,9 +492,7 @@ export default function AdminPanel() {
     setTicketStatus(null)
     try {
       const columnLookup = new Set(ticketColumns.map(col => col.name))
-      const contextFields = ticketContextFields.filter(
-        name => columnLookup.has(name) && !excludedContextColumns.has(name.toLowerCase())
-      )
+      const contextFields = ticketContextFields.filter(name => columnLookup.has(name))
       const payload = {
         table_name: ticketTable,
         text_column: ticketTextColumn,
@@ -529,14 +527,7 @@ export default function AdminPanel() {
     }
   }
 
-  const excludedContextColumns = new Set(
-    [ticketTextColumn, ticketDateColumn, 'ticket_id', 'id', 'ref']
-      .filter(Boolean)
-      .map(name => name.toLowerCase())
-  )
-  const ticketContextOptions = ticketColumns
-    .map(col => col.name)
-    .filter(name => !excludedContextColumns.has(name.toLowerCase()))
+  const ticketContextOptions = ticketColumns.map(col => col.name)
 
   const handleExplorerRoleChange = (
     source: string,
@@ -1389,7 +1380,7 @@ export default function AdminPanel() {
               <h3 className="text-lg font-semibold text-primary-950">Contexte tickets (chat)</h3>
               <p className="text-sm text-primary-600">
                 Configurez la table et les colonnes texte/date utilisées dans le mode chat « tickets », ainsi que les
-                colonnes additionnelles injectées dans le contexte LLM. Les choix restent alignés avec l&apos;Explorer,
+                colonnes injectées dans le contexte LLM. Les choix restent alignés avec l&apos;Explorer,
                 sans dépendre du Radar.
               </p>
             </div>
@@ -1480,11 +1471,11 @@ export default function AdminPanel() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-primary-800 mb-1">
-                  Colonnes additionnelles (contexte LLM)
+                  Colonnes du contexte LLM
                 </label>
                 <div className="rounded-md border border-primary-200 bg-white p-2 max-h-48 overflow-auto">
                   {ticketContextOptions.length === 0 ? (
-                    <p className="text-xs text-primary-500">Aucune colonne additionnelle disponible.</p>
+                    <p className="text-xs text-primary-500">Aucune colonne disponible.</p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {ticketContextOptions.map(name => (
@@ -1513,7 +1504,7 @@ export default function AdminPanel() {
                   )}
                 </div>
                 <p className="text-[11px] text-primary-500 mt-1">
-                  Texte, date et ID sont toujours inclus.
+                  Seules les colonnes cochées sont injectées dans le contexte LLM.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -1530,7 +1521,7 @@ export default function AdminPanel() {
             <div className="md:border-l md:border-primary-100 md:pl-6 pt-4 md:pt-0 space-y-2 text-sm text-primary-700">
               <p>
                 Cette configuration est utilisée par le mode chat « tickets » pour filtrer et ordonner les items.
-                Les colonnes additionnelles restent alignées avec l&apos;Explorer (column-roles).
+                Les colonnes du contexte restent alignées avec l&apos;Explorer (column-roles).
               </p>
               <p className="text-xs text-primary-500">
                 Pour éviter d&apos;écraser vos catégories existantes, elles sont conservées automatiquement lors de la
