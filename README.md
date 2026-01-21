@@ -60,10 +60,8 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Front: affichage en direct des tokens. Lorsqu’un mode NL→SQL est actif, la/les requêtes SQL exécutées s’affichent d’abord dans la bulle (grisé car provisoire), puis la bulle bascule automatiquement sur la réponse finale. Un lien « Afficher les détails de la requête » dans la bulle permet de revoir les SQL, les échantillons et désormais les lignes RAG récupérées (table, score, colonnes clés) pour expliquer la mise en avant.
 - Mode par défaut: le chat démarre en mode **tickets** (contexte injecté). Le bouton (icône étincelle) sert désormais à basculer vers le mode base (agents NL→SQL + RAG + rédaction). Quand le bouton n’est pas activé, le flux reste en mode tickets.
 - La synthèse du contexte tickets peut être parallélisée via `TICKET_CONTEXT_WORKERS` (défaut 1) pour accélérer les volumes importants.
-- En mode tickets, si le contexte brut est sous `TICKET_CONTEXT_DIRECT_MAX_CHARS` (défaut 100000), il est injecté directement dans le chat (un seul agent). Au‑delà, la synthèse multi‑chunks reste utilisée.
 - Le prompt de synthèse tickets reçoit un `total_tickets` stable même quand le contexte est chunké.
 - Le backend journalise le nombre de workers actifs pour la synthèse tickets.
-- L’UI indique la charge du contexte tickets avec un pourcentage (`context_chars` / `TICKET_CONTEXT_DIRECT_MAX_CHARS`).
 - En mode tickets, l’UI affiche un indicateur « DeepSearch mode : … » avec variantes aléatoires à cadence lente, sans répétition de mots, et avec certaines variantes exclues au démarrage.
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
@@ -72,7 +70,6 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l’aperçu des tickets filtrés par les périodes sélectionnées (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché.
 - L’exploration permet de sélectionner des tickets (checkboxes) pour limiter le contexte du chat aux éléments choisis, jusqu’à effacement manuel de la sélection.
 - Backend: deux modes LLM (`LLM_MODE=local|api`) — vLLM local via `VLLM_BASE_URL`, provider externe via `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `LLM_MODEL`.
-- Les échanges LLM (question, contexte, réponse) sont tracés dans `logs/llm.log` (JSON multi-lignes) configuré par `LLM_TRACE_LOG_PATH` — fichier local ignoré par Git.
 - Les réponses du chat sont formatées et rendues en Markdown (titres courts, listes, tableaux, blocs de code) pour une meilleure lisibilité.
 - `LLM_MAX_TOKENS` (défaut 1024) impose le plafond `max_tokens` sur tous les appels OpenAI-compatibles (explorateur, analyste, rédaction, router, chat) pour éviter les erreurs lorsque `model_max_tokens - context_tokens` devient négatif.
 - `AGENT_OUTPUT_MAX_ROWS`/`AGENT_OUTPUT_MAX_COLUMNS` (défauts 200/20) bornent le volume de lignes/colonnes envoyé par les agents NL→SQL dans les événements SSE afin d’éviter des payloads géants.

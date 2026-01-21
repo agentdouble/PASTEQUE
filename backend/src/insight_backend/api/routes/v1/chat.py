@@ -417,9 +417,6 @@ def chat_stream(  # type: ignore[valid-type]
                     "table": ticket_context.get("table"),
                     "date_from": ticket_context.get("date_from"),
                     "date_to": ticket_context.get("date_to"),
-                    "context_chars": ticket_context.get("context_chars"),
-                    "context_char_limit": ticket_context.get("context_char_limit"),
-                    "context_mode": ticket_context.get("context_mode"),
                 }
             }
             evidence_spec = ticket_context.get("evidence_spec")
