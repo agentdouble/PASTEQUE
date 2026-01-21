@@ -2,26 +2,24 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 from fastapi import HTTPException, status
 
-from ..core.config import settings, resolve_project_path
-from ..repositories.dictionary_repository import DataDictionaryRepository
+from ..core.config import settings
 from ..repositories.data_repository import DataRepository
+from ..repositories.loop_repository import LoopRepository
 from ..repositories.data_source_preference_repository import (
     DataSourcePreferenceRepository,
     DataSourcePreferences,
 )
-from ..repositories.ticket_context_repository import TicketContextConfigRepository
 from ..services.ticket_context_agent import TicketContextAgent
 from ..services.ticket_utils import (
     chunk_ticket_items,
+    format_ticket_context,
     prepare_ticket_entries,
     truncate_text,
 )
-from ..core.prompts import get_prompt_store
 
 
 log = logging.getLogger("insight.services.ticket_context_service")
@@ -30,19 +28,16 @@ log = logging.getLogger("insight.services.ticket_context_service")
 class TicketContextService:
     def __init__(
         self,
+        loop_repo: LoopRepository,
         data_repo: DataRepository,
         agent: TicketContextAgent | None = None,
         data_pref_repo: DataSourcePreferenceRepository | None = None,
-        ticket_config_repo: TicketContextConfigRepository | None = None,
     ):
+        self.loop_repo = loop_repo
         self.data_repo = data_repo
         self.agent = agent or TicketContextAgent()
         self.data_pref_repo = data_pref_repo
-        self.ticket_config_repo = ticket_config_repo
         self._cached_entries: dict[str, list[dict[str, Any]]] = {}
-        self._dictionary_repo = DataDictionaryRepository(
-            directory=Path(resolve_project_path(settings.data_dictionary_dir))
-        )
 
     # -------- Public API --------
     def get_metadata(
@@ -81,7 +76,6 @@ class TicketContextService:
         table: str | None = None,
         text_column: str | None = None,
         date_column: str | None = None,
-        selection: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         config, entries, filtered, parsed_periods, period_label = self._prepare_context(
             allowed_tables=allowed_tables,
@@ -91,41 +85,12 @@ class TicketContextService:
             table=table,
             text_column=text_column,
             date_column=date_column,
-            selection=selection,
         )
-        context_fields = self._get_context_fields(config=config)
-        lines = self._format_context_lines(filtered, context_fields=context_fields, config=config)
-        context_chars = self._count_context_chars(lines)
-        char_limit = max(1, int(settings.ticket_context_direct_max_chars))
-        direct_mode = context_chars <= char_limit
-        if direct_mode:
-            context_blob = "\n".join(lines)
-            summary = f"Tickets bruts:\n{context_blob}" if context_blob else ""
-            chunks_count = 0
-        else:
-            formatted = [{**item, "line": line} for item, line in zip(filtered, lines)]
-            chunks = chunk_ticket_items(formatted)
-            summary = self.agent.summarize_chunks(
-                period_label=period_label,
-                chunks=chunks,
-                total_tickets=len(filtered),
-            )
-            chunks_count = len(chunks)
-        log.info(
-            "TicketContextService: mode=%s chars=%d limit=%d tickets=%d table=%s",
-            "direct" if direct_mode else "summary",
-            context_chars,
-            char_limit,
-            len(filtered),
-            config.table_name,
-        )
-        dictionary_note = self._build_dictionary_note(
-            table=config.table_name,
-            columns=context_fields,
-        )
+        chunks = self._build_chunks(filtered)
+        summary = self.agent.summarize_chunks(period_label=period_label, chunks=chunks)
 
         # Evidence spec + rows for UI side panel
-        columns = self._derive_columns(context_fields=context_fields)
+        columns = self._derive_columns(config=config, sample=filtered)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
             columns=columns,
@@ -133,32 +98,24 @@ class TicketContextService:
             text_column=config.text_column,
         )
 
-        system_message = get_prompt_store().render(
-            "ticket_context_injected_system",
-            {
-                "period_label": period_label,
-                "selected_count": len(filtered),
-                "summary": summary,
-            },
+        system_message = (
+            f"Contexte tickets ({period_label}) — {len(filtered)} éléments sélectionnés.\n"
+            f"{summary}\n"
+            "Utilise ce contexte uniquement pour répondre à l'utilisateur. Ne rajoute pas d'autres sources."
         )
-        if dictionary_note:
-            system_message = f"{system_message}\n\n{dictionary_note}"
 
         return {
             "summary": summary,
             "period_label": period_label,
             "count": len(filtered),
             "total": len(entries),
-            "chunks": chunks_count,
+            "chunks": len(chunks),
             "table": config.table_name,
             "date_from": rows_payload.get("period", {}).get("from"),
             "date_to": rows_payload.get("period", {}).get("to"),
             "system_message": system_message,
             "evidence_spec": spec,
             "evidence_rows": rows_payload,
-            "context_chars": context_chars,
-            "context_char_limit": char_limit,
-            "context_mode": "direct" if direct_mode else "summary",
         }
 
     def build_preview(
@@ -171,7 +128,6 @@ class TicketContextService:
         table: str | None = None,
         text_column: str | None = None,
         date_column: str | None = None,
-        selection: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         config, entries, filtered, parsed_periods, period_label = self._prepare_context(
             allowed_tables=allowed_tables,
@@ -181,13 +137,8 @@ class TicketContextService:
             table=table,
             text_column=text_column,
             date_column=date_column,
-            selection=selection,
         )
-        context_fields = self._get_context_fields(config=config)
-        lines = self._format_context_lines(filtered, context_fields=context_fields, config=config)
-        context_chars = self._count_context_chars(lines)
-        char_limit = max(1, int(settings.ticket_context_direct_max_chars))
-        columns = self._derive_columns(context_fields=context_fields)
+        columns = self._derive_columns(config=config, sample=filtered)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
             columns=columns,
@@ -201,8 +152,6 @@ class TicketContextService:
             "table": config.table_name,
             "evidence_spec": spec,
             "evidence_rows": rows_payload,
-            "context_chars": context_chars,
-            "context_char_limit": char_limit,
         }
 
     # -------- Internals --------
@@ -216,7 +165,6 @@ class TicketContextService:
         table: str | None,
         text_column: str | None,
         date_column: str | None,
-        selection: dict[str, Any] | None,
     ) -> tuple[Any, list[dict[str, Any]], list[dict[str, Any]], list[tuple[date | None, date | None]], str]:
         config = self._get_config(table=table, text_column=text_column, date_column=date_column)
         self._ensure_allowed(config.table_name, allowed_tables)
@@ -226,34 +174,18 @@ class TicketContextService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Aucun ticket exploitable avec cette configuration.",
             )
-        selection_spec = self._normalize_selection(selection)
-        if selection_spec:
-            pk, values = selection_spec
-            filtered = self._filter_by_selection(entries, pk=pk, values=values)
-            if not filtered:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Aucun ticket correspondant à la sélection.",
-                )
-            parsed_periods = [(None, None)]
-        else:
-            parsed_periods = self._parse_periods(date_from=date_from, date_to=date_to, periods=periods)
-            filtered = self._filter_by_periods(entries, periods=parsed_periods)
-            if not filtered:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Aucun ticket dans cette plage de dates.",
-                )
+        parsed_periods = self._parse_periods(date_from=date_from, date_to=date_to, periods=periods)
+        filtered = self._filter_by_periods(entries, periods=parsed_periods)
+        if not filtered:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Aucun ticket dans cette plage de dates.",
+            )
         period_label = self._period_label(filtered, periods=parsed_periods)
         return config, entries, filtered, parsed_periods, period_label
-
     def _get_config(self, *, table: str | None, text_column: str | None, date_column: str | None):
         if table:
             canon = self._canonical_table(table, None)
-            if self.ticket_config_repo is not None and not text_column and not date_column:
-                default = self.ticket_config_repo.get_config()
-                if default and default.table_name.casefold() == canon.casefold():
-                    return default
             inferred_text, inferred_date = self._infer_columns(canon)
             t_col = text_column or inferred_text
             d_col = date_column or inferred_date
@@ -264,36 +196,13 @@ class TicketContextService:
                 )
             return type("Cfg", (), {"table_name": canon, "text_column": t_col, "date_column": d_col})
 
-        if self.ticket_config_repo is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Configuration contexte tickets indisponible.",
-            )
-        config = self.ticket_config_repo.get_config()
+        config = self.loop_repo.get_config()
         if not config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Configuration contexte tickets manquante.",
+                detail="Configuration loop/tickets manquante.",
             )
         return config
-
-    def get_default_config(self):
-        if self.ticket_config_repo is None:
-            return None
-        return self.ticket_config_repo.get_config()
-
-    def save_default_config(self, *, table_name: str, text_column: str, date_column: str):
-        if self.ticket_config_repo is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Configuration contexte tickets indisponible.",
-            )
-        self._validate_columns(table_name=table_name, text_column=text_column, date_column=date_column)
-        return self.ticket_config_repo.save_config(
-            table_name=table_name,
-            text_column=text_column,
-            date_column=date_column,
-        )
 
     def _infer_columns(self, table: str) -> tuple[str | None, str | None]:
         try:
@@ -341,18 +250,6 @@ class TicketContextService:
 
         return text_col, date_col
 
-    def _validate_columns(self, *, table_name: str, text_column: str, date_column: str) -> None:
-        try:
-            cols = [name for name, _ in self.data_repo.get_schema(table_name)]
-        except FileNotFoundError as exc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-        missing = [col for col in (text_column, date_column) if col not in cols]
-        if missing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Colonnes manquantes dans {table_name}: {', '.join(missing)}",
-            )
-
     def _get_preferences(self, table: str) -> DataSourcePreferences | None:
         if self.data_pref_repo is None:
             return None
@@ -361,47 +258,6 @@ class TicketContextService:
         except Exception:
             log.debug("Unable to load data source preferences for %s", table, exc_info=True)
             return None
-
-    def _get_context_fields(self, *, config) -> list[str]:
-        pref = self._get_preferences(config.table_name)
-        fields = pref.ticket_context_fields if pref else []
-        if not fields:
-            return []
-        cleaned: list[str] = []
-        seen: set[str] = set()
-        for name in fields:
-            key = name.casefold()
-            if key in seen:
-                continue
-            seen.add(key)
-            cleaned.append(name)
-        return cleaned
-
-    def _build_dictionary_note(self, *, table: str, columns: list[str]) -> str | None:
-        if not columns:
-            return None
-        try:
-            dico = self._dictionary_repo.load_table(table) or {}
-        except Exception:
-            log.debug("Unable to load data dictionary for %s", table, exc_info=True)
-            return None
-        items = dico.get("columns") or []
-        if not isinstance(items, list):
-            return None
-        wanted = {c.casefold() for c in columns}
-        parts: list[str] = []
-        for col in items:
-            try:
-                name = str(col.get("name") or "").strip()
-                desc = str(col.get("description") or "").strip()
-                if not name or name.casefold() not in wanted or not desc:
-                    continue
-                parts.append(f"- {name}: {desc}")
-            except Exception:
-                continue
-        if not parts:
-            return None
-        return "Dictionnaire colonnes (chat):\n" + "\n".join(parts)
 
     def _ensure_allowed(self, table_name: str, allowed_tables: Iterable[str] | None) -> None:
         if allowed_tables is None:
@@ -431,26 +287,8 @@ class TicketContextService:
         cached = self._cached_entries.get(config.table_name)
         if cached is not None:
             return cached
-        context_fields = self._get_context_fields(config=config)
-        columns: list[str] = []
-        seen: set[str] = set()
-        for name in [
-            config.text_column,
-            config.date_column,
-            *context_fields,
-        ]:
-            if not name:
-                continue
-            key = name.casefold()
-            if key in seen:
-                continue
-            seen.add(key)
-            columns.append(name)
         entries = prepare_ticket_entries(
-            rows=self.data_repo.read_rows(
-                config.table_name,
-                columns=columns,
-            ),
+            rows=self.data_repo.read_rows(config.table_name),
             text_column=config.text_column,
             date_column=config.date_column,
         )
@@ -489,57 +327,6 @@ class TicketContextService:
         # If still empty, keep None to represent "all dates"
         return parsed or [(None, None)]
 
-    def _normalize_selection(self, selection: dict[str, Any] | None) -> tuple[str, set[str]] | None:
-        if selection is None:
-            return None
-        if not isinstance(selection, dict):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Sélection de tickets invalide.",
-            )
-        pk = selection.get("pk")
-        if not isinstance(pk, str) or not pk.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Colonne de sélection manquante.",
-            )
-        raw_values = selection.get("values")
-        if not isinstance(raw_values, list) or not raw_values:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Sélection de tickets vide.",
-            )
-        values = {str(value).strip() for value in raw_values if str(value).strip()}
-        if not values:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Sélection de tickets vide.",
-            )
-        return pk.strip(), values
-
-    def _filter_by_selection(
-        self,
-        entries: list[dict[str, Any]],
-        *,
-        pk: str,
-        values: set[str],
-    ) -> list[dict[str, Any]]:
-        pk_key = pk.casefold()
-        filtered: list[dict[str, Any]] = []
-        for item in entries:
-            raw = item.get("raw") or {}
-            value = raw.get(pk)
-            if value is None:
-                for key, candidate in raw.items():
-                    if key.casefold() == pk_key:
-                        value = candidate
-                        break
-            if value is None:
-                continue
-            if str(value) in values:
-                filtered.append(item)
-        return filtered
-
     def _filter_by_periods(
         self,
         entries: list[dict[str, Any]],
@@ -558,70 +345,19 @@ class TicketContextService:
                 break
         return filtered
 
-    def _format_context_lines(
-        self,
-        entries: list[dict[str, Any]],
-        *,
-        context_fields: list[str],
-        config,
-    ) -> list[str]:
-        lines: list[str] = []
+    def _build_chunks(self, entries: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+        # Pre-format ticket lines once for LLM payloads
+        formatted: list[dict[str, Any]] = []
         for item in entries:
-            lines.append(self._format_context_line(item, context_fields=context_fields, config=config))
-        return lines
-
-    def _count_context_chars(self, lines: list[str]) -> int:
-        if not lines:
-            return 0
-        return sum(len(line) for line in lines) + (len(lines) - 1)
-
-    def _format_context_line(self, item: dict[str, Any], *, context_fields: list[str], config) -> str:
-        if not context_fields:
-            return ""
-        selected = {name.casefold() for name in context_fields}
-        text_key = config.text_column.casefold()
-        date_key = config.date_column.casefold()
-        prefix = ""
-        if date_key in selected:
-            prefix = f"{item['date'].isoformat()}"
-        if text_key in selected:
-            text = truncate_text(item.get("text") or "")
-            if text:
-                prefix = f"{prefix} — {text}" if prefix else text
-        details = self._format_context_details(
-            item,
-            context_fields=context_fields,
-            exclude={text_key, date_key},
-        )
-        if details:
-            return f"{prefix} | {details}" if prefix else details
-        return prefix
-
-    def _format_context_details(
-        self,
-        item: dict[str, Any],
-        *,
-        context_fields: list[str],
-        exclude: set[str],
-    ) -> str:
-        if not context_fields:
-            return ""
-        raw = item.get("raw") or {}
-        parts: list[str] = []
-        for col in context_fields:
-            key = col.casefold()
-            if key in exclude:
-                continue
-            value = raw.get(col)
-            if value is None:
-                continue
-            text = str(value).strip()
-            if not text:
-                continue
-            parts.append(f"{col}={truncate_text(text)}")
-        if not parts:
-            return ""
-        return truncate_text(" | ".join(parts))
+            line = f"{item['date'].isoformat()}#{item.get('ticket_id') or ''} — {truncate_text(item['text'])}"
+            formatted.append(
+                {
+                    **item,
+                    "line": line,
+                    "total_count": len(entries),
+                }
+            )
+        return chunk_ticket_items(formatted)
 
     def _period_label(self, entries: list[dict[str, Any]], *, periods: list[tuple[date | None, date | None]]) -> str:
         dates = [item["date"] for item in entries]
@@ -636,33 +372,31 @@ class TicketContextService:
         uniq = list(dict.fromkeys(labels))
         return " ; ".join(uniq)
 
-    def _derive_columns(self, *, context_fields: list[str]) -> list[str]:
+    def _derive_columns(self, *, config, sample: list[dict[str, Any]]) -> list[str]:
         columns: list[str] = []
         seen: set[str] = set()
-        for name in context_fields:
-            if not name:
-                continue
-            key = name.casefold()
-            if key in seen:
-                continue
-            seen.add(key)
-            columns.append(name)
+        for key in (config.text_column, config.date_column, "ticket_id"):
+            if key and key not in seen:
+                columns.append(key)
+                seen.add(key)
+        # Add remaining keys from sample raw rows to aid UI
+        for item in sample[: min(10, len(sample))]:
+            row = item.get("raw") or {}
+            for k in row.keys():
+                if k not in seen:
+                    seen.add(k)
+                    columns.append(k)
         return columns
 
     def _build_evidence_spec(self, *, config, columns: list[str], period_label: str) -> dict[str, Any]:
-        columns_set = {col.casefold() for col in columns}
-        title = config.text_column if config.text_column.casefold() in columns_set else None
-        created_at = config.date_column if config.date_column.casefold() in columns_set else None
-        pk = next((col for col in columns if col.casefold() in {"ticket_id", "id", "ref"}), columns[0] if columns else "")
-        display: dict[str, str] = {}
-        if title:
-            display["title"] = title
-        if created_at:
-            display["created_at"] = created_at
+        pk = "ticket_id" if "ticket_id" in columns else (columns[0] if columns else "id")
         spec = {
             "entity_label": "Tickets",
             "pk": pk,
-            "display": display,
+            "display": {
+                "title": config.text_column,
+                "created_at": config.date_column,
+            },
             "columns": columns,
             "limit": settings.evidence_limit_default,
             "period": period_label,
