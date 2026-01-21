@@ -200,7 +200,7 @@ function formatContextUsage(usage: { chars: number; limit: number } | null): { l
   const safeChars = Math.max(0, chars)
   const safeLimit = Math.max(1, limit)
   const percent = Math.round((safeChars / safeLimit) * 100)
-  const label = `${percent}% du contexte (${safeChars.toLocaleString('fr-FR')}/${safeLimit.toLocaleString('fr-FR')} caractères)`
+  const label = `${percent}% du contexte`
   return { label, overLimit: safeChars > safeLimit }
 }
 
