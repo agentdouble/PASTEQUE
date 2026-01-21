@@ -70,6 +70,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l’aperçu des tickets filtrés par les périodes sélectionnées (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché.
 - L’exploration permet de sélectionner des tickets (checkboxes) pour limiter le contexte du chat aux éléments choisis, jusqu’à effacement manuel de la sélection.
 - Backend: deux modes LLM (`LLM_MODE=local|api`) — vLLM local via `VLLM_BASE_URL`, provider externe via `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `LLM_MODEL`.
+- Les échanges LLM (question, contexte, réponse) sont tracés dans `logs/llm.log` (JSONL) configuré par `LLM_TRACE_LOG_PATH` — fichier local ignoré par Git.
 - Les réponses du chat sont formatées et rendues en Markdown (titres courts, listes, tableaux, blocs de code) pour une meilleure lisibilité.
 - `LLM_MAX_TOKENS` (défaut 1024) impose le plafond `max_tokens` sur tous les appels OpenAI-compatibles (explorateur, analyste, rédaction, router, chat) pour éviter les erreurs lorsque `model_max_tokens - context_tokens` devient négatif.
 - `AGENT_OUTPUT_MAX_ROWS`/`AGENT_OUTPUT_MAX_COLUMNS` (défauts 200/20) bornent le volume de lignes/colonnes envoyé par les agents NL→SQL dans les événements SSE afin d’éviter des payloads géants.

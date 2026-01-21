@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
 import httpx
-from ..core.config import settings
+from ..core.config import resolve_project_path, settings
 
 
 class OpenAIBackendError(RuntimeError):
@@ -14,6 +17,68 @@ class OpenAIBackendError(RuntimeError):
 
 
 log = logging.getLogger("insight.integrations.openai")
+
+
+def _extract_last_user_message(messages: List[Dict[str, str]]) -> Optional[str]:
+    for msg in reversed(messages):
+        if msg.get("role") != "user":
+            continue
+        content = msg.get("content")
+        if isinstance(content, str):
+            return content
+    return None
+
+
+def _trace_log_path() -> Optional[str]:
+    raw = (settings.llm_trace_log_path or "").strip()
+    if not raw:
+        return None
+    return resolve_project_path(raw)
+
+
+def _append_llm_trace(record: Dict[str, Any]) -> None:
+    path = _trace_log_path()
+    if not path:
+        return
+    try:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        line = json.dumps(record, ensure_ascii=True) + "\n"
+        fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
+        try:
+            os.write(fd, line.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except Exception:
+        log.exception("Failed to append LLM trace log to %s", path)
+
+
+def _extract_response_text(payload: Dict[str, Any]) -> Optional[str]:
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return None
+    choice = choices[0]
+    if not isinstance(choice, dict):
+        return None
+    message = choice.get("message")
+    if not isinstance(message, dict):
+        return None
+    content = message.get("content")
+    return content if isinstance(content, str) else None
+
+
+def _collect_stream_content(payload: Dict[str, Any], parts: List[str]) -> None:
+    choices = payload.get("choices")
+    if not isinstance(choices, list):
+        return
+    for choice in choices:
+        if not isinstance(choice, dict):
+            continue
+        delta = choice.get("delta")
+        if not isinstance(delta, dict):
+            continue
+        content = delta.get("content")
+        if isinstance(content, str):
+            parts.append(content)
 
 
 class OpenAICompatibleClient:
@@ -42,11 +107,21 @@ class OpenAICompatibleClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         payload: Dict[str, Any] = {"model": model, "messages": messages}
         payload.update(params)
+        trace = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "kind": "chat_completions",
+            "base_url": self.base_url,
+            "model": model,
+            "question": _extract_last_user_message(messages),
+            "context": messages,
+            "params": dict(params),
+        }
         log.debug("POST %s model=%s", url, model)
         try:
             resp = self.client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
         except httpx.ConnectError as exc:
+            _append_llm_trace({**trace, "error": str(exc)})
             log.error("LLM backend unreachable at %s: %s", url, exc)
             raise OpenAIBackendError(
                 f"Impossible de joindre le backend LLM ({self.base_url})."
@@ -56,6 +131,14 @@ class OpenAICompatibleClient:
             response = exc.response
             body = response.text
             request_id = response.headers.get("x-request-id") or response.headers.get("cf-ray")
+            _append_llm_trace(
+                {
+                    **trace,
+                    "error": f"HTTP {response.status_code}",
+                    "response_body": body,
+                    "request_id": request_id,
+                }
+            )
             if request_id:
                 log.error(
                     "LLM backend returned %s for %s (request_id=%s): %s",
@@ -76,9 +159,13 @@ class OpenAICompatibleClient:
                 detail = f"{detail} request_id={request_id}."
             raise OpenAIBackendError(f"{detail} Consultez ses logs pour plus de détails.") from exc
         except httpx.HTTPError as exc:
+            _append_llm_trace({**trace, "error": str(exc)})
             log.error("LLM backend request failed for %s: %s", url, exc)
             raise OpenAIBackendError("Erreur lors de l'appel au backend LLM.") from exc
-        return resp.json()
+        data = resp.json()
+        trace["response"] = _extract_response_text(data)
+        _append_llm_trace(trace)
+        return data
 
     def embeddings(self, *, model: str, inputs: List[str], **params: Any) -> List[List[float]]:
         url = f"{self.base_url}/embeddings"
@@ -158,6 +245,18 @@ class OpenAICompatibleClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         payload: Dict[str, Any] = {"model": model, "messages": messages, "stream": True}
         payload.update(params)
+        trace_params = dict(params)
+        trace_params["stream"] = True
+        trace = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "kind": "chat_completions_stream",
+            "base_url": self.base_url,
+            "model": model,
+            "question": _extract_last_user_message(messages),
+            "context": messages,
+            "params": trace_params,
+        }
+        content_parts: List[str] = []
         log.debug("STREAM %s model=%s", url, model)
         try:
             with self.client.stream("POST", url, headers=headers, json=payload) as resp:
@@ -172,11 +271,16 @@ class OpenAICompatibleClient:
                     if data == "[DONE]":
                         break
                     try:
-                        yield json.loads(data)
+                        chunk = json.loads(data)
                     except Exception as exc:  # pragma: no cover - defensive parsing
                         log.error("Invalid SSE chunk: %s", exc)
                         continue
+                    _collect_stream_content(chunk, content_parts)
+                    yield chunk
         except httpx.ConnectError as exc:
+            trace["response"] = "".join(content_parts) if content_parts else None
+            trace["error"] = str(exc)
+            _append_llm_trace(trace)
             log.error("LLM backend unreachable at %s: %s", url, exc)
             raise OpenAIBackendError(
                 f"Impossible de joindre le backend LLM ({self.base_url})."
@@ -184,6 +288,10 @@ class OpenAICompatibleClient:
             ) from exc
         except httpx.HTTPStatusError as exc:
             body = exc.response.text
+            trace["response"] = "".join(content_parts) if content_parts else None
+            trace["error"] = f"HTTP {exc.response.status_code}"
+            trace["response_body"] = body
+            _append_llm_trace(trace)
             log.error(
                 "LLM backend returned %s for %s: %s", exc.response.status_code, url, body
             )
@@ -192,5 +300,10 @@ class OpenAICompatibleClient:
                 " Consultez ses logs pour plus de détails."
             ) from exc
         except httpx.HTTPError as exc:
+            trace["response"] = "".join(content_parts) if content_parts else None
+            trace["error"] = str(exc)
+            _append_llm_trace(trace)
             log.error("LLM backend request failed for %s: %s", url, exc)
             raise OpenAIBackendError("Erreur lors de l'appel au backend LLM.") from exc
+        trace["response"] = "".join(content_parts) if content_parts else None
+        _append_llm_trace(trace)

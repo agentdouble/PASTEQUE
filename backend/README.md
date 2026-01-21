@@ -101,6 +101,7 @@ Si les colonnes `Category` et `Sub Category` sont absentes d’une table, `categ
 - Logger `insight.api.chat`: trace chaque appel `POST /api/v1/chat/completions` (mode LLM sélectionné, nombre de messages, provider et taille de la réponse).
 - Logger `insight.services.chat`: détaille l’entrée du service (dernier message utilisateur tronqué), l’éventuel passage `/sql`, les plans NL→SQL et les réponses renvoyées.
 - Les prévisualisations de messages sont limitées à ~160 caractères pour éviter de fuiter des contenus sensibles dans les traces.
+- Les échanges LLM (question, contexte, réponse) sont journalisés en JSONL dans le fichier défini par `LLM_TRACE_LOG_PATH` (défaut `../logs/llm.log`).
 - Les logs sont au niveau INFO par défaut via `core.logging.configure_logging`; ajuster `LOG_LEVEL` dans l’environnement si besoin.
 - Les réponses NL→SQL envoyées au frontend sont désormais uniquement en langage naturel; les requêtes SQL restent accessibles via les métadonnées ou les logs si besoin.
 - Le générateur NL→SQL refuse désormais les requêtes qui n’appliquent pas le préfixe `files.` sur toutes les tables (`/api/v1/mindsdb/sync-files` garde le même schéma).
