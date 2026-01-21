@@ -215,7 +215,7 @@ export default function AdminPanel() {
       try {
         const [colsResponse, overview] = await Promise.all([
           apiFetch<ColumnInfo[]>(`/data/schema/${encodeURIComponent(tableName)}`),
-          apiFetch<DataOverviewResponse>('/data/overview?include_disabled=true'),
+          apiFetch<DataOverviewResponse>('/data/overview?include_disabled=true&lightweight=true'),
         ])
         setTicketColumns(colsResponse ?? [])
         const match = overview?.sources?.find(src => src.source === tableName)
