@@ -42,7 +42,8 @@ def _append_llm_trace(record: Dict[str, Any]) -> None:
         return
     try:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        line = json.dumps(record, ensure_ascii=True) + "\n"
+        entry = json.dumps(record, ensure_ascii=True, indent=2)
+        line = f"{entry}\n\n"
         fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
         try:
             os.write(fd, line.encode("utf-8"))
