@@ -193,6 +193,17 @@ function normalizeRetrievalDetail(raw: unknown): RetrievalDetails | null {
   return detail
 }
 
+function formatContextUsage(usage: { chars: number; limit: number } | null): { label: string; overLimit: boolean } | null {
+  if (!usage) return null
+  const { chars, limit } = usage
+  if (!Number.isFinite(chars) || !Number.isFinite(limit) || limit <= 0) return null
+  const safeChars = Math.max(0, chars)
+  const safeLimit = Math.max(1, limit)
+  const percent = Math.round((safeChars / safeLimit) * 100)
+  const label = `${percent}% du contexte`
+  return { label, overLimit: safeChars > safeLimit }
+}
+
 function createMessageId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
@@ -464,6 +475,7 @@ export default function Chat() {
   const [ticketMetaLoading, setTicketMetaLoading] = useState(false)
   const [ticketMetaError, setTicketMetaError] = useState('')
   const [ticketStatus, setTicketStatus] = useState('')
+  const [ticketContextUsage, setTicketContextUsage] = useState<{ chars: number; limit: number } | null>(null)
   const [ticketTable, setTicketTable] = useState<string>('')
   const [ticketTables, setTicketTables] = useState<string[]>([])
   const [sqlMode, setSqlMode] = useState(false)
@@ -948,6 +960,7 @@ export default function Chat() {
         setSqlMode(true)
         setChartMode(false)
         setTicketStatus('')
+        setTicketContextUsage(null)
         setTicketPreviewItems([])
         setTicketPreviewError('')
         setTicketPreviewLoading(false)
@@ -1043,6 +1056,11 @@ export default function Chat() {
             if (count !== undefined) parts.push(`${count}${total ? `/${total}` : ''} tickets`)
             if (label) parts.push(label)
             setTicketStatus(parts.join(' — ') || 'Contexte tickets appliqué')
+            const contextChars = typeof tc.context_chars === 'number' ? tc.context_chars : undefined
+            const contextLimit = typeof tc.context_char_limit === 'number' ? tc.context_char_limit : undefined
+            if (contextChars !== undefined && contextLimit !== undefined) {
+              setTicketContextUsage({ chars: contextChars, limit: contextLimit })
+            }
           }
           if ((meta as any)?.ticket_context_error) {
             setTicketStatus(String((meta as any).ticket_context_error))
@@ -1837,6 +1855,32 @@ export default function Chat() {
 
   const activeSelectionCount = activeSelection?.values.length ?? 0
 
+  const previewUsage = useMemo(() => {
+    const items = ticketPreviewItems.filter(item => typeof item.context_chars === 'number')
+    if (items.length === 0) return null
+    const totalChars = items.reduce((acc, item) => acc + (item.context_chars ?? 0), 0)
+    const limit = items.find(item => typeof item.context_char_limit === 'number')?.context_char_limit
+    if (typeof limit !== 'number' || !Number.isFinite(limit) || limit <= 0) return null
+    return { chars: totalChars, limit }
+  }, [ticketPreviewItems])
+
+  useEffect(() => {
+    if (!ticketMode) {
+      setTicketContextUsage(null)
+      return
+    }
+    if (activeSelectionCount > 0) {
+      return
+    }
+    if (previewUsage) {
+      setTicketContextUsage(previewUsage)
+    } else if (!ticketPreviewLoading) {
+      setTicketContextUsage(null)
+    }
+  }, [ticketMode, activeSelectionCount, previewUsage, ticketPreviewLoading])
+
+  const contextUsageLabel = useMemo(() => formatContextUsage(ticketContextUsage), [ticketContextUsage])
+
   function formatPeriodLabel(item: TicketPanelItem | null): string | null {
     if (!item) return null
     if (item.periodLabel) return item.periodLabel
@@ -2048,10 +2092,20 @@ export default function Chat() {
                   <div className="mb-3 border rounded-2xl bg-primary-50 p-3 flex flex-col gap-2">
                     <div className="flex items-center justify-between text-xs text-primary-700">
                       <span>Contexte tickets {ticketMeta?.table ? `(${ticketMeta.table})` : ''}</span>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                           {ticketMetaError || ticketStatus || (ticketMeta?.total ? `${ticketMeta.total} tickets` : '')}
                         </span>
+                        {contextUsageLabel && (
+                          <span
+                            className={clsx(
+                              'text-[11px]',
+                              contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
+                            )}
+                          >
+                            {contextUsageLabel.label}
+                          </span>
+                        )}
                         <button
                           type="button"
                           className="text-[11px] text-primary-600 underline"
@@ -2295,11 +2349,21 @@ export default function Chat() {
                   </div>
                 ) : (
                   <div className="mb-3 border rounded-2xl bg-primary-50 px-3 py-2 flex items-center justify-between text-xs text-primary-700">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span>Contexte tickets masqué</span>
                       <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                         {ticketMetaError || ticketStatus || (ticketMeta?.total ? `${ticketMeta.total} tickets` : '')}
                       </span>
+                      {contextUsageLabel && (
+                        <span
+                          className={clsx(
+                            'text-[11px]',
+                            contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
+                          )}
+                        >
+                          {contextUsageLabel.label}
+                        </span>
+                      )}
                       {activeSelectionCount > 0 && (
                         <span className="text-[11px] text-primary-600">
                           {activeSelectionCount === 1 ? '1 sélectionné' : `${activeSelectionCount} sélectionnés`}

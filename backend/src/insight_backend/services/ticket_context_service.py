@@ -94,11 +94,30 @@ class TicketContextService:
             selection=selection,
         )
         context_fields = self._get_context_fields(config=config)
-        chunks = self._build_chunks(filtered, context_fields=context_fields, config=config)
-        summary = self.agent.summarize_chunks(
-            period_label=period_label,
-            chunks=chunks,
-            total_tickets=len(filtered),
+        lines = self._format_context_lines(filtered, context_fields=context_fields, config=config)
+        context_chars = self._count_context_chars(lines)
+        char_limit = max(1, int(settings.ticket_context_direct_max_chars))
+        direct_mode = context_chars <= char_limit
+        if direct_mode:
+            context_blob = "\n".join(lines)
+            summary = f"Tickets bruts:\n{context_blob}" if context_blob else ""
+            chunks_count = 0
+        else:
+            formatted = [{**item, "line": line} for item, line in zip(filtered, lines)]
+            chunks = chunk_ticket_items(formatted)
+            summary = self.agent.summarize_chunks(
+                period_label=period_label,
+                chunks=chunks,
+                total_tickets=len(filtered),
+            )
+            chunks_count = len(chunks)
+        log.info(
+            "TicketContextService: mode=%s chars=%d limit=%d tickets=%d table=%s",
+            "direct" if direct_mode else "summary",
+            context_chars,
+            char_limit,
+            len(filtered),
+            config.table_name,
         )
         dictionary_note = self._build_dictionary_note(
             table=config.table_name,
@@ -130,13 +149,16 @@ class TicketContextService:
             "period_label": period_label,
             "count": len(filtered),
             "total": len(entries),
-            "chunks": len(chunks),
+            "chunks": chunks_count,
             "table": config.table_name,
             "date_from": rows_payload.get("period", {}).get("from"),
             "date_to": rows_payload.get("period", {}).get("to"),
             "system_message": system_message,
             "evidence_spec": spec,
             "evidence_rows": rows_payload,
+            "context_chars": context_chars,
+            "context_char_limit": char_limit,
+            "context_mode": "direct" if direct_mode else "summary",
         }
 
     def build_preview(
@@ -162,6 +184,9 @@ class TicketContextService:
             selection=selection,
         )
         context_fields = self._get_context_fields(config=config)
+        lines = self._format_context_lines(filtered, context_fields=context_fields, config=config)
+        context_chars = self._count_context_chars(lines)
+        char_limit = max(1, int(settings.ticket_context_direct_max_chars))
         columns = self._derive_columns(context_fields=context_fields)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
@@ -176,6 +201,8 @@ class TicketContextService:
             "table": config.table_name,
             "evidence_spec": spec,
             "evidence_rows": rows_payload,
+            "context_chars": context_chars,
+            "context_char_limit": char_limit,
         }
 
     # -------- Internals --------
@@ -531,19 +558,22 @@ class TicketContextService:
                 break
         return filtered
 
-    def _build_chunks(
+    def _format_context_lines(
         self,
         entries: list[dict[str, Any]],
         *,
         context_fields: list[str],
         config,
-    ) -> list[list[dict[str, Any]]]:
-        # Pre-format ticket lines once for LLM payloads
-        formatted: list[dict[str, Any]] = []
+    ) -> list[str]:
+        lines: list[str] = []
         for item in entries:
-            line = self._format_context_line(item, context_fields=context_fields, config=config)
-            formatted.append({**item, "line": line})
-        return chunk_ticket_items(formatted)
+            lines.append(self._format_context_line(item, context_fields=context_fields, config=config))
+        return lines
+
+    def _count_context_chars(self, lines: list[str]) -> int:
+        if not lines:
+            return 0
+        return sum(len(line) for line in lines) + (len(lines) - 1)
 
     def _format_context_line(self, item: dict[str, Any], *, context_fields: list[str], config) -> str:
         if not context_fields:
