@@ -391,15 +391,24 @@ def chat_stream(  # type: ignore[valid-type]
         periods = None
         if isinstance(meta_in.get("ticket_periods"), list):
             periods = meta_in.get("ticket_periods")
+        selection: dict[str, object] | None = None
+        selection_table: str | None = None
+        raw_selection = meta_in.get("ticket_selection")
+        if isinstance(raw_selection, dict):
+            selection = raw_selection
+            raw_table = raw_selection.get("table")
+            if isinstance(raw_table, str) and raw_table.strip():
+                selection_table = raw_table.strip()
         try:
             ticket_context = ticket_service.build_context(
                 allowed_tables=allowed_tables,
                 date_from=meta_in.get("tickets_from"),
                 date_to=meta_in.get("tickets_to"),
                 periods=periods,
-                table=meta_in.get("ticket_table"),
+                table=selection_table or meta_in.get("ticket_table"),
                 text_column=meta_in.get("ticket_text_column"),
                 date_column=meta_in.get("ticket_date_column"),
+                selection=selection,
             )
             sys_msg = ticket_context.get("system_message")
             if sys_msg:
@@ -413,6 +422,9 @@ def chat_stream(  # type: ignore[valid-type]
                     "table": ticket_context.get("table"),
                     "date_from": ticket_context.get("date_from"),
                     "date_to": ticket_context.get("date_to"),
+                    "context_chars": ticket_context.get("context_chars"),
+                    "context_char_limit": ticket_context.get("context_char_limit"),
+                    "context_mode": ticket_context.get("context_mode"),
                 }
             }
             evidence_spec = ticket_context.get("evidence_spec")

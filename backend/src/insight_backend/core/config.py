@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     llm_model: str | None = Field(None, alias="LLM_MODEL")
     openai_timeout_s: int = Field(90, alias="OPENAI_TIMEOUT_S")
     llm_max_tokens: int = Field(1024, alias="LLM_MAX_TOKENS")
+    llm_trace_log_path: str | None = Field("../logs/llm.log", alias="LLM_TRACE_LOG_PATH")
     # vLLM local
     vllm_base_url: str | None = Field("http://localhost:8000/v1", alias="VLLM_BASE_URL")
     z_local_model: str | None = Field("GLM-4.5-Air", alias="Z_LOCAL_MODEL")
@@ -69,6 +70,7 @@ class Settings(BaseSettings):
     loop_max_tickets_per_call: int = Field(400, alias="LOOP_MAX_TICKETS_PER_CALL")
     loop_max_input_chars: int = Field(300000, alias="LOOP_MAX_INPUT_CHARS")
     ticket_context_workers: int = Field(1, alias="TICKET_CONTEXT_WORKERS")
+    ticket_context_direct_max_chars: int = Field(100000, alias="TICKET_CONTEXT_DIRECT_MAX_CHARS")
 
     # Router gate (applied on every user message)
     router_mode: str = Field("rule", alias="ROUTER_MODE")  # "rule" | "local" | "api" | "false"
@@ -176,6 +178,13 @@ class Settings(BaseSettings):
     def _validate_ticket_context_workers(cls, v: int) -> int:
         if v <= 0:
             raise ValueError("TICKET_CONTEXT_WORKERS must be > 0")
+        return int(v)
+
+    @field_validator("ticket_context_direct_max_chars")
+    @classmethod
+    def _validate_ticket_context_direct_max_chars(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("TICKET_CONTEXT_DIRECT_MAX_CHARS must be > 0")
         return int(v)
 
     @field_validator("llm_max_tokens")
