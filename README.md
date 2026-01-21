@@ -153,6 +153,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Chaque source affichant ces colonnes est listée avec ses catégories et sous-catégories cliquables : un clic déclenche un aperçu (`/api/v1/data/explore/{source}`) limité à 25 lignes, avec le volume total de lignes correspondantes.
 - Si une source ne possède pas les deux colonnes, la vue l’ignore et affiche un message explicite plutôt que de masquer l’erreur.
 - Les aperçus sont paginés (25 lignes/page) avec navigation précédente/suivante et un tri par colonne `date` (desc/asc) quand la colonne est présente.
+- Depuis l’aperçu, un bouton « Discuter dans le chat » ouvre le chat en mode tickets avec la sélection Category/Sub Category préchargée (capée à 500 tickets, compteur affiché).
 - Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage sélectionnée est appliquée côté backend (`/data/overview` + `/data/explore`) pour recalculer les volumes, avec un rail unique qui met en évidence la plage choisie.
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
