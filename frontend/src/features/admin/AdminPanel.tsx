@@ -32,6 +32,11 @@ type ColumnRoleSelection = {
   category_field: string | null
   sub_category_field: string | null
 }
+type TicketDraft = {
+  textColumn: string
+  dateColumn: string
+  contextFields: string[]
+}
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
@@ -116,6 +121,8 @@ export default function AdminPanel() {
   const [ticketRoles, setTicketRoles] = useState<ColumnRolesResponse | null>(null)
   const [ticketContextFields, setTicketContextFields] = useState<string[]>([])
   const [ticketConfigLoaded, setTicketConfigLoaded] = useState(false)
+  const [ticketDrafts, setTicketDrafts] = useState<Record<string, TicketDraft>>({})
+  const ticketTableRef = useRef('')
   const ticketConfigRequestRef = useRef(0)
   const [explorerData, setExplorerData] = useState<DataOverviewResponse | null>(null)
   const [explorerLoading, setExplorerLoading] = useState(false)
@@ -202,7 +209,10 @@ export default function AdminPanel() {
   }, [])
 
   const loadTicketConfig = useCallback(
-    async (tableName: string, opts?: { textColumn?: string; dateColumn?: string }) => {
+    async (
+      tableName: string,
+      opts?: { textColumn?: string; dateColumn?: string; draft?: TicketDraft }
+    ) => {
       const requestId = ++ticketConfigRequestRef.current
       if (!tableName) {
         setTicketColumns([])
@@ -219,7 +229,10 @@ export default function AdminPanel() {
           apiFetch<ColumnInfo[]>(`/data/schema/${encodeURIComponent(tableName)}`),
           apiFetch<DataOverviewResponse>('/data/overview?include_disabled=true&lightweight=true'),
         ])
-        if (requestId !== ticketConfigRequestRef.current) {
+        if (
+          requestId !== ticketConfigRequestRef.current ||
+          ticketTableRef.current !== tableName
+        ) {
           return
         }
         setTicketColumns(colsResponse ?? [])
@@ -233,18 +246,34 @@ export default function AdminPanel() {
           ticket_context_fields: match?.ticket_context_fields ?? [],
         }
         setTicketRoles(roles)
+        const draft = opts?.draft
+        const hasDraft = Boolean(draft)
+        const textFromDraft =
+          draft?.textColumn && columnLookup.has(draft.textColumn.toLowerCase())
+            ? draft.textColumn
+            : ''
+        const dateFromDraft =
+          draft?.dateColumn && columnLookup.has(draft.dateColumn.toLowerCase())
+            ? draft.dateColumn
+            : ''
+        const contextFromDraft = (draft?.contextFields ?? []).filter(name =>
+          columnLookup.has(name.toLowerCase())
+        )
         const textFromConfig =
           opts?.textColumn && columnLookup.has(opts.textColumn.toLowerCase()) ? opts.textColumn : ''
         const dateFromConfig =
           opts?.dateColumn && columnLookup.has(opts.dateColumn.toLowerCase()) ? opts.dateColumn : ''
-        setTicketTextColumn(textFromConfig)
-        setTicketDateColumn(dateFromConfig || roles.date_field || '')
-        const contextFields = (roles.ticket_context_fields ?? []).filter(
-          name => columnLookup.has(name.toLowerCase())
+        const contextFields = (roles.ticket_context_fields ?? []).filter(name =>
+          columnLookup.has(name.toLowerCase())
         )
-        setTicketContextFields(contextFields)
+        setTicketTextColumn(hasDraft ? textFromDraft : textFromConfig)
+        setTicketDateColumn(hasDraft ? dateFromDraft : dateFromConfig || roles.date_field || '')
+        setTicketContextFields(hasDraft ? contextFromDraft : contextFields)
       } catch (err) {
-        if (requestId !== ticketConfigRequestRef.current) {
+        if (
+          requestId !== ticketConfigRequestRef.current ||
+          ticketTableRef.current !== tableName
+        ) {
           return
         }
         setTicketColumns([])
@@ -267,6 +296,7 @@ export default function AdminPanel() {
         setTicketError('Configuration chat introuvable.')
         return
       }
+      ticketTableRef.current = config.table_name
       setTicketTable(config.table_name)
       await loadTicketConfig(config.table_name, {
         textColumn: config.text_column,
@@ -385,16 +415,35 @@ export default function AdminPanel() {
 
   const handleTicketTableChange = useCallback(
     (value: string) => {
+      if (ticketTable) {
+        setTicketDrafts(prev => ({
+          ...prev,
+          [ticketTable]: {
+            textColumn: ticketTextColumn,
+            dateColumn: ticketDateColumn,
+            contextFields: ticketContextFields,
+          },
+        }))
+      }
       setTicketTable(value)
+      ticketTableRef.current = value
       setTicketStatus(null)
       setTicketError('')
       setTicketTextColumn('')
       setTicketDateColumn('')
       setTicketRoles(null)
       setTicketContextFields([])
-      void loadTicketConfig(value)
+      const draft = value ? ticketDrafts[value] : undefined
+      void loadTicketConfig(value, { draft })
     },
-    [loadTicketConfig]
+    [
+      loadTicketConfig,
+      ticketTable,
+      ticketTextColumn,
+      ticketDateColumn,
+      ticketContextFields,
+      ticketDrafts,
+    ]
   )
 
   async function handleSaveLoopConfig() {
