@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import CategoryStackedChart from '@/components/charts/CategoryStackedChart'
 import { Card, Loader, Button } from '@/components/ui'
 import { apiFetch } from '@/services/api'
@@ -85,6 +86,7 @@ export default function IaView() {
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const auth = getAuth()
   const isAdmin = Boolean(auth?.isAdmin)
+  const navigate = useNavigate()
 
   const computeGlobalBounds = (sources: DataSourceOverview[] | undefined) => {
     let min: string | undefined
@@ -372,6 +374,20 @@ export default function IaView() {
     }
   }
 
+  const handleDiscussSelection = () => {
+    if (!selection) return
+    const params = new URLSearchParams()
+    params.set('explorer_source', selection.source)
+    params.set('explorer_category', selection.category)
+    params.set('explorer_sub_category', selection.subCategory)
+    if (appliedRange?.from) params.set('explorer_from', appliedRange.from)
+    if (appliedRange?.to) params.set('explorer_to', appliedRange.to)
+    if (sourceHasDate(selection.source)) {
+      params.set('explorer_sort', sortDirection)
+    }
+    navigate(`/chat?${params.toString()}`)
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -499,6 +515,8 @@ export default function IaView() {
         onToggleSort={handleToggleSort}
         canSort={selection ? sourceHasDate(selection.source) : false}
         activeRange={appliedRange}
+        onDiscuss={handleDiscussSelection}
+        canDiscuss={selection ? sourceHasDate(selection.source) : false}
       />
 
       {loading ? (
@@ -749,6 +767,8 @@ function SelectionPreview({
   onToggleSort,
   canSort,
   activeRange,
+  onDiscuss,
+  canDiscuss,
 }: {
   selection: Selection | null
   preview: TableExplorePreview | null
@@ -762,6 +782,8 @@ function SelectionPreview({
   onToggleSort: () => void
   canSort: boolean
   activeRange: { from?: string; to?: string } | null
+  onDiscuss: () => void
+  canDiscuss: boolean
 }) {
   if (!selection) return null
 
@@ -775,18 +797,29 @@ function SelectionPreview({
 
   return (
     <Card variant="outlined" className="space-y-3">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-primary-700">
           <span className="font-semibold text-primary-900">{selection.source}</span> ·{' '}
           <span className="font-semibold text-primary-900">{selection.category}</span> /{' '}
           <span className="font-semibold text-primary-900">{selection.subCategory}</span>
         </div>
-        {preview ? (
-          <div className="text-[11px] text-primary-500">
-            {preview.matching_rows.toLocaleString('fr-FR')} lignes correspondantes ·{' '}
-            {rows.length.toLocaleString('fr-FR')} affichées sur {limit} par page
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {preview ? (
+            <div className="text-[11px] text-primary-500">
+              {preview.matching_rows.toLocaleString('fr-FR')} lignes correspondantes ·{' '}
+              {rows.length.toLocaleString('fr-FR')} affichées sur {limit} par page
+            </div>
+          ) : null}
+          <Button
+            variant="primary"
+            size="xs"
+            onClick={onDiscuss}
+            disabled={!canDiscuss || loading}
+            className="!rounded-full"
+          >
+            Discuter dans le chat
+          </Button>
+        </div>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">

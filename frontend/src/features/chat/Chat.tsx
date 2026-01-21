@@ -21,6 +21,7 @@ import type {
   FeedbackResponse,
   FeedbackValue
 } from '@/types/chat'
+import type { TableExplorePreview } from '@/types/data'
 import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip } from 'react-icons/hi2'
 import clsx from 'clsx'
 import { renderMarkdown } from '@/utils/markdown'
@@ -215,6 +216,65 @@ function formatTicketDate(value?: string): string {
   const date = new Date(`${value}T00:00:00Z`)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleDateString('fr-FR')
+}
+
+const EXPLORER_SELECTION_LIMIT = 500
+
+type ExplorerSelectionParams = {
+  source: string
+  category: string
+  subCategory: string
+  from?: string
+  to?: string
+  sort?: 'asc' | 'desc'
+}
+
+type ExplorerTicketSelection = {
+  id: string
+  source: string
+  category: string
+  subCategory: string
+  from?: string
+  to?: string
+  sort?: 'asc' | 'desc'
+  idColumn: string
+  values: string[]
+  matchingRows: number
+  limited: boolean
+}
+
+function parseExplorerParams(search: string): ExplorerSelectionParams | null {
+  const sp = new URLSearchParams(search)
+  const source = sp.get('explorer_source')?.trim()
+  const category = sp.get('explorer_category')?.trim()
+  const subCategory = sp.get('explorer_sub_category')?.trim()
+  if (!source || !category || !subCategory) return null
+  const sortRaw = sp.get('explorer_sort')?.trim().toLowerCase()
+  const sort = sortRaw === 'asc' || sortRaw === 'desc' ? (sortRaw as 'asc' | 'desc') : undefined
+  const from = sp.get('explorer_from')?.trim() || undefined
+  const to = sp.get('explorer_to')?.trim() || undefined
+  return { source, category, subCategory, from, to, sort }
+}
+
+function explorerSelectionKey(params: ExplorerSelectionParams): string {
+  return [
+    params.source,
+    params.category,
+    params.subCategory,
+    params.from ?? '',
+    params.to ?? '',
+    params.sort ?? '',
+  ].join('|')
+}
+
+function pickTicketIdColumn(columns: string[]): string | null {
+  if (!Array.isArray(columns)) return null
+  const lookup = new Map(columns.map(col => [col.trim().toLowerCase(), col]))
+  for (const candidate of ['ticket_id', 'id', 'ref']) {
+    const match = lookup.get(candidate)
+    if (match) return match
+  }
+  return null
 }
 
 type DateRangeSliderProps = {
@@ -414,6 +474,9 @@ export default function Chat() {
   const [ticketPreviewError, setTicketPreviewError] = useState('')
   const [ticketPreviewTab, setTicketPreviewTab] = useState(0)
   const [ticketSelections, setTicketSelections] = useState<Record<string, TicketSelectionState>>({})
+  const [explorerTicketSelection, setExplorerTicketSelection] = useState<ExplorerTicketSelection | null>(null)
+  const [explorerTicketLoading, setExplorerTicketLoading] = useState(false)
+  const [explorerTicketError, setExplorerTicketError] = useState('')
   const [showTicketsSheet, setShowTicketsSheet] = useState(false)
   // Données utilisées (tables accessibles au LLM)
   const [showDataPanel, setShowDataPanel] = useState(false)
@@ -426,10 +489,13 @@ export default function Chat() {
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const ticketPreviewAbortRef = useRef<AbortController | null>(null)
+  const explorerSelectionAbortRef = useRef<AbortController | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
   const deepSearchStatusRef = useRef('')
   const deepSearchUsedWordsRef = useRef<Set<string>>(new Set())
+  const explorerSelectionKeyRef = useRef<string | null>(null)
+  const explorerSelectionAppliedKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!ticketMode || !awaitingFirstDelta) {
@@ -516,6 +582,28 @@ export default function Chat() {
       sp.delete('new')
       setSearchParams(sp, { replace: true })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
+
+  // Charger une sélection Explorer (source/category/sub category) si présente dans l'URL
+  useEffect(() => {
+    const params = parseExplorerParams(search)
+    if (!params) return
+    const key = explorerSelectionKey(params)
+    if (explorerSelectionKeyRef.current === key) return
+    explorerSelectionKeyRef.current = key
+    setExplorerTicketError('')
+    setExplorerTicketSelection(null)
+    setTicketMode(true)
+    setSqlMode(false)
+    setChartMode(false)
+    setShowTicketPanel(true)
+    setTicketTable(params.source)
+    void loadTicketMetadata(params.source, { target: 'main' })
+    if (params.from || params.to) {
+      setTicketRanges([{ id: createMessageId(), from: params.from, to: params.to }])
+    }
+    void loadExplorerTicketSelection(params)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
@@ -667,6 +755,71 @@ export default function Chat() {
     return { periods, sources }
   }
 
+  async function loadExplorerTicketSelection(params: ExplorerSelectionParams) {
+    if (explorerSelectionAbortRef.current) {
+      explorerSelectionAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    explorerSelectionAbortRef.current = controller
+    setExplorerTicketLoading(true)
+    setExplorerTicketError('')
+    setExplorerTicketSelection(null)
+
+    const query = new URLSearchParams({
+      category: params.category,
+      sub_category: params.subCategory,
+      limit: String(EXPLORER_SELECTION_LIMIT),
+      offset: '0',
+    })
+    if (params.sort) query.set('sort_date', params.sort)
+    if (params.from) query.set('date_from', params.from)
+    if (params.to) query.set('date_to', params.to)
+
+    try {
+      const preview = await apiFetch<TableExplorePreview>(
+        `/data/explore/${encodeURIComponent(params.source)}?${query.toString()}`,
+        { signal: controller.signal }
+      )
+      if (controller.signal.aborted) return
+      const columns = preview?.preview_columns ?? []
+      const idColumn = pickTicketIdColumn(columns)
+      if (!idColumn) {
+        throw new Error("Colonne d'identifiant introuvable pour charger les tickets.")
+      }
+      const values = (preview?.preview_rows ?? [])
+        .map(row => row[idColumn])
+        .filter(value => value !== null && value !== undefined)
+        .map(value => String(value))
+        .filter(value => value.trim() !== '')
+      if (values.length === 0) {
+        throw new Error('Aucun ticket trouvé pour cette sélection.')
+      }
+      const uniqueValues = Array.from(new Set(values))
+      const matchingRows = typeof preview?.matching_rows === 'number' ? preview.matching_rows : uniqueValues.length
+      setExplorerTicketSelection({
+        id: explorerSelectionKey(params),
+        source: params.source,
+        category: params.category,
+        subCategory: params.subCategory,
+        from: params.from,
+        to: params.to,
+        sort: params.sort,
+        idColumn,
+        values: uniqueValues,
+        matchingRows,
+        limited: matchingRows > uniqueValues.length,
+      })
+      explorerSelectionAppliedKeyRef.current = null
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      setExplorerTicketError(err instanceof Error ? err.message : 'Chargement de la sélection Explorer impossible.')
+    } finally {
+      if (!controller.signal.aborted) {
+        setExplorerTicketLoading(false)
+      }
+    }
+  }
+
   function updateTicketSelection(item: TicketPanelItem, values: string[]) {
     const unique = Array.from(new Set(values.filter(value => value.trim() !== '')))
     setTicketSelections(prev => {
@@ -692,6 +845,11 @@ export default function Chat() {
       delete next[panelKey]
       return next
     })
+    if (explorerSelectionAppliedKeyRef.current === panelKey) {
+      explorerSelectionAppliedKeyRef.current = null
+      setExplorerTicketSelection(null)
+      setExplorerTicketError('')
+    }
   }
 
   async function loadTicketPreview(
@@ -1594,6 +1752,29 @@ export default function Chat() {
     return []
   }, [ticketMode, ticketPreviewItems, evidenceSpec, evidenceData])
 
+  useEffect(() => {
+    if (!ticketMode || !explorerTicketSelection || panelItems.length === 0) return
+    const targetIndex = panelItems.findIndex(
+      item => (item.table ?? '').toLowerCase() === explorerTicketSelection.source.toLowerCase()
+    )
+    const resolvedIndex = targetIndex >= 0 ? targetIndex : 0
+    const target = panelItems[resolvedIndex]
+    if (!target) return
+    if (explorerSelectionAppliedKeyRef.current === target.key) return
+    setTicketSelections(prev => ({
+      ...prev,
+      [target.key]: {
+        values: explorerTicketSelection.values,
+        pk: explorerTicketSelection.idColumn,
+        table: target.table ?? explorerTicketSelection.source,
+      },
+    }))
+    if (panelItems.length > 1) {
+      setTicketPreviewTab(resolvedIndex)
+    }
+    explorerSelectionAppliedKeyRef.current = target.key
+  }, [ticketMode, explorerTicketSelection, panelItems])
+
   const panelCount = useMemo(
     () =>
       panelItems.reduce((acc, item) => {
@@ -1896,6 +2077,26 @@ export default function Chat() {
                         </button>
                       </div>
                     )}
+                    {explorerTicketLoading ? (
+                      <div className="text-[11px] text-primary-500">
+                        Chargement des tickets Explorer…
+                      </div>
+                    ) : explorerTicketError ? (
+                      <div className="text-[11px] text-red-600">{explorerTicketError}</div>
+                    ) : explorerTicketSelection ? (
+                      <div className="flex items-center justify-between text-[11px] text-primary-600 rounded-lg border border-primary-100 bg-white/70 px-2 py-1">
+                        <span className="truncate">
+                          Explorer chargé : {explorerTicketSelection.category} / {explorerTicketSelection.subCategory}
+                        </span>
+                        <span className="whitespace-nowrap">
+                          {explorerTicketSelection.values.length}
+                          {explorerTicketSelection.limited
+                            ? `/${explorerTicketSelection.matchingRows}`
+                            : ''}{' '}
+                          tickets
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="flex items-center gap-2 flex-wrap">
                       <label className="text-[11px] text-primary-600">Table</label>
                       <select
