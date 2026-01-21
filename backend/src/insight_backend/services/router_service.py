@@ -8,6 +8,7 @@ from typing import Literal
 
 from ..core.config import settings
 from ..core.agent_limits import check_and_increment
+from ..core.prompts import get_prompt_store
 from ..integrations.openai_client import OpenAICompatibleClient, OpenAIBackendError
 from .nl2sql_service import _extract_json_blob  # reuse robust JSON extractor
 
@@ -125,14 +126,7 @@ class RouterService:
         if not base_url or not model:
             raise OpenAIBackendError("Router LLM non configuré (base_url/model)")
 
-        prompt = (
-            "Tu es un routeur. Analyse le message utilisateur et décide si on doit déclencher\n"
-            "une pipeline de données (catégories: data, feedback, foyer). Réponds UNIQUEMENT en JSON\n"
-            "avec les champs: allow (true|false), route ('data'|'feedback'|'foyer'|'none'),\n"
-            "confidence (0..1), reason (français concis).\n"
-            "En cas de doute, préfère allow=true et route='data'.\n"
-            "Exemples: 'coucou ça va' -> {\"allow\":false,\"route\":\"none\",...}."
-        )
+        prompt = get_prompt_store().get("router_system").template
         messages = [
             {"role": "system", "content": prompt},
             {"role": "user", "content": text},
