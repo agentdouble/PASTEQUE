@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, FormEvent } from 'react'
+import { useState, useEffect, useCallback, useRef, FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { apiFetch } from '@/services/api'
 import { getAuth } from '@/services/auth'
@@ -116,6 +116,7 @@ export default function AdminPanel() {
   const [ticketRoles, setTicketRoles] = useState<ColumnRolesResponse | null>(null)
   const [ticketContextFields, setTicketContextFields] = useState<string[]>([])
   const [ticketConfigLoaded, setTicketConfigLoaded] = useState(false)
+  const ticketConfigRequestRef = useRef(0)
   const [explorerData, setExplorerData] = useState<DataOverviewResponse | null>(null)
   const [explorerLoading, setExplorerLoading] = useState(false)
   const [explorerError, setExplorerError] = useState('')
@@ -202,6 +203,7 @@ export default function AdminPanel() {
 
   const loadTicketConfig = useCallback(
     async (tableName: string, opts?: { textColumn?: string; dateColumn?: string }) => {
+      const requestId = ++ticketConfigRequestRef.current
       if (!tableName) {
         setTicketColumns([])
         setTicketRoles(null)
@@ -217,6 +219,9 @@ export default function AdminPanel() {
           apiFetch<ColumnInfo[]>(`/data/schema/${encodeURIComponent(tableName)}`),
           apiFetch<DataOverviewResponse>('/data/overview?include_disabled=true&lightweight=true'),
         ])
+        if (requestId !== ticketConfigRequestRef.current) {
+          return
+        }
         setTicketColumns(colsResponse ?? [])
         const match = overview?.sources?.find(src => src.source === tableName)
         const columnLookup = new Set((colsResponse ?? []).map(col => col.name.toLowerCase()))
@@ -239,6 +244,9 @@ export default function AdminPanel() {
         )
         setTicketContextFields(contextFields)
       } catch (err) {
+        if (requestId !== ticketConfigRequestRef.current) {
+          return
+        }
         setTicketColumns([])
         setTicketRoles(null)
         setTicketTextColumn('')
