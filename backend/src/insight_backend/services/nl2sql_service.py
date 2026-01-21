@@ -11,6 +11,7 @@ import sqlglot
 from sqlglot import exp
 from ..integrations.openai_client import OpenAICompatibleClient
 from ..core.agent_limits import check_and_increment
+from ..core.prompts import get_prompt_store
 from ..repositories.data_repository import DataRepository
 
 log = logging.getLogger("insight.services.nl2sql")
@@ -348,25 +349,23 @@ class NL2SQLService:
         if date_hints:
             log.info("NL2SQL.generate date hints for tables: %s", sorted(date_hints.keys()))
 
-        system = (
-            "You are a strict SQL generator. Dialect: MindsDB SQL (MySQL-like).\n"
-            f"Use only the tables listed below under the '{settings.nl2sql_db_prefix}.' schema.\n"
-            "Return exactly ONE SELECT query. No comments. No explanations.\n"
-            "Rules: SELECT-only; never modify data. Date-like columns are TEXT in 'YYYY-MM-DD'.\n"
-            "For date parts, use EXTRACT(YEAR|MONTH FROM CAST(CASE WHEN col IS NULL OR col IN ('None','') THEN NULL ELSE col END AS DATE)).\n"
-            "Never use NULLIF with more than 2 arguments. Prefer the CASE…END form above over NULLIF.\n"
-            f"Every FROM/JOIN must reference tables as '{settings.nl2sql_db_prefix}.table' and assign an alias (e.g. FROM {settings.nl2sql_db_prefix}.tickets_jira AS t).\n"
-            "After introducing an alias, reuse it everywhere (SELECT, WHERE, subqueries) instead of the raw table name.\n"
-            "Never invent table or column names: use them exactly as provided (e.g. if only 'tickets_jira' exists, do NOT use 'tickets')."
+        store = get_prompt_store()
+        system = store.render(
+            "nl2sql_generate_system",
+            {"db_prefix": settings.nl2sql_db_prefix},
         )
         hints = ""
         if date_hints:
             hint_lines = [f"- {settings.nl2sql_db_prefix}.{t}: {', '.join(cols)}" for t, cols in date_hints.items()]
             hints = "\nDate-like columns (cast before date ops):\n" + "\n".join(hint_lines)
-        user = (
-            f"Available tables and columns:\n{tables_blob}{hints}\n\n"
-            f"Question: {question}\n"
-            f"Produce a single SQL query using only {settings.nl2sql_db_prefix}.* tables."
+        user = store.render(
+            "nl2sql_generate_user",
+            {
+                "tables_blob": tables_blob,
+                "hints": hints,
+                "question": question,
+                "db_prefix": settings.nl2sql_db_prefix,
+            },
         )
         # Enforce per-agent cap (nl2sql)
         check_and_increment("nl2sql")
@@ -403,11 +402,7 @@ class NL2SQLService:
             _preview(question, limit=200),
             len(evidence),
         )
-        system = (
-            "You are an analyst. Given a question and the results of prior SQL queries,"
-            " write a concise answer in French. Use numbers and be precise."
-            " If data is insufficient, say so. Do not include SQL in the final answer."
-        )
+        system = get_prompt_store().get("nl2sql_analyst_system").template
         condensed = _condense_evidence(
             evidence,
             max_items=6,
@@ -476,11 +471,7 @@ class NL2SQLService:
                 "Answer in French, 2–4 concise sentences, include key figures.",
             ],
         }
-        system = (
-            "You are a synthesis agent. Combine the SQL evidence and any retrieved related rows\n"
-            "to answer the user's question precisely in French. Prefer the SQL-derived numbers\n"
-            "when data conflicts. Do not output SQL or code."
-        )
+        system = get_prompt_store().get("nl2sql_synthesis_system").template
         # Enforce per-agent cap (redaction)
         check_and_increment("redaction")
         payload_json = json.dumps(payload, ensure_ascii=False)
@@ -536,15 +527,9 @@ class NL2SQLService:
             tables_desc.append(f"- {settings.nl2sql_db_prefix}.{t}({col_list})")
         tables_blob = "\n".join(tables_desc)
 
-        system = (
-            "You are a data explorer agent. Propose up to N short SELECT queries that help\n"
-            "understand the data relevant to the question: small DISTINCT lists, MIN/MAX for dates\n"
-            "or numbers, COUNTs by key categories, and a few sample rows (LIMIT ≤ 20).\n"
-            f"Use only the '{settings.nl2sql_db_prefix}.' schema and always add an alias after each table.\n"
-            "All queries must be SELECT‑only, safe to execute, and return quickly.\n"
-            "For date parts, use EXTRACT(YEAR|MONTH FROM CAST(CASE WHEN col IS NULL OR col IN ('None','') THEN NULL ELSE col END AS DATE)).\n"
-            "Never use NULLIF with more than 2 arguments; prefer the CASE…END form above.\n"
-            "Return JSON only: {\"queries\":[{\"purpose\":str,\"sql\":str}, ...]}. No prose."
+        system = get_prompt_store().render(
+            "nl2sql_explore_system",
+            {"db_prefix": settings.nl2sql_db_prefix},
         )
         obs_section = (f"\nObservations to consider:\n{observations}\n" if observations else "")
         user = (
@@ -624,13 +609,9 @@ class NL2SQLService:
         for t, cols in schema.items():
             col_list = ", ".join(cols)
             tables_desc.append(f"- {settings.nl2sql_db_prefix}.{t}({col_list})")
-        system = (
-            "You are an analyst agent. Given a natural language question and the results of prior\n"
-            "exploratory queries, write ONE SQL SELECT that directly answers the question.\n"
-            "Dialect: MindsDB (MySQL-like). Rules: SELECT-only; prefix tables with the allowed schema;\n"
-            "For date parts, use EXTRACT(YEAR|MONTH FROM CAST(CASE WHEN col IS NULL OR col IN ('None','') THEN NULL ELSE col END AS DATE)).\n"
-            "Never use NULLIF with more than 2 arguments; prefer the CASE…END form above.\n"
-            "Return only the SQL (optionally fenced). No explanation."
+        system = get_prompt_store().render(
+            "nl2sql_generate_with_evidence_system",
+            {"db_prefix": settings.nl2sql_db_prefix},
         )
         # Condense evidence to keep prompt within safe bounds
         condensed = _condense_evidence(
@@ -719,12 +700,7 @@ class NL2SQLService:
             ),
             "max_items": max_items,
         }
-        system = (
-            "You are a visualization assistant. Propose up to N concise axis suggestions\n"
-            "for charts that would best communicate the answer to the question, based on the columns\n"
-            "available and any exploratory findings. Prefer simple bar/line charts; fall back to 'table' when unclear.\n"
-            "Return ONLY JSON: {\"axes\":[{\"x\":str,\"y\":str?,\"agg\":str?,\"chart\":str,\"reason\":str}...]}."
-        )
+        system = get_prompt_store().get("nl2sql_axes_system").template
         # Enforce per-agent cap (axes)
         check_and_increment("axes")
         payload_json = json.dumps(payload, ensure_ascii=False)
@@ -792,21 +768,7 @@ class NL2SQLService:
             len(evidence),
             len(retrieval_context or []),
         )
-        system = (
-            "Tu es un rédacteur‑analyste français. À partir des tableaux de résultats fournis (evidence), "
-            "réponds directement à la question de l'utilisateur de manière naturelle et fluide.\n\n"
-            "Règles:\n"
-            "- Adapte librement la structure de ta réponse selon la question et les données disponibles\n"
-            "- Intègre les chiffres précis (comptes, pourcentages, tendances) de l'evidence SQL\n"
-            "- Si un bloc 'retrieval_context' est fourni, enrichis ta réponse avec ces exemples concrets de manière naturelle\n"
-            "- Si l'evidence SQL est vide ou non pertinente, ignore-la et base-toi uniquement sur retrieval_context si disponible\n"
-            "- Si retrieval_context est vide ou non pertinent, ignore-le et base-toi uniquement sur l'evidence SQL\n"
-            "- Si les deux sources sont insuffisantes, indique clairement que tu n'as pas trouvé de données pertinentes\n"
-            "- N'utilise JAMAIS de formulations prédéfinies comme « Mise en avant : », « Constat : », « Action proposée : »\n"
-            "- Pas de titres, pas de listes à puces, pas de sections numérotées\n"
-            "- Français professionnel, direct et concis (2-5 phrases selon le contexte)\n"
-            "- Pas de SQL ni de jargon technique dans la réponse finale"
-        )
+        system = get_prompt_store().get("nl2sql_writer_system").template
         payload = {
             "question": question,
             "evidence": _condense_evidence(
