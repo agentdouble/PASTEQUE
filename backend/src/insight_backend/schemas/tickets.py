@@ -67,6 +67,8 @@ class TicketContextPreviewItem(BaseModel):
   period_label: str | None = None
   count: int | None = None
   total: int | None = None
+  context_chars: int | None = None
+  context_char_limit: int | None = None
   evidence_spec: dict[str, Any] | None = None
   evidence_rows: dict[str, Any] | None = None
   error: str | None = None
