@@ -52,6 +52,7 @@ export interface ChatMetadata {
   ticket_mode?: boolean
   tickets_from?: string
   tickets_to?: string
+  ticket_selection?: TicketSelectionPayload
   // Extension point
   [key: string]: unknown
 }
@@ -180,6 +181,15 @@ export interface TicketContextMeta {
   table?: string
   date_from?: string
   date_to?: string
+  context_chars?: number
+  context_char_limit?: number
+  context_mode?: string
+}
+
+export interface TicketSelectionPayload {
+  pk: string
+  values: string[]
+  table?: string
 }
 
 export interface TicketPreviewItem {
@@ -187,6 +197,8 @@ export interface TicketPreviewItem {
   period_label?: string
   count?: number
   total?: number
+  context_chars?: number
+  context_char_limit?: number
   evidence_spec?: EvidenceSpec | null
   evidence_rows?: EvidenceRowsPayload | null
   error?: string
