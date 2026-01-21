@@ -93,10 +93,6 @@ def _ensure_data_source_preference_columns() -> None:
         stmts.append(
             "ALTER TABLE data_source_preferences ADD COLUMN IF NOT EXISTS sub_category_field VARCHAR(255)"
         )
-    if "ticket_context_fields" not in columns:
-        stmts.append(
-            "ALTER TABLE data_source_preferences ADD COLUMN IF NOT EXISTS ticket_context_fields JSON"
-        )
     if "explorer_enabled" not in columns:
         stmts.append(
             "ALTER TABLE data_source_preferences ADD COLUMN IF NOT EXISTS explorer_enabled BOOLEAN NOT NULL DEFAULT TRUE"

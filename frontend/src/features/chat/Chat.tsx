@@ -21,7 +21,6 @@ import type {
   FeedbackResponse,
   FeedbackValue
 } from '@/types/chat'
-import type { TableExplorePreview } from '@/types/data'
 import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip } from 'react-icons/hi2'
 import clsx from 'clsx'
 import { renderMarkdown } from '@/utils/markdown'
@@ -193,238 +192,11 @@ function normalizeRetrievalDetail(raw: unknown): RetrievalDetails | null {
   return detail
 }
 
-function formatContextUsage(usage: { chars: number; limit: number } | null): { label: string; overLimit: boolean } | null {
-  if (!usage) return null
-  const { chars, limit } = usage
-  if (!Number.isFinite(chars) || !Number.isFinite(limit) || limit <= 0) return null
-  const safeChars = Math.max(0, chars)
-  const safeLimit = Math.max(1, limit)
-  const percent = Math.round((safeChars / safeLimit) * 100)
-  const label = `${percent}% du contexte`
-  return { label, overLimit: safeChars > safeLimit }
-}
-
 function createMessageId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
-
-function toDateTimestamp(value?: string): number | undefined {
-  if (!value) return undefined
-  const ts = Date.parse(`${value}T00:00:00Z`)
-  return Number.isNaN(ts) ? undefined : ts
-}
-
-function toDateIso(value?: number): string | undefined {
-  if (value === undefined) return undefined
-  return new Date(value).toISOString().slice(0, 10)
-}
-
-function formatTicketDate(value?: string): string {
-  if (!value) return '—'
-  const date = new Date(`${value}T00:00:00Z`)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('fr-FR')
-}
-
-const EXPLORER_SELECTION_LIMIT = 500
-
-type ExplorerSelectionParams = {
-  source: string
-  category: string
-  subCategory: string
-  from?: string
-  to?: string
-  sort?: 'asc' | 'desc'
-}
-
-type ExplorerTicketSelection = {
-  id: string
-  source: string
-  category: string
-  subCategory: string
-  from?: string
-  to?: string
-  sort?: 'asc' | 'desc'
-  idColumn: string
-  values: string[]
-  matchingRows: number
-  limited: boolean
-}
-
-function parseExplorerParams(search: string): ExplorerSelectionParams | null {
-  const sp = new URLSearchParams(search)
-  const source = sp.get('explorer_source')?.trim()
-  const category = sp.get('explorer_category')?.trim()
-  const subCategory = sp.get('explorer_sub_category')?.trim()
-  if (!source || !category || !subCategory) return null
-  const sortRaw = sp.get('explorer_sort')?.trim().toLowerCase()
-  const sort = sortRaw === 'asc' || sortRaw === 'desc' ? (sortRaw as 'asc' | 'desc') : undefined
-  const from = sp.get('explorer_from')?.trim() || undefined
-  const to = sp.get('explorer_to')?.trim() || undefined
-  return { source, category, subCategory, from, to, sort }
-}
-
-function explorerSelectionKey(params: ExplorerSelectionParams): string {
-  return [
-    params.source,
-    params.category,
-    params.subCategory,
-    params.from ?? '',
-    params.to ?? '',
-    params.sort ?? '',
-  ].join('|')
-}
-
-function pickTicketIdColumn(columns: string[]): string | null {
-  if (!Array.isArray(columns)) return null
-  const lookup = new Map(columns.map(col => [col.trim().toLowerCase(), col]))
-  for (const candidate of ['ticket_id', 'id', 'ref']) {
-    const match = lookup.get(candidate)
-    if (match) return match
-  }
-  return null
-}
-
-type DateRangeSliderProps = {
-  minDate?: string
-  maxDate?: string
-  range: { from?: string; to?: string }
-  onChange: (next: { from?: string; to?: string }) => void
-}
-
-function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderProps) {
-  const sliderRef = useRef<HTMLDivElement | null>(null)
-  const minTs = toDateTimestamp(minDate)
-  const maxTs = toDateTimestamp(maxDate)
-  const inactive = !range.from && !range.to
-
-  if (minTs === undefined || maxTs === undefined) {
-    return (
-      <div className="text-[11px] text-primary-500">
-        Bornes de dates indisponibles.
-      </div>
-    )
-  }
-
-  const startIso = range.from ?? minDate
-  const endIso = range.to ?? maxDate
-  const startTs =
-    startIso ? Math.max(minTs, toDateTimestamp(startIso) ?? minTs) : minTs
-  const endTs =
-    endIso ? Math.min(maxTs, toDateTimestamp(endIso) ?? maxTs) : maxTs
-  const totalSpan = Math.max(maxTs - minTs, 1)
-  const startPercent = Math.max(0, Math.min(100, ((startTs - minTs) / totalSpan) * 100))
-  const endPercent = Math.max(startPercent, Math.min(100, ((endTs - minTs) / totalSpan) * 100))
-
-  const tsFromPointer = (clientX: number): number | undefined => {
-    const rect = sliderRef.current?.getBoundingClientRect()
-    if (!rect) return undefined
-    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-    return Math.round(minTs + pct * (maxTs - minTs))
-  }
-
-  const handleRangeStartChange = (value: number) => {
-    const clamped = Math.min(Math.max(value, minTs), endTs)
-    onChange({
-      from: toDateIso(clamped),
-      to: toDateIso(endTs),
-    })
-  }
-
-  const handleRangeEndChange = (value: number) => {
-    const clamped = Math.max(Math.min(value, maxTs), startTs)
-    onChange({
-      from: toDateIso(startTs),
-      to: toDateIso(clamped),
-    })
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-[11px] text-primary-600">
-        <span>
-          Du <span className="font-semibold text-primary-900">{range.from ? formatTicketDate(range.from) : '…'}</span>
-        </span>
-        <span>
-          au <span className="font-semibold text-primary-900">{range.to ? formatTicketDate(range.to) : '…'}</span>
-        </span>
-      </div>
-      <div className="relative h-10" ref={sliderRef}>
-        <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-100" />
-        <div
-          className={clsx(
-            'absolute top-1/2 h-2 -translate-y-1/2 rounded-full transition-all duration-200',
-            inactive ? 'bg-primary-300/70' : 'bg-primary-900/60'
-          )}
-          style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
-        />
-        <div
-          className={clsx(
-            'absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 shadow-sm pointer-events-none transition-transform duration-150',
-            inactive ? 'bg-primary-600 border-primary-100' : 'bg-primary-950 border-primary-100'
-          )}
-          style={{ left: `calc(${startPercent}% - 8px)` }}
-        />
-        <div
-          className={clsx(
-            'absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 shadow-sm pointer-events-none transition-transform duration-150',
-            inactive ? 'bg-primary-600 border-primary-100' : 'bg-primary-900 border-primary-100'
-          )}
-          style={{ left: `calc(${endPercent}% - 8px)` }}
-        />
-        <button
-          type="button"
-          aria-label="Début de période"
-          className="absolute top-0 h-full w-11 -translate-x-1/2"
-          onPointerDown={event => {
-            event.preventDefault()
-            const ts = tsFromPointer(event.clientX)
-            if (ts !== undefined) handleRangeStartChange(ts)
-            const move = (evt: PointerEvent) => {
-              const next = tsFromPointer(evt.clientX)
-              if (next !== undefined) handleRangeStartChange(next)
-            }
-            const stop = () => {
-              window.removeEventListener('pointermove', move)
-              window.removeEventListener('pointerup', stop)
-            }
-            window.addEventListener('pointermove', move)
-            window.addEventListener('pointerup', stop, { once: true })
-          }}
-          style={{ zIndex: 30, background: 'transparent', left: `${startPercent}%` }}
-        />
-        <button
-          type="button"
-          aria-label="Fin de période"
-          className="absolute top-0 h-full w-11 -translate-x-1/2"
-          onPointerDown={event => {
-            event.preventDefault()
-            const ts = tsFromPointer(event.clientX)
-            if (ts !== undefined) handleRangeEndChange(ts)
-            const move = (evt: PointerEvent) => {
-              const next = tsFromPointer(evt.clientX)
-              if (next !== undefined) handleRangeEndChange(next)
-            }
-            const stop = () => {
-              window.removeEventListener('pointermove', move)
-              window.removeEventListener('pointerup', stop)
-            }
-            window.addEventListener('pointermove', move)
-            window.addEventListener('pointerup', stop, { once: true })
-          }}
-          style={{ zIndex: 31, background: 'transparent', left: `${endPercent}%` }}
-        />
-      </div>
-      {inactive ? (
-        <div className="text-[11px] text-primary-500">
-          Glissez pour définir une période.
-        </div>
-      ) : null}
-    </div>
-  )
 }
 
 type TicketPanelItem = {
@@ -434,12 +206,6 @@ type TicketPanelItem = {
   spec: EvidenceSpec | null
   data: EvidenceRowsPayload | null
   error?: string
-}
-
-type TicketSelectionState = {
-  values: string[]
-  pk?: string
-  table?: string
 }
 
 export default function Chat() {
@@ -475,7 +241,6 @@ export default function Chat() {
   const [ticketMetaLoading, setTicketMetaLoading] = useState(false)
   const [ticketMetaError, setTicketMetaError] = useState('')
   const [ticketStatus, setTicketStatus] = useState('')
-  const [ticketContextUsage, setTicketContextUsage] = useState<{ chars: number; limit: number } | null>(null)
   const [ticketTable, setTicketTable] = useState<string>('')
   const [ticketTables, setTicketTables] = useState<string[]>([])
   const [sqlMode, setSqlMode] = useState(false)
@@ -485,10 +250,6 @@ export default function Chat() {
   const [ticketPreviewLoading, setTicketPreviewLoading] = useState(false)
   const [ticketPreviewError, setTicketPreviewError] = useState('')
   const [ticketPreviewTab, setTicketPreviewTab] = useState(0)
-  const [ticketSelections, setTicketSelections] = useState<Record<string, TicketSelectionState>>({})
-  const [explorerTicketSelection, setExplorerTicketSelection] = useState<ExplorerTicketSelection | null>(null)
-  const [explorerTicketLoading, setExplorerTicketLoading] = useState(false)
-  const [explorerTicketError, setExplorerTicketError] = useState('')
   const [showTicketsSheet, setShowTicketsSheet] = useState(false)
   // Données utilisées (tables accessibles au LLM)
   const [showDataPanel, setShowDataPanel] = useState(false)
@@ -501,13 +262,10 @@ export default function Chat() {
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const ticketPreviewAbortRef = useRef<AbortController | null>(null)
-  const explorerSelectionAbortRef = useRef<AbortController | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
   const deepSearchStatusRef = useRef('')
   const deepSearchUsedWordsRef = useRef<Set<string>>(new Set())
-  const explorerSelectionKeyRef = useRef<string | null>(null)
-  const explorerSelectionAppliedKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!ticketMode || !awaitingFirstDelta) {
@@ -594,28 +352,6 @@ export default function Chat() {
       sp.delete('new')
       setSearchParams(sp, { replace: true })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search])
-
-  // Charger une sélection Explorer (source/category/sub category) si présente dans l'URL
-  useEffect(() => {
-    const params = parseExplorerParams(search)
-    if (!params) return
-    const key = explorerSelectionKey(params)
-    if (explorerSelectionKeyRef.current === key) return
-    explorerSelectionKeyRef.current = key
-    setExplorerTicketError('')
-    setExplorerTicketSelection(null)
-    setTicketMode(true)
-    setSqlMode(false)
-    setChartMode(false)
-    setShowTicketPanel(true)
-    setTicketTable(params.source)
-    void loadTicketMetadata(params.source, { target: 'main' })
-    if (params.from || params.to) {
-      setTicketRanges([{ id: createMessageId(), from: params.from, to: params.to }])
-    }
-    void loadExplorerTicketSelection(params)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
@@ -767,103 +503,6 @@ export default function Chat() {
     return { periods, sources }
   }
 
-  async function loadExplorerTicketSelection(params: ExplorerSelectionParams) {
-    if (explorerSelectionAbortRef.current) {
-      explorerSelectionAbortRef.current.abort()
-    }
-    const controller = new AbortController()
-    explorerSelectionAbortRef.current = controller
-    setExplorerTicketLoading(true)
-    setExplorerTicketError('')
-    setExplorerTicketSelection(null)
-
-    const query = new URLSearchParams({
-      category: params.category,
-      sub_category: params.subCategory,
-      limit: String(EXPLORER_SELECTION_LIMIT),
-      offset: '0',
-    })
-    if (params.sort) query.set('sort_date', params.sort)
-    if (params.from) query.set('date_from', params.from)
-    if (params.to) query.set('date_to', params.to)
-
-    try {
-      const preview = await apiFetch<TableExplorePreview>(
-        `/data/explore/${encodeURIComponent(params.source)}?${query.toString()}`,
-        { signal: controller.signal }
-      )
-      if (controller.signal.aborted) return
-      const columns = preview?.preview_columns ?? []
-      const idColumn = pickTicketIdColumn(columns)
-      if (!idColumn) {
-        throw new Error("Colonne d'identifiant introuvable pour charger les tickets.")
-      }
-      const values = (preview?.preview_rows ?? [])
-        .map(row => row[idColumn])
-        .filter(value => value !== null && value !== undefined)
-        .map(value => String(value))
-        .filter(value => value.trim() !== '')
-      if (values.length === 0) {
-        throw new Error('Aucun ticket trouvé pour cette sélection.')
-      }
-      const uniqueValues = Array.from(new Set(values))
-      const matchingRows = typeof preview?.matching_rows === 'number' ? preview.matching_rows : uniqueValues.length
-      setExplorerTicketSelection({
-        id: explorerSelectionKey(params),
-        source: params.source,
-        category: params.category,
-        subCategory: params.subCategory,
-        from: params.from,
-        to: params.to,
-        sort: params.sort,
-        idColumn,
-        values: uniqueValues,
-        matchingRows,
-        limited: matchingRows > uniqueValues.length,
-      })
-      explorerSelectionAppliedKeyRef.current = null
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return
-      setExplorerTicketError(err instanceof Error ? err.message : 'Chargement de la sélection Explorer impossible.')
-    } finally {
-      if (!controller.signal.aborted) {
-        setExplorerTicketLoading(false)
-      }
-    }
-  }
-
-  function updateTicketSelection(item: TicketPanelItem, values: string[]) {
-    const unique = Array.from(new Set(values.filter(value => value.trim() !== '')))
-    setTicketSelections(prev => {
-      const next = { ...prev }
-      if (unique.length === 0) {
-        if (!next[item.key]) return prev
-        delete next[item.key]
-        return next
-      }
-      next[item.key] = {
-        values: unique,
-        pk: item.spec?.pk,
-        table: item.table,
-      }
-      return next
-    })
-  }
-
-  function clearTicketSelection(panelKey: string) {
-    setTicketSelections(prev => {
-      if (!prev[panelKey]) return prev
-      const next = { ...prev }
-      delete next[panelKey]
-      return next
-    })
-    if (explorerSelectionAppliedKeyRef.current === panelKey) {
-      explorerSelectionAppliedKeyRef.current = null
-      setExplorerTicketSelection(null)
-      setExplorerTicketError('')
-    }
-  }
-
   async function loadTicketPreview(
     sources: Array<{ table?: string; periods?: Array<{ from?: string; to?: string }> }>
   ) {
@@ -960,12 +599,10 @@ export default function Chat() {
         setSqlMode(true)
         setChartMode(false)
         setTicketStatus('')
-        setTicketContextUsage(null)
         setTicketPreviewItems([])
         setTicketPreviewError('')
         setTicketPreviewLoading(false)
         setTicketPreviewTab(0)
-        setTicketSelections({})
       }
       return next
     })
@@ -1005,31 +642,17 @@ export default function Chat() {
       if (sqlMode || isChartMode) baseMeta.nl2sql = true
       if (ticketMode) {
         baseMeta.ticket_mode = true
-        const selection = activeSelection
-        if (selection) {
-          baseMeta.ticket_selection = {
-            pk: selection.pk,
-            values: selection.values,
-            table: selection.table,
-          }
-          const selectionTable = selection.table || ticketTable
-          if (selectionTable) {
-            baseMeta.ticket_table = selectionTable
-          }
-          setTicketStatus(`Sélection active (${selection.values.length} tickets)`)
-        } else {
-          const { periods, sources } = buildTicketSources()
-          if (periods.length > 0) {
-            baseMeta.ticket_periods = periods
-            baseMeta.tickets_from = periods[0].from
-            baseMeta.tickets_to = periods[0].to
-          }
-          if (ticketTable) baseMeta.ticket_table = ticketTable
-          if (sources.length > 0) {
-            baseMeta.ticket_sources = sources
-          }
-          setTicketStatus('Préparation du contexte tickets…')
+        const { periods, sources } = buildTicketSources()
+        if (periods.length > 0) {
+          baseMeta.ticket_periods = periods
+          baseMeta.tickets_from = periods[0].from
+          baseMeta.tickets_to = periods[0].to
         }
+        if (ticketTable) baseMeta.ticket_table = ticketTable
+        if (sources.length > 0) {
+          baseMeta.ticket_sources = sources
+        }
+        setTicketStatus('Préparation du contexte tickets…')
       } else {
         setTicketStatus('')
       }
@@ -1056,11 +679,6 @@ export default function Chat() {
             if (count !== undefined) parts.push(`${count}${total ? `/${total}` : ''} tickets`)
             if (label) parts.push(label)
             setTicketStatus(parts.join(' — ') || 'Contexte tickets appliqué')
-            const contextChars = typeof tc.context_chars === 'number' ? tc.context_chars : undefined
-            const contextLimit = typeof tc.context_char_limit === 'number' ? tc.context_char_limit : undefined
-            if (contextChars !== undefined && contextLimit !== undefined) {
-              setTicketContextUsage({ chars: contextChars, limit: contextLimit })
-            }
           }
           if ((meta as any)?.ticket_context_error) {
             setTicketStatus(String((meta as any).ticket_context_error))
@@ -1428,7 +1046,6 @@ export default function Chat() {
         : []
       setExcludedTables(new Set(ex))
       setEffectiveTables([])
-      setTicketSelections({})
       setHighlightMessageId(typeof opts?.highlightMessageId === 'number' ? opts?.highlightMessageId : null)
       closeHistory()
     } catch (e) {
@@ -1449,7 +1066,6 @@ export default function Chat() {
     setTicketPreviewError('')
     setTicketPreviewLoading(false)
     setTicketPreviewTab(0)
-    setTicketSelections({})
     setError('')
     setHistoryOpen(false)
     setHighlightMessageId(null)
@@ -1770,29 +1386,6 @@ export default function Chat() {
     return []
   }, [ticketMode, ticketPreviewItems, evidenceSpec, evidenceData])
 
-  useEffect(() => {
-    if (!ticketMode || !explorerTicketSelection || panelItems.length === 0) return
-    const targetIndex = panelItems.findIndex(
-      item => (item.table ?? '').toLowerCase() === explorerTicketSelection.source.toLowerCase()
-    )
-    const resolvedIndex = targetIndex >= 0 ? targetIndex : 0
-    const target = panelItems[resolvedIndex]
-    if (!target) return
-    if (explorerSelectionAppliedKeyRef.current === target.key) return
-    setTicketSelections(prev => ({
-      ...prev,
-      [target.key]: {
-        values: explorerTicketSelection.values,
-        pk: explorerTicketSelection.idColumn,
-        table: target.table ?? explorerTicketSelection.source,
-      },
-    }))
-    if (panelItems.length > 1) {
-      setTicketPreviewTab(resolvedIndex)
-    }
-    explorerSelectionAppliedKeyRef.current = target.key
-  }, [ticketMode, explorerTicketSelection, panelItems])
-
   const panelCount = useMemo(
     () =>
       panelItems.reduce((acc, item) => {
@@ -1827,59 +1420,6 @@ export default function Chat() {
     }
     return panelItems[0]
   }, [panelItems, ticketMode, ticketPreviewTab])
-
-  useEffect(() => {
-    if (!ticketMode) return
-    const validKeys = new Set(panelItems.map(item => item.key))
-    setTicketSelections(prev => {
-      let changed = false
-      const next: Record<string, TicketSelectionState> = {}
-      for (const [key, value] of Object.entries(prev)) {
-        if (!validKeys.has(key)) {
-          changed = true
-          continue
-        }
-        next[key] = value
-      }
-      return changed ? next : prev
-    })
-  }, [ticketMode, panelItems])
-
-  const activeSelection = useMemo(() => {
-    if (!ticketMode || !activePanelItem) return null
-    const selection = ticketSelections[activePanelItem.key]
-    if (!selection || selection.values.length === 0) return null
-    if (!selection.pk) return null
-    return selection
-  }, [ticketMode, activePanelItem, ticketSelections])
-
-  const activeSelectionCount = activeSelection?.values.length ?? 0
-
-  const previewUsage = useMemo(() => {
-    const items = ticketPreviewItems.filter(item => typeof item.context_chars === 'number')
-    if (items.length === 0) return null
-    const totalChars = items.reduce((acc, item) => acc + (item.context_chars ?? 0), 0)
-    const limit = items.find(item => typeof item.context_char_limit === 'number')?.context_char_limit
-    if (typeof limit !== 'number' || !Number.isFinite(limit) || limit <= 0) return null
-    return { chars: totalChars, limit }
-  }, [ticketPreviewItems])
-
-  useEffect(() => {
-    if (!ticketMode) {
-      setTicketContextUsage(null)
-      return
-    }
-    if (activeSelectionCount > 0) {
-      return
-    }
-    if (previewUsage) {
-      setTicketContextUsage(previewUsage)
-    } else if (!ticketPreviewLoading) {
-      setTicketContextUsage(null)
-    }
-  }, [ticketMode, activeSelectionCount, previewUsage, ticketPreviewLoading])
-
-  const contextUsageLabel = useMemo(() => formatContextUsage(ticketContextUsage), [ticketContextUsage])
 
   function formatPeriodLabel(item: TicketPanelItem | null): string | null {
     if (!item) return null
@@ -1917,11 +1457,6 @@ export default function Chat() {
     const activeItem = showTabs ? panelItems[activeIndex] : panelItems[0]
     const activeLabel = activeItem?.table || activeItem?.spec?.entity_label || 'Tickets'
     const activePeriod = formatPeriodLabel(activeItem)
-    const selectionValues = ticketMode && activeItem ? ticketSelections[activeItem.key]?.values ?? [] : []
-    const selectionCount = selectionValues.length
-    const selectionLabel = selectionCount === 1
-      ? '1 ticket sélectionné'
-      : `${selectionCount} tickets sélectionnés`
     return (
       <div className="space-y-3">
         {showTabs && (
@@ -1948,18 +1483,6 @@ export default function Chat() {
             })}
           </div>
         )}
-        {ticketMode && selectionCount > 0 && activeItem && (
-          <div className="flex items-center justify-between text-[11px] text-primary-600">
-            <span>{selectionLabel}</span>
-            <button
-              type="button"
-              className="text-primary-700 underline"
-              onClick={() => clearTicketSelection(activeItem.key)}
-            >
-              Tout effacer
-            </button>
-          </div>
-        )}
         {activePeriod && (
           <div className="text-[11px] text-primary-500">
             {showTabs ? (
@@ -1975,19 +1498,7 @@ export default function Chat() {
         {activeItem?.error ? (
           <div className="text-xs text-red-600">{activeItem.error}</div>
         ) : (
-          <TicketPanel
-            spec={activeItem?.spec ?? null}
-            data={activeItem?.data ?? null}
-            containerRef={containerRef}
-            selection={
-              ticketMode && activeItem?.spec?.pk
-                ? {
-                    values: selectionValues,
-                    onChange: values => activeItem && updateTicketSelection(activeItem, values),
-                  }
-                : undefined
-            }
-          />
+          <TicketPanel spec={activeItem?.spec ?? null} data={activeItem?.data ?? null} containerRef={containerRef} />
         )}
       </div>
     )
@@ -2092,20 +1603,10 @@ export default function Chat() {
                   <div className="mb-3 border rounded-2xl bg-primary-50 p-3 flex flex-col gap-2">
                     <div className="flex items-center justify-between text-xs text-primary-700">
                       <span>Contexte tickets {ticketMeta?.table ? `(${ticketMeta.table})` : ''}</span>
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-3">
                         <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                           {ticketMetaError || ticketStatus || (ticketMeta?.total ? `${ticketMeta.total} tickets` : '')}
                         </span>
-                        {contextUsageLabel && (
-                          <span
-                            className={clsx(
-                              'text-[11px]',
-                              contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
-                            )}
-                          >
-                            {contextUsageLabel.label}
-                          </span>
-                        )}
                         <button
                           type="button"
                           className="text-[11px] text-primary-600 underline"
@@ -2115,42 +1616,6 @@ export default function Chat() {
                         </button>
                       </div>
                     </div>
-                    {activeSelectionCount > 0 && activePanelItem && (
-                      <div className="flex items-center justify-between text-[11px] text-primary-600">
-                        <span>
-                          {activeSelectionCount === 1
-                            ? '1 ticket sélectionné'
-                            : `${activeSelectionCount} tickets sélectionnés`}
-                        </span>
-                        <button
-                          type="button"
-                          className="text-primary-700 underline"
-                          onClick={() => clearTicketSelection(activePanelItem.key)}
-                        >
-                          Effacer
-                        </button>
-                      </div>
-                    )}
-                    {explorerTicketLoading ? (
-                      <div className="text-[11px] text-primary-500">
-                        Chargement des tickets Explorer…
-                      </div>
-                    ) : explorerTicketError ? (
-                      <div className="text-[11px] text-red-600">{explorerTicketError}</div>
-                    ) : explorerTicketSelection ? (
-                      <div className="flex items-center justify-between text-[11px] text-primary-600 rounded-lg border border-primary-100 bg-white/70 px-2 py-1">
-                        <span className="truncate">
-                          Explorer chargé : {explorerTicketSelection.category} / {explorerTicketSelection.subCategory}
-                        </span>
-                        <span className="whitespace-nowrap">
-                          {explorerTicketSelection.values.length}
-                          {explorerTicketSelection.limited
-                            ? `/${explorerTicketSelection.matchingRows}`
-                            : ''}{' '}
-                          tickets
-                        </span>
-                      </div>
-                    ) : null}
                     <div className="flex items-center gap-2 flex-wrap">
                       <label className="text-[11px] text-primary-600">Table</label>
                       <select
@@ -2162,7 +1627,7 @@ export default function Chat() {
                         }}
                         className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
                       >
-                        <option value="">Auto (config chat)</option>
+                        <option value="">Auto (config loop)</option>
                         {ticketTables.map(name => (
                           <option key={name} value={name}>{name}</option>
                         ))}
@@ -2171,37 +1636,50 @@ export default function Chat() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex flex-col gap-2 w-full">
                         {ticketRanges.map((range, idx) => (
-                          <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
-                            <DateRangeSlider
-                              minDate={ticketMeta?.min}
-                              maxDate={ticketMeta?.max}
-                              range={range}
-                              onChange={next =>
-                                setTicketRanges(prev =>
-                                  prev.map(r => (r.id === range.id ? { ...r, ...next } : r))
-                                )
-                              }
+                          <div key={range.id} className="flex items-center gap-2 flex-wrap">
+                            <label className="text-[11px] text-primary-600">Du</label>
+                            <input
+                              type="date"
+                              value={range.from ?? ''}
+                              min={ticketMeta?.min}
+                              max={range.to || ticketMeta?.max}
+                              onChange={e => {
+                                const value = e.target.value || undefined
+                                setTicketRanges(prev => prev.map(r => r.id === range.id ? { ...r, from: value } : r))
+                              }}
+                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
                             />
-                            <div className="flex items-center gap-3">
-                              {ticketRanges.length > 1 && (
-                                <button
-                                  type="button"
-                                  className="text-xs text-red-600 underline"
-                                  onClick={() => setTicketRanges(prev => prev.filter(r => r.id !== range.id))}
-                                >
-                                  Supprimer
-                                </button>
-                              )}
-                              {idx === ticketRanges.length - 1 && (
-                                <button
-                                  type="button"
-                                  className="text-xs text-primary-700 underline"
-                                  onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
-                                >
-                                  + Ajouter une période
-                                </button>
-                              )}
-                            </div>
+                            <span className="text-primary-400 text-xs">→</span>
+                            <label className="text-[11px] text-primary-600">au</label>
+                            <input
+                              type="date"
+                              value={range.to ?? ''}
+                              min={range.from || ticketMeta?.min}
+                              max={ticketMeta?.max}
+                              onChange={e => {
+                                const value = e.target.value || undefined
+                                setTicketRanges(prev => prev.map(r => r.id === range.id ? { ...r, to: value } : r))
+                              }}
+                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
+                            />
+                            {ticketRanges.length > 1 && (
+                              <button
+                                type="button"
+                                className="text-xs text-red-600 underline"
+                                onClick={() => setTicketRanges(prev => prev.filter(r => r.id !== range.id))}
+                              >
+                                Supprimer
+                              </button>
+                            )}
+                            {idx === ticketRanges.length - 1 && (
+                              <button
+                                type="button"
+                                className="text-xs text-primary-700 underline"
+                                onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
+                              >
+                                + Ajouter une période
+                              </button>
+                            )}
                           </div>
                         ))}
                         <button
@@ -2253,7 +1731,7 @@ export default function Chat() {
                           }}
                           className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
                         >
-                          <option value="">Auto (config chat)</option>
+                          <option value="">Auto (config loop)</option>
                           {ticketTables.map(name => (
                             <option key={name} value={name}>{name}</option>
                           ))}
@@ -2261,57 +1739,78 @@ export default function Chat() {
                       </div>
                       <div className="flex flex-col gap-2 w-full mt-1">
                         {(source.ranges || []).map((range, idx) => (
-                          <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
-                            <DateRangeSlider
-                              minDate={minDate}
-                              maxDate={maxDate}
-                              range={range}
-                              onChange={next =>
+                          <div key={range.id} className="flex items-center gap-2 flex-wrap">
+                            <label className="text-[11px] text-primary-600">Du</label>
+                            <input
+                              type="date"
+                              value={range.from ?? ''}
+                              min={minDate}
+                              max={range.to || maxDate}
+                              onChange={e => {
+                                const value = e.target.value || undefined
                                 setExtraTicketSources(prev =>
                                   prev.map(s =>
                                     s.id === source.id
-                                      ? { ...s, ranges: s.ranges.map(r => (r.id === range.id ? { ...r, ...next } : r)) }
+                                      ? { ...s, ranges: s.ranges.map(r => r.id === range.id ? { ...r, from: value } : r) }
                                       : s
                                   )
                                 )
-                              }
+                              }}
+                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
                             />
-                            <div className="flex items-center gap-3">
-                              {(source.ranges?.length || 0) > 1 && (
-                                <button
-                                  type="button"
-                                  className="text-xs text-red-600 underline"
-                                  onClick={() =>
-                                    setExtraTicketSources(prev =>
-                                      prev.map(s =>
-                                        s.id === source.id
-                                          ? { ...s, ranges: s.ranges.filter(r => r.id !== range.id) }
-                                          : s
-                                      )
+                            <span className="text-primary-400 text-xs">→</span>
+                            <label className="text-[11px] text-primary-600">au</label>
+                            <input
+                              type="date"
+                              value={range.to ?? ''}
+                              min={range.from || minDate}
+                              max={maxDate}
+                              onChange={e => {
+                                const value = e.target.value || undefined
+                                setExtraTicketSources(prev =>
+                                  prev.map(s =>
+                                    s.id === source.id
+                                      ? { ...s, ranges: s.ranges.map(r => r.id === range.id ? { ...r, to: value } : r) }
+                                      : s
+                                  )
+                                )
+                              }}
+                              className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
+                            />
+                            {(source.ranges?.length || 0) > 1 && (
+                              <button
+                                type="button"
+                                className="text-xs text-red-600 underline"
+                                onClick={() =>
+                                  setExtraTicketSources(prev =>
+                                    prev.map(s =>
+                                      s.id === source.id
+                                        ? { ...s, ranges: s.ranges.filter(r => r.id !== range.id) }
+                                        : s
                                     )
-                                  }
-                                >
-                                  Supprimer
-                                </button>
-                              )}
-                              {idx === (source.ranges?.length || 1) - 1 && (
-                                <button
-                                  type="button"
-                                  className="text-xs text-primary-700 underline"
-                                  onClick={() =>
-                                    setExtraTicketSources(prev =>
-                                      prev.map(s =>
-                                        s.id === source.id
-                                          ? { ...s, ranges: [...s.ranges, { id: createMessageId() }] }
-                                          : s
-                                      )
+                                  )
+                                }
+                              >
+                                Supprimer
+                              </button>
+                            )}
+                            {idx === (source.ranges?.length || 1) - 1 && (
+                              <button
+                                type="button"
+                                className="text-xs text-primary-700 underline"
+                                onClick={() =>
+                                  setExtraTicketSources(prev =>
+                                    prev.map(s =>
+                                      s.id === source.id
+                                        ? { ...s, ranges: [...s.ranges, { id: createMessageId() }] }
+                                        : s
                                     )
-                                  }
-                                >
-                                  + Ajouter une période
-                                </button>
-                              )}
-                            </div>
+                                  )
+                                }
+                              >
+                                + Ajouter une période
+                              </button>
+                            )}
                           </div>
                         ))}
                         <button
@@ -2349,26 +1848,11 @@ export default function Chat() {
                   </div>
                 ) : (
                   <div className="mb-3 border rounded-2xl bg-primary-50 px-3 py-2 flex items-center justify-between text-xs text-primary-700">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <span>Contexte tickets masqué</span>
                       <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                         {ticketMetaError || ticketStatus || (ticketMeta?.total ? `${ticketMeta.total} tickets` : '')}
                       </span>
-                      {contextUsageLabel && (
-                        <span
-                          className={clsx(
-                            'text-[11px]',
-                            contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
-                          )}
-                        >
-                          {contextUsageLabel.label}
-                        </span>
-                      )}
-                      {activeSelectionCount > 0 && (
-                        <span className="text-[11px] text-primary-600">
-                          {activeSelectionCount === 1 ? '1 sélectionné' : `${activeSelectionCount} sélectionnés`}
-                        </span>
-                      )}
                     </div>
                     <button
                       type="button"
@@ -2646,13 +2130,9 @@ type TicketPanelProps = {
   spec: EvidenceSpec | null
   data: EvidenceRowsPayload | null
   containerRef?: RefObject<HTMLDivElement>
-  selection?: {
-    values: string[]
-    onChange: (values: string[]) => void
-  }
 }
 
-function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) {
+function TicketPanel({ spec, data, containerRef }: TicketPanelProps) {
   // Preview caps (configurable)
   const PREVIEW_COL_MAX = TICKETS_CONFIG.PREVIEW_COL_MAX
   const PREVIEW_CHAR_MAX = TICKETS_CONFIG.PREVIEW_CHAR_MAX
@@ -2684,9 +2164,6 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
   const statusKey = spec?.display?.status
   const pkKey = spec?.pk
   const linkTpl = spec?.display?.link_template
-  const selectionEnabled = Boolean(selection && pkKey)
-  const selectedValues = selection?.values ?? []
-  const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues])
 
   if (import.meta?.env?.MODE !== 'production') {
     try {
@@ -2734,17 +2211,6 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
     const s = String(val ?? '')
     if (s.length <= max) return s
     return s.slice(0, Math.max(max - 1, 0)) + '…'
-  }
-
-  function toggleSelection(value: string, checked: boolean) {
-    if (!selection) return
-    const next = new Set(selectedSet)
-    if (checked) {
-      next.add(value)
-    } else {
-      next.delete(value)
-    }
-    selection.onChange(Array.from(next))
   }
 
   const sorted = useMemo(() => {
@@ -2871,9 +2337,6 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
         const pk = pkKey ? row[pkKey] : undefined
         const link = buildLink(linkTpl, row)
         const uniqueKey = pk != null ? String(pk) : `row-${idx}`
-        const rowId = pkKey && pk != null ? String(pk) : ''
-        const canSelect = selectionEnabled && Boolean(rowId)
-        const isSelected = canSelect && selectedSet.has(rowId)
         return (
           <div
             key={uniqueKey}
@@ -2881,56 +2344,39 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
             tabIndex={0}
             onClick={() => pkKey && pk != null && openDetail(pk)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pkKey && pk != null && openDetail(pk) } }}
-            className={clsx(
-              'border rounded-md p-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300',
-              isSelected ? 'border-primary-300 bg-primary-50' : 'border-primary-100 hover:bg-primary-50'
-            )}
+            className="border border-primary-100 rounded-md p-2 hover:bg-primary-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300"
             aria-label={`Voir le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
           >
-            <div className="flex items-start gap-2">
-              {canSelect && (
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={isSelected}
-                  onChange={e => toggleSelection(rowId, e.target.checked)}
-                  onClick={e => e.stopPropagation()}
-                  aria-label={`Sélectionner le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-sm font-medium text-primary-900 truncate">
-                    {String(title ?? (pk ?? `#${idx + 1}`))}
-                  </div>
-                  {status != null ? (
-                    <span className="text-[11px] rounded-full border px-2 py-[2px] text-primary-600 border-primary-200">{String(status)}</span>
-                  ) : null}
-                </div>
-                <div className="mt-1 text-xs text-primary-500">
-                  {created ? new Date(String(created)).toLocaleString() : null}
-                </div>
-                {link && (
-                  <div className="mt-1 text-xs">
-                    <a href={link} target="_blank" rel="noopener noreferrer" className="underline text-primary-600 break-all" onClick={e => e.stopPropagation()}>{link}</a>
-                  </div>
-                )}
-                {previewColumns && previewColumns.length > 0 && (
-                  <div className="mt-2 overflow-auto">
-                    <table className="min-w-full text-[11px]">
-                      <tbody>
-                        {previewColumns.map((c) => (
-                          <tr key={c} className="border-t border-primary-100">
-                            <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
-                            <td className="py-1 text-primary-800 break-all" title={String(row[c] ?? '')}>{truncate(row[c])}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-sm font-medium text-primary-900 truncate">
+                {String(title ?? (pk ?? `#${idx + 1}`))}
               </div>
+              {status != null ? (
+                <span className="text-[11px] rounded-full border px-2 py-[2px] text-primary-600 border-primary-200">{String(status)}</span>
+              ) : null}
             </div>
+            <div className="mt-1 text-xs text-primary-500">
+              {created ? new Date(String(created)).toLocaleString() : null}
+            </div>
+            {link && (
+              <div className="mt-1 text-xs">
+                <a href={link} target="_blank" rel="noopener noreferrer" className="underline text-primary-600 break-all" onClick={e => e.stopPropagation()}>{link}</a>
+              </div>
+            )}
+            {previewColumns && previewColumns.length > 0 && (
+              <div className="mt-2 overflow-auto">
+                <table className="min-w-full text-[11px]">
+                  <tbody>
+                    {previewColumns.map((c) => (
+                      <tr key={c} className="border-t border-primary-100">
+                        <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
+                        <td className="py-1 text-primary-800 break-all" title={String(row[c] ?? '')}>{truncate(row[c])}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )
       })}

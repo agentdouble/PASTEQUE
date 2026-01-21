@@ -86,9 +86,6 @@ def chunk_ticket_items(items: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]
     current_chars = 0
 
     def _ticket_cost(item: dict[str, Any]) -> int:
-        line = item.get("line")
-        if line:
-            return len(str(line))
         text = str(item.get("text") or "")
         return min(len(text), settings.loop_ticket_text_max_chars)
 

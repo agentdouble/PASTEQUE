@@ -42,7 +42,6 @@ class DataSourceOverview(BaseModel):
     date_field: str | None = None
     category_field: str | None = None
     sub_category_field: str | None = None
-    ticket_context_fields: list[str] = Field(default_factory=list)
     explorer_enabled: bool = True
     field_count: int = 0
     fields: list[FieldBreakdown] = Field(default_factory=list)
@@ -67,7 +66,6 @@ class UpdateColumnRolesRequest(BaseModel):
     date_field: str | None = None
     category_field: str | None = None
     sub_category_field: str | None = None
-    ticket_context_fields: list[str] | None = None
 
 
 class ColumnRolesResponse(BaseModel):
@@ -75,7 +73,6 @@ class ColumnRolesResponse(BaseModel):
     date_field: str | None = None
     category_field: str | None = None
     sub_category_field: str | None = None
-    ticket_context_fields: list[str] = Field(default_factory=list)
 
 
 class UpdateExplorerEnabledRequest(BaseModel):
