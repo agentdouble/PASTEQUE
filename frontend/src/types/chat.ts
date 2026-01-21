@@ -181,6 +181,9 @@ export interface TicketContextMeta {
   table?: string
   date_from?: string
   date_to?: string
+  context_chars?: number
+  context_char_limit?: number
+  context_mode?: string
 }
 
 export interface TicketSelectionPayload {
@@ -194,6 +197,8 @@ export interface TicketPreviewItem {
   period_label?: string
   count?: number
   total?: number
+  context_chars?: number
+  context_char_limit?: number
   evidence_spec?: EvidenceSpec | null
   evidence_rows?: EvidenceRowsPayload | null
   error?: string
