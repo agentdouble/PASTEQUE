@@ -123,6 +123,7 @@ export default function AdminPanel() {
   const [ticketConfigLoaded, setTicketConfigLoaded] = useState(false)
   const [ticketDrafts, setTicketDrafts] = useState<Record<string, TicketDraft>>({})
   const ticketTableRef = useRef('')
+  const ticketConfigRequestRef = useRef(0)
   const [explorerData, setExplorerData] = useState<DataOverviewResponse | null>(null)
   const [explorerLoading, setExplorerLoading] = useState(false)
   const [explorerError, setExplorerError] = useState('')
@@ -212,6 +213,7 @@ export default function AdminPanel() {
       tableName: string,
       opts?: { textColumn?: string; dateColumn?: string; draft?: TicketDraft }
     ) => {
+      const requestId = ++ticketConfigRequestRef.current
       if (!tableName) {
         setTicketColumns([])
         setTicketRoles(null)
@@ -227,7 +229,10 @@ export default function AdminPanel() {
           apiFetch<ColumnInfo[]>(`/data/schema/${encodeURIComponent(tableName)}`),
           apiFetch<DataOverviewResponse>('/data/overview?include_disabled=true&lightweight=true'),
         ])
-        if (ticketTableRef.current !== tableName) {
+        if (
+          requestId !== ticketConfigRequestRef.current ||
+          ticketTableRef.current !== tableName
+        ) {
           return
         }
         setTicketColumns(colsResponse ?? [])
@@ -265,7 +270,10 @@ export default function AdminPanel() {
         setTicketDateColumn(hasDraft ? dateFromDraft : dateFromConfig || roles.date_field || '')
         setTicketContextFields(hasDraft ? contextFromDraft : contextFields)
       } catch (err) {
-        if (ticketTableRef.current !== tableName) {
+        if (
+          requestId !== ticketConfigRequestRef.current ||
+          ticketTableRef.current !== tableName
+        ) {
           return
         }
         setTicketColumns([])
