@@ -162,8 +162,9 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage sélectionnée est appliquée côté backend (`/data/overview` + `/data/explore`) pour recalculer les volumes, avec un rail unique qui met en évidence la plage choisie.
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
-- Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et les listes cliquables.
-- Les catégories sont maintenant sélectionnables via un dropdown, avec un filtre texte pour cibler les sous-catégories affichées dans une liste scrollable.
+- Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et le donut.
+- La navigation se fait directement via le donut (clic catégorie puis sous-catégorie).
+- L’aperçu des tickets sélectionnés s’affiche désormais sous le donut de la source, et la liste de sous-catégories sous le graphique a été retirée.
 
 ### Radar – résumés journaliers/hebdo/mensuels
 

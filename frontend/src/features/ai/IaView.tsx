@@ -320,6 +320,8 @@ export default function IaView() {
     navigate(`/chat?${params.toString()}`)
   }
 
+  const selectionHasDate = selection ? sourceHasDate(selection.source) : false
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -434,23 +436,6 @@ export default function IaView() {
         </Card>
       ) : null}
 
-      <SelectionPreview
-        selection={selection}
-        preview={preview}
-        loading={previewLoading}
-        error={previewError}
-        limit={PAGE_SIZE}
-        page={page}
-        matchingRows={matchingRows || preview?.matching_rows || 0}
-        sortDirection={sortDirection}
-        onPageChange={handlePageChange}
-        onToggleSort={handleToggleSort}
-        canSort={selection ? sourceHasDate(selection.source) : false}
-        activeRange={appliedRange}
-        onDiscuss={handleDiscussSelection}
-        canDiscuss={selection ? sourceHasDate(selection.source) : false}
-      />
-
       {loading ? (
         <Card variant="elevated" className="py-12 flex justify-center">
           <Loader text="Chargement des répartitions Category / Sub Category…" />
@@ -469,6 +454,20 @@ export default function IaView() {
               key={source.source}
               source={source}
               onSelect={handleSelect}
+              selection={selection}
+              preview={preview}
+              previewLoading={previewLoading}
+              previewError={previewError}
+              limit={PAGE_SIZE}
+              page={page}
+              matchingRows={matchingRows || preview?.matching_rows || 0}
+              sortDirection={sortDirection}
+              onPageChange={handlePageChange}
+              onToggleSort={handleToggleSort}
+              canSort={selectionHasDate}
+              activeRange={appliedRange}
+              onDiscuss={handleDiscussSelection}
+              canDiscuss={selectionHasDate}
             />
           ))}
         </div>
@@ -480,31 +479,44 @@ export default function IaView() {
 function SourceCategoryCard({
   source,
   onSelect,
+  selection,
+  preview,
+  previewLoading,
+  previewError,
+  limit,
+  page,
+  matchingRows,
+  sortDirection,
+  onPageChange,
+  onToggleSort,
+  canSort,
+  activeRange,
+  onDiscuss,
+  canDiscuss,
 }: {
   source: DataSourceOverview
   onSelect: (source: string, category: string, subCategory: string) => void
+  selection: Selection | null
+  preview: TableExplorePreview | null
+  previewLoading: boolean
+  previewError: string
+  limit: number
+  page: number
+  matchingRows: number
+  sortDirection: 'asc' | 'desc'
+  onPageChange: (nextPage: number) => void
+  onToggleSort: () => void
+  canSort: boolean
+  activeRange: { from?: string; to?: string } | null
+  onDiscuss: () => void
+  canDiscuss: boolean
 }) {
   const categoryNodes = useMemo(
     () => buildCategoryNodes(source.category_breakdown),
     [source.category_breakdown]
   )
-  const [activeCategory, setActiveCategory] = useState<string>(categoryNodes[0]?.name ?? '')
-  const [subFilter, setSubFilter] = useState('')
 
-  useEffect(() => {
-    if (!activeCategory && categoryNodes[0]) {
-      setActiveCategory(categoryNodes[0].name)
-    } else if (activeCategory && !categoryNodes.find(node => node.name === activeCategory)) {
-      setActiveCategory(categoryNodes[0]?.name ?? '')
-    }
-  }, [categoryNodes, activeCategory])
-
-  const selectedNode =
-    categoryNodes.find(node => node.name === activeCategory) ?? categoryNodes[0] ?? null
-  const filteredSubs =
-    selectedNode?.subCategories.filter(sub =>
-      sub.name.toLowerCase().includes(subFilter.trim().toLowerCase())
-    ) ?? []
+  const selectionForCard = selection?.source === source.source ? selection : null
 
   if (!categoryNodes.length) {
     return (
@@ -521,14 +533,8 @@ function SourceCategoryCard({
   }
 
   const handleChartSelect = (category: string, subCategory?: string) => {
-    setActiveCategory(category)
-    setSubFilter('')
-    const targetSub =
-      subCategory ??
-      categoryNodes.find(node => node.name === category)?.subCategories[0]?.name ??
-      ''
-    if (targetSub) {
-      onSelect(source.source, category, targetSub)
+    if (subCategory) {
+      onSelect(source.source, category, subCategory)
     }
   }
 
@@ -543,26 +549,6 @@ function SourceCategoryCard({
             {categoryNodes.length.toLocaleString('fr-FR')} catégories
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <select
-            value={activeCategory}
-            onChange={e => setActiveCategory(e.target.value)}
-            className="border border-primary-200 rounded-md px-3 py-2 text-sm text-primary-900 bg-white shadow-inner"
-          >
-            {categoryNodes.map(node => (
-              <option key={node.name} value={node.name}>
-                {node.name} ({node.subCategories.length})
-              </option>
-            ))}
-          </select>
-          <input
-            type="search"
-            placeholder="Filtrer les sous-catégories"
-            value={subFilter}
-            onChange={e => setSubFilter(e.target.value)}
-            className="border border-primary-200 rounded-md px-3 py-2 text-sm text-primary-900 bg-white shadow-inner"
-          />
-        </div>
       </div>
 
       <CategoryStackedChart
@@ -571,40 +557,22 @@ function SourceCategoryCard({
         className="bg-primary-50/80"
       />
 
-      {selectedNode ? (
-        <div className="overflow-hidden border border-primary-200 rounded-xl bg-white shadow-sm">
-          <div className="flex items-start justify-between px-3 py-2 bg-primary-900 text-white">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{selectedNode.name}</p>
-              <p className="text-[11px] text-primary-100/80">
-                {selectedNode.total.toLocaleString('fr-FR')} lignes ·{' '}
-                {selectedNode.subCategories.length.toLocaleString('fr-FR')} sous-catégories
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col divide-y divide-primary-100 max-h-72 overflow-y-auto">
-            {filteredSubs.length ? (
-              filteredSubs.map(sub => (
-                <button
-                  key={sub.name}
-                  type="button"
-                  className="flex items-center justify-between px-3 py-2 text-left hover:bg-primary-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 border-l-4 border-primary-200"
-                  onClick={() => onSelect(source.source, selectedNode.name, sub.name)}
-                >
-                  <p className="text-sm font-semibold text-primary-900 truncate min-w-0">{sub.name}</p>
-                  <span className="text-xs font-semibold text-primary-700">
-                    {sub.count.toLocaleString('fr-FR')}
-                  </span>
-                </button>
-              ))
-            ) : (
-              <div className="px-3 py-3 text-sm text-primary-600">
-                Aucune sous-catégorie ne correspond à ce filtre.
-              </div>
-            )}
-          </div>
-        </div>
-      ) : null}
+      <SelectionPreview
+        selection={selectionForCard}
+        preview={selectionForCard ? preview : null}
+        loading={selectionForCard ? previewLoading : false}
+        error={selectionForCard ? previewError : ''}
+        limit={limit}
+        page={page}
+        matchingRows={matchingRows}
+        sortDirection={sortDirection}
+        onPageChange={onPageChange}
+        onToggleSort={onToggleSort}
+        canSort={canSort}
+        activeRange={activeRange}
+        onDiscuss={onDiscuss}
+        canDiscuss={canDiscuss}
+      />
     </Card>
   )
 }
