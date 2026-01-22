@@ -33,8 +33,10 @@ def init_database() -> None:
     _ensure_user_password_reset_column()
     _ensure_user_settings_column()
     _ensure_admin_column()
+    _ensure_user_feature_flags()
     _ensure_feedback_archive_column()
     _ensure_data_source_preference_columns()
+    _ensure_ticket_context_config_columns()
     log.info("Database initialized (tables ensured).")
 
 
@@ -78,6 +80,41 @@ def _ensure_admin_column() -> None:
     log.info("Admin flag column ensured on users table.")
 
 
+def _ensure_user_feature_flags() -> None:
+    inspector = inspect(engine)
+    columns = {col["name"] for col in inspector.get_columns("users")}
+    stmts = []
+    if "can_use_sql_agent" not in columns:
+        stmts.append(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_use_sql_agent BOOLEAN NOT NULL DEFAULT FALSE"
+        )
+    if "can_generate_chart" not in columns:
+        stmts.append(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_generate_chart BOOLEAN NOT NULL DEFAULT FALSE"
+        )
+    if "can_view_graph" not in columns:
+        stmts.append(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_view_graph BOOLEAN NOT NULL DEFAULT FALSE"
+        )
+    with engine.begin() as conn:
+        for stmt in stmts:
+            conn.execute(text(stmt))
+        conn.execute(
+            text(
+                "UPDATE users "
+                "SET can_use_sql_agent = TRUE, "
+                "can_generate_chart = TRUE, "
+                "can_view_graph = TRUE "
+                "WHERE username = :admin_username"
+            ),
+            {"admin_username": settings.admin_username},
+        )
+    if stmts:
+        log.info("User feature flags ensured on users table.")
+    else:
+        log.debug("User feature flags already present on users table.")
+
+
 def _ensure_data_source_preference_columns() -> None:
     """Ensure optional columns exist on data_source_preferences."""
     inspector = inspect(engine)
@@ -109,6 +146,38 @@ def _ensure_data_source_preference_columns() -> None:
         for stmt in stmts:
             conn.execute(text(stmt))
     log.info("data_source_preferences optional columns ensured (%d added).", len(stmts))
+
+
+def _ensure_ticket_context_config_columns() -> None:
+    inspector = inspect(engine)
+    if "ticket_context_configs" not in inspector.get_table_names():
+        log.debug("ticket_context_configs table missing; skipping column checks.")
+        return
+    columns = {col["name"] for col in inspector.get_columns("ticket_context_configs")}
+    if "title_column" in columns:
+        log.debug("ticket_context_configs.title_column column already present.")
+        return
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE ticket_context_configs "
+                "ADD COLUMN IF NOT EXISTS title_column VARCHAR(255)"
+            )
+        )
+        conn.execute(
+            text(
+                "UPDATE ticket_context_configs "
+                "SET title_column = text_column "
+                "WHERE title_column IS NULL OR title_column = ''"
+            )
+        )
+        conn.execute(
+            text(
+                "ALTER TABLE ticket_context_configs "
+                "ALTER COLUMN title_column SET NOT NULL"
+            )
+        )
+    log.info("ticket_context_configs.title_column column ensured.")
 
 
 @contextmanager

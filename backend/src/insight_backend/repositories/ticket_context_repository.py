@@ -26,6 +26,7 @@ class TicketContextConfigRepository:
         *,
         table_name: str,
         text_column: str,
+        title_column: str,
         date_column: str,
     ) -> TicketContextConfig:
         config = self.get_config()
@@ -33,23 +34,27 @@ class TicketContextConfigRepository:
             config = TicketContextConfig(
                 table_name=table_name,
                 text_column=text_column,
+                title_column=title_column,
                 date_column=date_column,
             )
             self.session.add(config)
             log.info(
-                "Ticket context config created (table=%s, text=%s, date=%s)",
+                "Ticket context config created (table=%s, text=%s, title=%s, date=%s)",
                 table_name,
                 text_column,
+                title_column,
                 date_column,
             )
         else:
             config.table_name = table_name
             config.text_column = text_column
+            config.title_column = title_column
             config.date_column = date_column
             log.info(
-                "Ticket context config updated (table=%s, text=%s, date=%s)",
+                "Ticket context config updated (table=%s, text=%s, title=%s, date=%s)",
                 table_name,
                 text_column,
+                title_column,
                 date_column,
             )
         self.session.flush()

@@ -3,6 +3,7 @@ import type { RefObject } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { TICKETS_CONFIG } from '@/config/tickets'
 import { apiFetch, streamSSE } from '@/services/api'
+import { getAuth } from '@/services/auth'
 import { Button, Textarea, Loader } from '@/components/ui'
 import type {
   Message,
@@ -452,6 +453,12 @@ type TicketPreviewSource = {
 }
 
 export default function Chat() {
+  const auth = getAuth()
+  const canUseSqlAgent = Boolean(auth?.isAdmin || auth?.canUseSqlAgent)
+  const canGenerateChart = Boolean(auth?.isAdmin || auth?.canGenerateChart)
+  const canViewGraph = Boolean(auth?.isAdmin || auth?.canViewGraph)
+  const composerButtonCount = (canUseSqlAgent ? 1 : 0) + (canGenerateChart ? 1 : 0)
+  const composerPaddingClass = composerButtonCount === 2 ? 'pl-28' : composerButtonCount === 1 ? 'pl-16' : 'pl-4'
   const [_searchParams, setSearchParams] = useSearchParams()
   const { search } = useLocation()
   const [messages, setMessages] = useState<Message[]>([])
@@ -2416,6 +2423,8 @@ export default function Chat() {
                 onSaveChart={onSaveChart}
                 onGenerateChart={onGenerateChart}
                 onFeedback={onFeedback}
+                canGenerateChart={canGenerateChart}
+                canViewGraph={canViewGraph}
                 highlighted={message.messageId != null && highlightMessageId === message.messageId}
               />
             ))}
@@ -2444,38 +2453,42 @@ export default function Chat() {
           <div className="p-3">
             <div className="relative">
               <div className="absolute left-2 top-1/2 -translate-y-1/2 transform inline-flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onToggleTicketModeClick}
-                  aria-pressed={!ticketMode}
-                  title={!ticketMode ? 'Mode base actif (agents SQL/RAG)' : 'Activer le contexte tickets par défaut'}
-                  className={clsx(
-                    'inline-flex items-center justify-center h-10 w-10 rounded-full transition-colors focus:outline-none border-2',
-                    !ticketMode
-                      ? 'bg-primary-700 text-white hover:bg-primary-800 border-primary-700'
-                      : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
-                  )}
-                >
-                  {ticketMetaLoading ? (
-                    <span className="inline-block h-4 w-4 border-2 border-primary-200 border-t-primary-700 rounded-full animate-spin" />
-                  ) : (
-                    <HiCpuChip className="w-5 h-5" />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={onToggleChartModeClick}
-                  aria-pressed={chartMode}
-                  title="Activer MCP Chart"
-                  className={clsx(
-                    'inline-flex items-center justify-center h-10 w-10 rounded-full transition-colors focus:outline-none border-2',
-                    chartMode
-                      ? 'bg-primary-600 text-white hover:bg-primary-700 border-primary-600'
-                      : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
-                  )}
-                >
-                  <HiChartBar className="w-5 h-5" />
-                </button>
+                {canUseSqlAgent && (
+                  <button
+                    type="button"
+                    onClick={onToggleTicketModeClick}
+                    aria-pressed={!ticketMode}
+                    title={!ticketMode ? 'Mode base actif (agents SQL/RAG)' : 'Activer le contexte tickets par défaut'}
+                    className={clsx(
+                      'inline-flex items-center justify-center h-10 w-10 rounded-full transition-colors focus:outline-none border-2',
+                      !ticketMode
+                        ? 'bg-primary-700 text-white hover:bg-primary-800 border-primary-700'
+                        : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
+                    )}
+                  >
+                    {ticketMetaLoading ? (
+                      <span className="inline-block h-4 w-4 border-2 border-primary-200 border-t-primary-700 rounded-full animate-spin" />
+                    ) : (
+                      <HiCpuChip className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
+                {canGenerateChart && (
+                  <button
+                    type="button"
+                    onClick={onToggleChartModeClick}
+                    aria-pressed={chartMode}
+                    title="Activer MCP Chart"
+                    className={clsx(
+                      'inline-flex items-center justify-center h-10 w-10 rounded-full transition-colors focus:outline-none border-2',
+                      chartMode
+                        ? 'bg-primary-600 text-white hover:bg-primary-700 border-primary-600'
+                        : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
+                    )}
+                  >
+                    <HiChartBar className="w-5 h-5" />
+                  </button>
+                )}
               </div>
               <Textarea
                 value={input}
@@ -2485,7 +2498,8 @@ export default function Chat() {
                 rows={1}
                 fullWidth
                 className={clsx(
-                  'pl-28 pr-14 h-12 min-h-[48px] resize-none overflow-x-auto overflow-y-hidden scrollbar-none no-focus-ring !rounded-2xl',
+                  composerPaddingClass,
+                  'pr-14 h-12 min-h-[48px] resize-none overflow-x-auto overflow-y-hidden scrollbar-none no-focus-ring !rounded-2xl',
                   'focus:!border-primary-200 focus:!ring-0 focus:!ring-transparent focus:!ring-offset-0 focus:!outline-none',
                   'focus-visible:!border-primary-200 focus-visible:!ring-0 focus-visible:!ring-transparent focus-visible:!ring-offset-0 focus-visible:!outline-none',
                   'leading-[48px] placeholder:text-primary-400',
@@ -2665,6 +2679,8 @@ interface MessageBubbleProps {
   onSaveChart?: (messageId: string) => void
   onGenerateChart?: (messageId: string) => void
   onFeedback?: (messageId: string, vote: FeedbackValue) => void
+  canGenerateChart?: boolean
+  canViewGraph?: boolean
   highlighted?: boolean
 }
 
@@ -2968,7 +2984,15 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
   )
 }
 
-function MessageBubble({ message, onSaveChart, onGenerateChart, onFeedback, highlighted }: MessageBubbleProps) {
+function MessageBubble({
+  message,
+  onSaveChart,
+  onGenerateChart,
+  onFeedback,
+  canGenerateChart,
+  canViewGraph,
+  highlighted
+}: MessageBubbleProps) {
   const {
     id,
     role,
@@ -2992,6 +3016,8 @@ function MessageBubble({ message, onSaveChart, onGenerateChart, onFeedback, high
   const canFeedback = !isUser && !message.ephemeral && !chartUrl && Boolean(message.messageId)
   const feedbackUp = message.feedback === 'up'
   const feedbackDown = message.feedback === 'down'
+  const allowChartActions = Boolean(canGenerateChart)
+  const allowChartSave = Boolean(canViewGraph)
   const handleFeedback = (vote: FeedbackValue) => {
     if (!id || !onFeedback) return
     onFeedback(id, vote)
@@ -3047,7 +3073,7 @@ function MessageBubble({ message, onSaveChart, onGenerateChart, onFeedback, high
                 Outil : {chartTool}
               </p>
             )}
-            {!chartSaved && onSaveChart && (
+            {!chartSaved && onSaveChart && allowChartSave && (
               <div className="pt-2">
                 <Button
                   size="sm"
@@ -3124,32 +3150,34 @@ function MessageBubble({ message, onSaveChart, onGenerateChart, onFeedback, high
                     </button>
                   </div>
                 )}
-                <Button
-                  size="xs"
-                  variant="secondary"
-                  onClick={() => message.id && onGenerateChart && onGenerateChart(message.id)}
-                  disabled={
-                    !message.id || Boolean(message.chartSaving) ||
-                    !(
-                      (message.chartDataset && message.chartDataset.sql &&
-                        (message.chartDataset.columns?.length ?? 0) > 0 &&
-                        (message.chartDataset.rows?.length ?? 0) > 0) ||
-                      (message.details && Array.isArray(message.details.steps) && message.details.steps.some(s => typeof s?.sql === 'string' && s.sql))
-                    )
-                  }
-                  title={
-                    message.chartDataset && (message.chartDataset.columns?.length ?? 0) > 0 && (message.chartDataset.rows?.length ?? 0) > 0
-                      ? 'Générer un graphique à partir du jeu de données'
-                      : 'Aucun jeu de données exploitable pour le graphique'
-                  }
-                >
-                  {message.chartSaving ? (
-                    <span className="inline-block h-4 w-4 mr-2 rounded-full border-2 border-primary-300 border-t-primary-900 animate-spin" />
-                  ) : (
-                    <HiChartBar className="w-4 h-4 mr-2" />
-                  )}
-                  {message.chartSaving ? 'Génération…' : 'Graphique'}
-                </Button>
+                {allowChartActions && (
+                  <Button
+                    size="xs"
+                    variant="secondary"
+                    onClick={() => message.id && onGenerateChart && onGenerateChart(message.id)}
+                    disabled={
+                      !message.id || Boolean(message.chartSaving) ||
+                      !(
+                        (message.chartDataset && message.chartDataset.sql &&
+                          (message.chartDataset.columns?.length ?? 0) > 0 &&
+                          (message.chartDataset.rows?.length ?? 0) > 0) ||
+                        (message.details && Array.isArray(message.details.steps) && message.details.steps.some(s => typeof s?.sql === 'string' && s.sql))
+                      )
+                    }
+                    title={
+                      message.chartDataset && (message.chartDataset.columns?.length ?? 0) > 0 && (message.chartDataset.rows?.length ?? 0) > 0
+                        ? 'Générer un graphique à partir du jeu de données'
+                        : 'Aucun jeu de données exploitable pour le graphique'
+                    }
+                  >
+                    {message.chartSaving ? (
+                      <span className="inline-block h-4 w-4 mr-2 rounded-full border-2 border-primary-300 border-t-primary-900 animate-spin" />
+                    ) : (
+                      <HiChartBar className="w-4 h-4 mr-2" />
+                    )}
+                    {message.chartSaving ? 'Génération…' : 'Graphique'}
+                  </Button>
+                )}
                 <Button
                   size="xs"
                   variant="secondary"
