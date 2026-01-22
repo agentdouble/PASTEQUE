@@ -35,6 +35,7 @@ def init_database() -> None:
     _ensure_admin_column()
     _ensure_feedback_archive_column()
     _ensure_data_source_preference_columns()
+    _ensure_ticket_context_config_columns()
     log.info("Database initialized (tables ensured).")
 
 
@@ -109,6 +110,29 @@ def _ensure_data_source_preference_columns() -> None:
         for stmt in stmts:
             conn.execute(text(stmt))
     log.info("data_source_preferences optional columns ensured (%d added).", len(stmts))
+
+
+def _ensure_ticket_context_config_columns() -> None:
+    inspector = inspect(engine)
+    if "ticket_context_configs" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("ticket_context_configs")}
+    with engine.begin() as conn:
+        if "title_column" not in columns:
+            conn.execute(
+                text(
+                    "ALTER TABLE ticket_context_configs "
+                    "ADD COLUMN IF NOT EXISTS title_column VARCHAR(255)"
+                )
+            )
+        conn.execute(
+            text(
+                "UPDATE ticket_context_configs "
+                "SET title_column = text_column "
+                "WHERE title_column IS NULL OR title_column = ''"
+            )
+        )
+    log.info("ticket_context_configs title_column ensured.")
 
 
 @contextmanager
