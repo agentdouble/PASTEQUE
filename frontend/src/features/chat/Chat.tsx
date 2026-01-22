@@ -492,10 +492,10 @@ export default function Chat() {
   const [showTicketsSheet, setShowTicketsSheet] = useState(false)
   // Données utilisées (tables accessibles au LLM)
   const [showDataPanel, setShowDataPanel] = useState(false)
-  const [dataTables, setDataTables] = useState<string[]>([])
+  const [dataTables] = useState<string[]>([])
   const [effectiveTables, setEffectiveTables] = useState<string[]>([])
   const [excludedTables, setExcludedTables] = useState<Set<string>>(new Set())
-  const [tablesLoading, setTablesLoading] = useState(false)
+  const [tablesLoading] = useState(false)
   // Saving behavior: opt‑in for updating user defaults to avoid cross‑tab races
   const [saveAsDefault, setSaveAsDefault] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
