@@ -503,6 +503,7 @@ export default function Chat() {
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const ticketPreviewAbortRef = useRef<AbortController | null>(null)
+  const ticketPreviewRequestRef = useRef(0)
   const explorerSelectionAbortRef = useRef<AbortController | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
@@ -885,6 +886,7 @@ export default function Chat() {
     if (ticketPreviewAbortRef.current) {
       ticketPreviewAbortRef.current.abort()
     }
+    const requestId = ++ticketPreviewRequestRef.current
     const controller = new AbortController()
     ticketPreviewAbortRef.current = controller
     setTicketPreviewLoading(true)
@@ -895,7 +897,7 @@ export default function Chat() {
         body: JSON.stringify({ sources }),
         signal: controller.signal,
       })
-      if (controller.signal.aborted) return
+      if (controller.signal.aborted || requestId !== ticketPreviewRequestRef.current) return
       const normalized = (items || []).map((item, idx) => {
         const rowsPayload = item?.evidence_rows
         const previewKey = sourceKeys[idx] || `${item?.table ?? 'tickets'}-${item?.period_label ?? ''}-${idx}`
@@ -921,10 +923,12 @@ export default function Chat() {
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
       console.error('Failed to load ticket preview', err)
-      setTicketPreviewItems([])
-      setTicketPreviewError(err instanceof Error ? err.message : 'Aperçu tickets indisponible')
+      if (requestId === ticketPreviewRequestRef.current) {
+        setTicketPreviewItems([])
+        setTicketPreviewError(err instanceof Error ? err.message : 'Aperçu tickets indisponible')
+      }
     } finally {
-      if (!controller.signal.aborted) {
+      if (!controller.signal.aborted && requestId === ticketPreviewRequestRef.current) {
         setTicketPreviewLoading(false)
       }
     }
@@ -953,6 +957,16 @@ export default function Chat() {
     void loadTicketPreview(ticketSourcesForPreview.sources, ticketSourcesForPreview.sourceKeys)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketMode, ticketSourcesForPreview])
+
+  useEffect(() => {
+    if (!ticketMode) return
+    const allowed = new Set(ticketSourcesForPreview.sourceKeys)
+    setTicketPreviewItems(prev => {
+      if (prev.length === 0) return prev
+      const next = prev.filter(item => allowed.has(item.previewKey))
+      return next.length === prev.length ? prev : next
+    })
+  }, [ticketMode, ticketSourcesForPreview.sourceKeys])
 
   function onToggleChartModeClick() {
     setChartMode(v => {
