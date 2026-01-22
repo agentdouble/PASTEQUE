@@ -940,7 +940,7 @@ export default function Chat() {
       return source
     })
     if (!matched) {
-      nextSources.push({ table: explorerTicketSelection.source, selection })
+      nextSources.push({ table: explorerTicketSelection.source, selection, periods: [] })
     }
     return nextSources
   }, [ticketRanges, ticketTable, extraTicketSources, explorerTicketSelection])
