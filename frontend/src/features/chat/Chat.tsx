@@ -723,7 +723,7 @@ export default function Chat() {
           const rest = prev.slice(1)
           return [updated, ...rest]
         })
-        setTicketStatus(meta?.total_count ? `Tickets prêts (${meta.total_count})` : 'Contexte tickets chargé')
+        setTicketStatus('')
       } else {
         setExtraTicketSources(prev =>
           prev.map(src =>
@@ -741,7 +741,7 @@ export default function Chat() {
         )
       }
     } catch (err) {
-      setTicketMetaError(err instanceof Error ? err.message : 'Contexte tickets indisponible')
+      setTicketMetaError(err instanceof Error ? err.message : 'Sélection indisponible')
       setTicketStatus('')
     } finally {
       setTicketMetaLoading(false)
@@ -1028,7 +1028,7 @@ export default function Chat() {
           if (sources.length > 0) {
             baseMeta.ticket_sources = sources
           }
-          setTicketStatus('Préparation du contexte tickets…')
+          setTicketStatus('Préparation de la sélection…')
         }
       } else {
         setTicketStatus('')
@@ -1055,7 +1055,7 @@ export default function Chat() {
             const parts = []
             if (count !== undefined) parts.push(`${count}${total ? `/${total}` : ''} tickets`)
             if (label) parts.push(label)
-            setTicketStatus(parts.join(' — ') || 'Contexte tickets appliqué')
+            setTicketStatus(parts.join(' — ') || 'Sélection appliquée')
             const contextChars = typeof tc.context_chars === 'number' ? tc.context_chars : undefined
             const contextLimit = typeof tc.context_char_limit === 'number' ? tc.context_char_limit : undefined
             if (contextChars !== undefined && contextLimit !== undefined) {
@@ -1741,12 +1741,6 @@ export default function Chat() {
     }
   }
 
-  function includedTablesCount(total: number, excluded: Set<string>, effective: string[]): number {
-    // Prefer server effective tables when available, else derive locally
-    if (effective && effective.length > 0) return Math.max(effective.length, 0)
-    return total > 0 ? Math.max(total - excluded.size, 0) : 0
-  }
-
   const panelItems = useMemo<TicketPanelItem[]>(() => {
     if (ticketMode) {
       return ticketPreviewItems.map((item, idx) => ({
@@ -1804,6 +1798,24 @@ export default function Chat() {
       }, 0),
     [panelItems]
   )
+
+  const selectedTicketsCount = useMemo(() => {
+    if (!ticketMode) return null
+    let total = 0
+    let hasCount = false
+    for (const item of ticketPreviewItems) {
+      if (typeof item.count === 'number') {
+        total += item.count
+        hasCount = true
+      }
+    }
+    return hasCount ? total : null
+  }, [ticketMode, ticketPreviewItems])
+
+  const selectedTicketsLabel = useMemo(() => {
+    if (selectedTicketsCount == null) return ''
+    return selectedTicketsCount === 1 ? '1 ticket sélectionné' : `${selectedTicketsCount} tickets sélectionnés`
+  }, [selectedTicketsCount])
 
   const panelTitle = panelItems.length === 1 && panelItems[0].spec?.entity_label
     ? panelItems[0].spec!.entity_label
@@ -1880,6 +1892,7 @@ export default function Chat() {
   }, [ticketMode, activeSelectionCount, previewUsage, ticketPreviewLoading])
 
   const contextUsageLabel = useMemo(() => formatContextUsage(ticketContextUsage), [ticketContextUsage])
+  const ticketSummaryLabel = ticketMetaError || ticketStatus || selectedTicketsLabel
 
   function formatPeriodLabel(item: TicketPanelItem | null): string | null {
     if (!item) return null
@@ -2013,7 +2026,7 @@ export default function Chat() {
             {/* Mobile toolbar (Exploration uniquement) */}
             <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 px-4 pt-3 pb-2 bg-white/95 backdrop-blur border-b lg:hidden">
               <div className="flex items-center justify-between gap-2">
-                <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : 'Nouvelle discussion'}</div>
+                <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : ''}</div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -2034,56 +2047,7 @@ export default function Chat() {
             </div>
             {/* Desktop toolbar (sans boutons Historique/Chat pour éviter doublons avec le header) */}
             <div className="hidden lg:flex items-center justify-between mb-2">
-              <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : 'Nouvelle discussion'}</div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setShowDataPanel(true)
-                    if (dataTables.length === 0 && !tablesLoading) {
-                      setTablesLoading(true)
-                      try {
-                        const items = await apiFetch<Array<{ name: string; path: string }>>('/data/tables')
-                        const names = (items || []).map(it => it?.name).filter((x): x is string => typeof x === 'string')
-                        setDataTables(names)
-                        // TODO: avoid extra fetch by returning last_conversation_settings in /conversations
-                        // Initialiser exclusions en conservant celles déjà cochées
-                        setExcludedTables(prev => new Set(Array.from(prev).filter(v => names.includes(v))))
-                        // Si nouvelle conversation et aucune exclusion encore définie, préremplir avec la dernière conversation
-                        if (!conversationId && excludedTables.size === 0 && history.length > 0) {
-                          try {
-                            const last = await apiFetch<{ settings?: { exclude_tables?: string[] } }>(`/conversations/${history[0].id}`)
-                            const ex = Array.isArray(last?.settings?.exclude_tables)
-                              ? (last!.settings!.exclude_tables as unknown[]).filter((x): x is string => typeof x === 'string')
-                              : []
-                            if (ex.length > 0) {
-                              const filtered = ex.filter(name => names.includes(name))
-                              setExcludedTables(new Set(filtered))
-                            }
-                          } catch (err) {
-                            // best-effort; ignore
-                          }
-                        }
-                      } catch (err) {
-                        console.error('Failed to load tables', err)
-                      } finally {
-                        setTablesLoading(false)
-                      }
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs bg-white text-primary-700 border-primary-300 hover:bg-primary-50"
-                  title="Voir et exclure des tables pour cette conversation"
-                >
-                  Données
-                  {(() => {
-                    const total = dataTables.length
-                    const included = includedTablesCount(total, excludedTables, effectiveTables)
-                    return total > 0 ? (
-                      <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] px-1 bg-primary-600 text-white">{included}</span>
-                    ) : null
-                  })()}
-                </button>
-              </div>
+              <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : ''}</div>
             </div>
 
             {ticketMode && (
@@ -2091,11 +2055,13 @@ export default function Chat() {
                 {showTicketPanel ? (
                   <div className="mb-3 border rounded-2xl bg-primary-50 p-3 flex flex-col gap-2">
                     <div className="flex items-center justify-between text-xs text-primary-700">
-                      <span>Contexte tickets {ticketMeta?.table ? `(${ticketMeta.table})` : ''}</span>
+                      <span>{ticketMeta?.table ? `Tickets (${ticketMeta.table})` : 'Tickets'}</span>
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
-                          {ticketMetaError || ticketStatus || (ticketMeta?.total ? `${ticketMeta.total} tickets` : '')}
-                        </span>
+                        {ticketSummaryLabel && (
+                          <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
+                            {ticketSummaryLabel}
+                          </span>
+                        )}
                         {contextUsageLabel && (
                           <span
                             className={clsx(
@@ -2210,7 +2176,7 @@ export default function Chat() {
                           onClick={() => {
                             if (ticketMeta) {
                               setTicketRanges([{ id: createMessageId(), from: ticketMeta.min, to: ticketMeta.max }])
-                              setTicketStatus(ticketMeta.total ? `${ticketMeta.total} tickets` : 'Contexte tickets réinitialisé')
+                              setTicketStatus('')
                             } else {
                               setTicketRanges([{ id: createMessageId() }])
                             }
@@ -2350,10 +2316,12 @@ export default function Chat() {
                 ) : (
                   <div className="mb-3 border rounded-2xl bg-primary-50 px-3 py-2 flex items-center justify-between text-xs text-primary-700">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span>Contexte tickets masqué</span>
-                      <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
-                        {ticketMetaError || ticketStatus || (ticketMeta?.total ? `${ticketMeta.total} tickets` : '')}
-                      </span>
+                      <span>Tickets masqués</span>
+                      {ticketSummaryLabel && (
+                        <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
+                          {ticketSummaryLabel}
+                        </span>
+                      )}
                       {contextUsageLabel && (
                         <span
                           className={clsx(
