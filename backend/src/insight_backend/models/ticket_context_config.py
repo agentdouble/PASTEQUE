@@ -14,6 +14,7 @@ class TicketContextConfig(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     table_name: Mapped[str] = mapped_column(String(255), nullable=False)
     text_column: Mapped[str] = mapped_column(String(255), nullable=False)
+    title_column: Mapped[str] = mapped_column(String(255), nullable=False)
     date_column: Mapped[str] = mapped_column(String(255), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
