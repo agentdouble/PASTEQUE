@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import CategoryStackedChart from '@/components/charts/CategoryStackedChart'
 import { Card, Loader, Button } from '@/components/ui'
 import { apiFetch } from '@/services/api'
-import { getAuth } from '@/services/auth'
 import type {
   CategorySubCategoryCount,
   DataOverviewResponse,
   DataSourceOverview,
   TableExplorePreview,
   TableRow,
-  ColumnRolesResponse,
 } from '@/types/data'
 import { HiSparkles } from 'react-icons/hi2'
 
@@ -24,12 +22,6 @@ type Selection = {
   source: string
   category: string
   subCategory: string
-}
-
-type ColumnRoleSelection = {
-  date_field: string | null
-  category_field: string | null
-  sub_category_field: string | null
 }
 
 const PAGE_SIZE = 25
@@ -79,13 +71,8 @@ export default function IaView() {
   const [globalBounds, setGlobalBounds] = useState<{ min?: string; max?: string }>({})
   const [pendingRange, setPendingRange] = useState<{ from?: string; to?: string } | null>(null)
   const [appliedRange, setAppliedRange] = useState<{ from?: string; to?: string } | null>(null)
-  const [columnRoles, setColumnRoles] = useState<Record<string, ColumnRoleSelection>>({})
-  const [savingRoles, setSavingRoles] = useState<Set<string>>(() => new Set())
-  const [rolesError, setRolesError] = useState<Record<string, string>>({})
   const requestRef = useRef(0)
   const sliderRef = useRef<HTMLDivElement | null>(null)
-  const auth = getAuth()
-  const isAdmin = Boolean(auth?.isAdmin)
   const navigate = useNavigate()
 
   const computeGlobalBounds = (sources: DataSourceOverview[] | undefined) => {
@@ -122,15 +109,6 @@ export default function IaView() {
       if (!appliedRange && bounds.min && bounds.max) {
         setAppliedRange(range ?? { from: bounds.min, to: bounds.max })
       }
-      const nextRoles: Record<string, ColumnRoleSelection> = {}
-      data.sources.forEach(src => {
-        nextRoles[src.source] = {
-          date_field: src.date_field ?? null,
-          category_field: src.category_field ?? null,
-          sub_category_field: src.sub_category_field ?? null,
-        }
-      })
-      setColumnRoles(nextRoles)
     } catch (err) {
       if (withLoader) {
         setError(err instanceof Error ? err.message : 'Chargement impossible.')
@@ -328,52 +306,6 @@ export default function IaView() {
     })()
   }
 
-  const handleSaveColumnRoles = async (source: string, roles: ColumnRoleSelection) => {
-    if (!isAdmin) return
-
-    if ((roles.category_field && !roles.sub_category_field) || (roles.sub_category_field && !roles.category_field)) {
-      setRolesError(prev => ({ ...prev, [source]: 'Choisissez une catégorie ET une sous-catégorie ou aucune des deux.' }))
-      return
-    }
-
-    setRolesError(prev => ({ ...prev, [source]: '' }))
-    setSavingRoles(prev => new Set(prev).add(source))
-    try {
-      const response = await apiFetch<ColumnRolesResponse>(
-        `/data/overview/${encodeURIComponent(source)}/column-roles`,
-        {
-          method: 'PUT',
-          body: JSON.stringify(roles),
-        }
-      )
-      const updated = response ?? roles
-      setColumnRoles(prev => ({
-        ...prev,
-        [source]: {
-          date_field: updated.date_field ?? null,
-          category_field: updated.category_field ?? null,
-          sub_category_field: updated.sub_category_field ?? null,
-        },
-      }))
-      await loadOverview(appliedRange, false)
-      if (selection?.source === source) {
-        setSelection(null)
-        setPreview(null)
-        setPreviewError('')
-        setMatchingRows(0)
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Mise à jour impossible.'
-      setRolesError(prev => ({ ...prev, [source]: message }))
-    } finally {
-      setSavingRoles(prev => {
-        const next = new Set(prev)
-        next.delete(source)
-        return next
-      })
-    }
-  }
-
   const handleDiscussSelection = () => {
     if (!selection) return
     const params = new URLSearchParams()
@@ -537,17 +469,6 @@ export default function IaView() {
               key={source.source}
               source={source}
               onSelect={handleSelect}
-              isAdmin={isAdmin}
-              roles={
-                columnRoles[source.source] ?? {
-                  date_field: source.date_field ?? null,
-                  category_field: source.category_field ?? null,
-                  sub_category_field: source.sub_category_field ?? null,
-                }
-              }
-              onSaveRoles={handleSaveColumnRoles}
-              saving={savingRoles.has(source.source)}
-              error={rolesError[source.source] ?? ''}
             />
           ))}
         </div>
@@ -559,19 +480,9 @@ export default function IaView() {
 function SourceCategoryCard({
   source,
   onSelect,
-  isAdmin,
-  roles,
-  onSaveRoles,
-  saving,
-  error,
 }: {
   source: DataSourceOverview
   onSelect: (source: string, category: string, subCategory: string) => void
-  isAdmin: boolean
-  roles: ColumnRoleSelection
-  onSaveRoles: (source: string, roles: ColumnRoleSelection) => void
-  saving: boolean
-  error: string
 }) {
   const categoryNodes = useMemo(
     () => buildCategoryNodes(source.category_breakdown),
@@ -579,7 +490,6 @@ function SourceCategoryCard({
   )
   const [activeCategory, setActiveCategory] = useState<string>(categoryNodes[0]?.name ?? '')
   const [subFilter, setSubFilter] = useState('')
-  const [rolesDraft, setRolesDraft] = useState<ColumnRoleSelection>(roles)
 
   useEffect(() => {
     if (!activeCategory && categoryNodes[0]) {
@@ -588,10 +498,6 @@ function SourceCategoryCard({
       setActiveCategory(categoryNodes[0]?.name ?? '')
     }
   }, [categoryNodes, activeCategory])
-
-  useEffect(() => {
-    setRolesDraft(roles)
-  }, [roles])
 
   const selectedNode =
     categoryNodes.find(node => node.name === activeCategory) ?? categoryNodes[0] ?? null
@@ -628,57 +534,6 @@ function SourceCategoryCard({
 
   return (
     <Card variant="elevated" padding="md" className="space-y-3">
-      {isAdmin ? (
-        <div className="space-y-2 border border-primary-100 rounded-lg bg-primary-50/70 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-primary-900">Colonnes clés</p>
-              <p className="text-[11px] text-primary-600">Date / Category / Sub Category</p>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onSaveRoles(source.source, rolesDraft)}
-              disabled={saving}
-            >
-              Enregistrer
-            </Button>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {(['date_field', 'category_field', 'sub_category_field'] as const).map(key => (
-              <label key={key} className="flex flex-col gap-1 text-xs text-primary-700">
-                <span className="font-semibold text-primary-800">
-                  {key === 'date_field'
-                    ? 'Colonne date'
-                    : key === 'category_field'
-                      ? 'Category'
-                      : 'Sub Category'}
-                </span>
-                <select
-                  className="h-9 rounded-md border border-primary-200 bg-white px-2 text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  value={rolesDraft[key] ?? ''}
-                  onChange={e =>
-                    setRolesDraft(prev => ({
-                      ...prev,
-                      [key]: e.target.value || null,
-                    }))
-                  }
-                  disabled={saving}
-                >
-                  <option value="">Aucune</option>
-                  {(source.fields ?? []).map(field => (
-                    <option key={field.field} value={field.field}>
-                      {field.field}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
-          {error ? <p className="text-[11px] text-red-600">{error}</p> : null}
-        </div>
-      ) : null}
-
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-primary-500">{source.source}</p>
