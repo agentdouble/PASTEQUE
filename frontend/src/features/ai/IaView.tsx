@@ -629,12 +629,12 @@ function SelectionPreview({
         <div className="flex items-center gap-2">
           <Button
             variant="primary"
-            size="xs"
+            size="sm"
             onClick={onDiscuss}
             disabled={!canDiscuss || loading}
             className="!rounded-full"
           >
-            Discuter dans le chat
+            Discuter avec ces données
           </Button>
         </div>
       </div>
