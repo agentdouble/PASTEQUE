@@ -21,6 +21,7 @@ Script combiné (depuis la racine):
 - Si un conteneur MindsDB portant `${MINDSDB_CONTAINER_NAME}` existe déjà et tourne, `./start.sh` le réutilise (pas de redémarrage). Sinon il le démarre; le conteneur reste actif à la fin du script (pas d’arrêt automatique).
 - `./start_full.sh` – mêmes étapes que `start.sh`, mais diffuse dans ce terminal les logs temps réel du backend, du frontend et de MindsDB (préfixés pour rester lisibles).
 - Exemple: définir `BACKEND_DEV_URL=http://0.0.0.0:8000`, `FRONTEND_DEV_URL=http://localhost:5173` puis lancer `./start.sh`.
+- Dépannage: si `./start.sh` échoue lors du build frontend (pas de sortie, car redirection), lancer `npm run build -- --mode development` dans `frontend/` pour afficher l'erreur TypeScript/Vite.
 
 Compatibilité shell:
 
