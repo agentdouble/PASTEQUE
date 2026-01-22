@@ -143,7 +143,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Admin : un onglet dédié dans l’espace « Admin » permet d’activer/désactiver les tables visibles dans l’Explorer et de fixer les colonnes Date / Category / Sub Category sans passer par l’UI Explorer.
 - `include_disabled=true` (admin uniquement) sur `GET /api/v1/data/overview` retourne aussi les tables désactivées pour préparer ou revoir leur configuration. `PUT /api/v1/data/overview/{source}/explorer-enabled` active/désactive explicitement une table pour l’Explorer.
 - Admin : les colonnes Date / Category / Sub Category sont configurables par table (persistées via `/data/overview/{source}/column-roles`) et pilotent les filtres date, la répartition Category/Sub Category et l’aperçu.
-- Admin : l’onglet « Chat » configure indépendamment le contexte tickets (table + colonnes texte/date + champs additionnels injectés au LLM), persisté via `/tickets/context/config` et `/data/overview/{source}/column-roles`.
+- Admin : l’onglet « Chat » configure indépendamment le contexte tickets (table + colonnes texte/date + colonne titre pour le panneau latéral + champs additionnels injectés au LLM), persisté via `/tickets/context/config` et `/data/overview/{source}/column-roles`.
 - Admin : l’onglet « Chat » s’appuie sur l’overview léger (`lightweight=true`) pour charger les colonnes et rôles même si une colonne configurée n’existe plus; la colonne manquante apparaît vide pour correction.
 - Admin : l’onglet « Chat » ignore les réponses réseau obsolètes lors d’un changement de table pour éviter un contexte tickets désynchronisé.
 - Visualisations Chart.js (lignes + barres) avec palette colorée pour timelines et répartitions des valeurs à partir des colonnes détectées automatiquement.

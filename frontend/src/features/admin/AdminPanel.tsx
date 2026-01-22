@@ -34,6 +34,7 @@ type ColumnRoleSelection = {
 }
 type TicketDraft = {
   textColumn: string
+  titleColumn: string
   dateColumn: string
   contextFields: string[]
 }
@@ -121,6 +122,7 @@ export default function AdminPanel() {
   const [loopDeleting, setLoopDeleting] = useState<number | null>(null)
   const [ticketTable, setTicketTable] = useState('')
   const [ticketTextColumn, setTicketTextColumn] = useState('')
+  const [ticketTitleColumn, setTicketTitleColumn] = useState('')
   const [ticketDateColumn, setTicketDateColumn] = useState('')
   const [ticketColumns, setTicketColumns] = useState<ColumnInfo[]>([])
   const [ticketStatus, setTicketStatus] = useState<Status | null>(null)
@@ -219,13 +221,14 @@ export default function AdminPanel() {
   const loadTicketConfig = useCallback(
     async (
       tableName: string,
-      opts?: { textColumn?: string; dateColumn?: string; draft?: TicketDraft }
+      opts?: { textColumn?: string; titleColumn?: string; dateColumn?: string; draft?: TicketDraft }
     ) => {
       const requestId = ++ticketConfigRequestRef.current
       if (!tableName) {
         setTicketColumns([])
         setTicketRoles(null)
         setTicketTextColumn('')
+        setTicketTitleColumn('')
         setTicketDateColumn('')
         setTicketContextFields([])
         return
@@ -260,6 +263,10 @@ export default function AdminPanel() {
           draft?.textColumn && columnLookup.has(draft.textColumn.toLowerCase())
             ? draft.textColumn
             : ''
+        const titleFromDraft =
+          draft?.titleColumn && columnLookup.has(draft.titleColumn.toLowerCase())
+            ? draft.titleColumn
+            : ''
         const dateFromDraft =
           draft?.dateColumn && columnLookup.has(draft.dateColumn.toLowerCase())
             ? draft.dateColumn
@@ -269,12 +276,15 @@ export default function AdminPanel() {
         )
         const textFromConfig =
           opts?.textColumn && columnLookup.has(opts.textColumn.toLowerCase()) ? opts.textColumn : ''
+        const titleFromConfig =
+          opts?.titleColumn && columnLookup.has(opts.titleColumn.toLowerCase()) ? opts.titleColumn : ''
         const dateFromConfig =
           opts?.dateColumn && columnLookup.has(opts.dateColumn.toLowerCase()) ? opts.dateColumn : ''
         const contextFields = (roles.ticket_context_fields ?? []).filter(name =>
           columnLookup.has(name.toLowerCase())
         )
         setTicketTextColumn(hasDraft ? textFromDraft : textFromConfig)
+        setTicketTitleColumn(hasDraft ? titleFromDraft : titleFromConfig)
         setTicketDateColumn(hasDraft ? dateFromDraft : dateFromConfig || roles.date_field || '')
         setTicketContextFields(hasDraft ? contextFromDraft : contextFields)
       } catch (err) {
@@ -287,6 +297,7 @@ export default function AdminPanel() {
         setTicketColumns([])
         setTicketRoles(null)
         setTicketTextColumn('')
+        setTicketTitleColumn('')
         setTicketDateColumn('')
         setTicketContextFields([])
         setTicketError(err instanceof Error ? err.message : 'Chargement impossible.')
@@ -308,12 +319,14 @@ export default function AdminPanel() {
       setTicketTable(config.table_name)
       await loadTicketConfig(config.table_name, {
         textColumn: config.text_column,
+        titleColumn: config.title_column,
         dateColumn: config.date_column,
       })
     } catch (err) {
       setTicketError(err instanceof Error ? err.message : 'Configuration chat introuvable.')
       setTicketTable('')
       setTicketTextColumn('')
+      setTicketTitleColumn('')
       setTicketDateColumn('')
       setTicketContextFields([])
       setTicketRoles(null)
@@ -428,6 +441,7 @@ export default function AdminPanel() {
           ...prev,
           [ticketTable]: {
             textColumn: ticketTextColumn,
+            titleColumn: ticketTitleColumn,
             dateColumn: ticketDateColumn,
             contextFields: ticketContextFields,
           },
@@ -438,6 +452,7 @@ export default function AdminPanel() {
       setTicketStatus(null)
       setTicketError('')
       setTicketTextColumn('')
+      setTicketTitleColumn('')
       setTicketDateColumn('')
       setTicketRoles(null)
       setTicketContextFields([])
@@ -448,6 +463,7 @@ export default function AdminPanel() {
       loadTicketConfig,
       ticketTable,
       ticketTextColumn,
+      ticketTitleColumn,
       ticketDateColumn,
       ticketContextFields,
       ticketDrafts,
@@ -549,6 +565,10 @@ export default function AdminPanel() {
       setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne texte.' })
       return
     }
+    if (!ticketTitleColumn) {
+      setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne titre.' })
+      return
+    }
     if (!ticketDateColumn) {
       setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne date.' })
       return
@@ -561,6 +581,7 @@ export default function AdminPanel() {
       const payload = {
         table_name: ticketTable,
         text_column: ticketTextColumn,
+        title_column: ticketTitleColumn,
         date_column: ticketDateColumn,
         ticket_context_fields: contextFields,
       }
@@ -1533,8 +1554,8 @@ export default function AdminPanel() {
             <div>
               <h3 className="text-lg font-semibold text-primary-950">Contexte tickets (chat)</h3>
               <p className="text-sm text-primary-600">
-                Configurez la table et les colonnes texte/date utilisées dans le mode chat « tickets », ainsi que les
-                colonnes injectées dans le contexte LLM. Les choix restent alignés avec l&apos;Explorer,
+                Configurez la table et les colonnes texte/date/titre utilisées dans le mode chat « tickets », ainsi que
+                les colonnes injectées dans le contexte LLM. Les choix restent alignés avec l&apos;Explorer,
                 sans dépendre du Radar.
               </p>
             </div>
@@ -1590,6 +1611,24 @@ export default function AdminPanel() {
                 <select
                   value={ticketTextColumn}
                   onChange={(e) => setTicketTextColumn(e.target.value)}
+                  className="w-full rounded-md border border-primary-200 px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
+                  disabled={ticketColumns.length === 0 || ticketSaving}
+                >
+                  <option value="">Choisir…</option>
+                  {ticketColumns.map(col => (
+                    <option key={col.name} value={col.name}>
+                      {col.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-800 mb-1">
+                  Colonne titre (panneau latéral)
+                </label>
+                <select
+                  value={ticketTitleColumn}
+                  onChange={(e) => setTicketTitleColumn(e.target.value)}
                   className="w-full rounded-md border border-primary-200 px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
                   disabled={ticketColumns.length === 0 || ticketSaving}
                 >
