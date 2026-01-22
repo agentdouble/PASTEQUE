@@ -125,10 +125,7 @@ class TicketContextService:
         )
 
         # Evidence spec + rows for UI side panel
-        columns = self._derive_columns(
-            context_fields=context_fields,
-            extra_fields=[config.title_column, config.date_column],
-        )
+        columns = self._derive_columns(context_fields=context_fields)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
             columns=columns,
@@ -190,10 +187,7 @@ class TicketContextService:
         lines = self._format_context_lines(filtered, context_fields=context_fields, config=config)
         context_chars = self._count_context_chars(lines)
         char_limit = max(1, int(settings.ticket_context_direct_max_chars))
-        columns = self._derive_columns(
-            context_fields=context_fields,
-            extra_fields=[config.title_column, config.date_column],
-        )
+        columns = self._derive_columns(context_fields=context_fields)
         spec = self._build_evidence_spec(config=config, columns=columns, period_label=period_label)
         rows_payload = self._build_rows_payload(
             columns=columns,
@@ -268,16 +262,7 @@ class TicketContextService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Impossible de déduire les colonnes texte/date pour cette table.",
                 )
-            return type(
-                "Cfg",
-                (),
-                {
-                    "table_name": canon,
-                    "text_column": t_col,
-                    "title_column": t_col,
-                    "date_column": d_col,
-                },
-            )
+            return type("Cfg", (), {"table_name": canon, "text_column": t_col, "date_column": d_col})
 
         if self.ticket_config_repo is None:
             raise HTTPException(
@@ -297,29 +282,16 @@ class TicketContextService:
             return None
         return self.ticket_config_repo.get_config()
 
-    def save_default_config(
-        self,
-        *,
-        table_name: str,
-        text_column: str,
-        title_column: str,
-        date_column: str,
-    ):
+    def save_default_config(self, *, table_name: str, text_column: str, date_column: str):
         if self.ticket_config_repo is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Configuration contexte tickets indisponible.",
             )
-        self._validate_columns(
-            table_name=table_name,
-            text_column=text_column,
-            title_column=title_column,
-            date_column=date_column,
-        )
+        self._validate_columns(table_name=table_name, text_column=text_column, date_column=date_column)
         return self.ticket_config_repo.save_config(
             table_name=table_name,
             text_column=text_column,
-            title_column=title_column,
             date_column=date_column,
         )
 
@@ -369,19 +341,12 @@ class TicketContextService:
 
         return text_col, date_col
 
-    def _validate_columns(
-        self,
-        *,
-        table_name: str,
-        text_column: str,
-        title_column: str,
-        date_column: str,
-    ) -> None:
+    def _validate_columns(self, *, table_name: str, text_column: str, date_column: str) -> None:
         try:
             cols = [name for name, _ in self.data_repo.get_schema(table_name)]
         except FileNotFoundError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-        missing = [col for col in (text_column, title_column, date_column) if col not in cols]
+        missing = [col for col in (text_column, date_column) if col not in cols]
         if missing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -471,7 +436,6 @@ class TicketContextService:
         seen: set[str] = set()
         for name in [
             config.text_column,
-            config.title_column,
             config.date_column,
             *context_fields,
         ]:
@@ -672,33 +636,22 @@ class TicketContextService:
         uniq = list(dict.fromkeys(labels))
         return " ; ".join(uniq)
 
-    def _derive_columns(
-        self,
-        *,
-        context_fields: list[str],
-        extra_fields: Iterable[str] | None = None,
-    ) -> list[str]:
+    def _derive_columns(self, *, context_fields: list[str]) -> list[str]:
         columns: list[str] = []
         seen: set[str] = set()
-
-        def push(name: str | None) -> None:
+        for name in context_fields:
             if not name:
-                return
+                continue
             key = name.casefold()
             if key in seen:
-                return
+                continue
             seen.add(key)
             columns.append(name)
-
-        for name in extra_fields or []:
-            push(name)
-        for name in context_fields:
-            push(name)
         return columns
 
     def _build_evidence_spec(self, *, config, columns: list[str], period_label: str) -> dict[str, Any]:
         columns_set = {col.casefold() for col in columns}
-        title = config.title_column if config.title_column.casefold() in columns_set else None
+        title = config.text_column if config.text_column.casefold() in columns_set else None
         created_at = config.date_column if config.date_column.casefold() in columns_set else None
         pk = next((col for col in columns if col.casefold() in {"ticket_id", "id", "ref"}), columns[0] if columns else "")
         display: dict[str, str] = {}

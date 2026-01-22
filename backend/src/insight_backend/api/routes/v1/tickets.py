@@ -88,7 +88,6 @@ def update_ticket_context_config(  # type: ignore[valid-type]
     config = service.save_default_config(
         table_name=payload.table_name,
         text_column=payload.text_column,
-        title_column=payload.title_column,
         date_column=payload.date_column,
     )
     pref_repo = DataSourcePreferenceRepository(session)
