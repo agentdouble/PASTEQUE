@@ -4,9 +4,14 @@ import { getAuth } from '@/services/auth'
 interface ProtectedRouteProps {
   children: React.ReactNode
   requireAdmin?: boolean
+  requireGraphAccess?: boolean
 }
 
-export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
+export default function ProtectedRoute({
+  children,
+  requireAdmin = false,
+  requireGraphAccess = false
+}: ProtectedRouteProps) {
   const auth = getAuth()
 
   if (!auth) {
@@ -14,6 +19,10 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
   }
 
   if (requireAdmin && !auth.isAdmin) {
+    return <Navigate to="/chat" replace />
+  }
+
+  if (requireGraphAccess && !(auth.isAdmin || auth.canViewGraph)) {
     return <Navigate to="/chat" replace />
   }
 

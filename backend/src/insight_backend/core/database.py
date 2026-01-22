@@ -33,6 +33,7 @@ def init_database() -> None:
     _ensure_user_password_reset_column()
     _ensure_user_settings_column()
     _ensure_admin_column()
+    _ensure_user_feature_flags()
     _ensure_feedback_archive_column()
     _ensure_data_source_preference_columns()
     log.info("Database initialized (tables ensured).")
@@ -76,6 +77,41 @@ def _ensure_admin_column() -> None:
             {"admin_username": settings.admin_username},
         )
     log.info("Admin flag column ensured on users table.")
+
+
+def _ensure_user_feature_flags() -> None:
+    inspector = inspect(engine)
+    columns = {col["name"] for col in inspector.get_columns("users")}
+    stmts = []
+    if "can_use_sql_agent" not in columns:
+        stmts.append(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_use_sql_agent BOOLEAN NOT NULL DEFAULT FALSE"
+        )
+    if "can_generate_chart" not in columns:
+        stmts.append(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_generate_chart BOOLEAN NOT NULL DEFAULT FALSE"
+        )
+    if "can_view_graph" not in columns:
+        stmts.append(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_view_graph BOOLEAN NOT NULL DEFAULT FALSE"
+        )
+    with engine.begin() as conn:
+        for stmt in stmts:
+            conn.execute(text(stmt))
+        conn.execute(
+            text(
+                "UPDATE users "
+                "SET can_use_sql_agent = TRUE, "
+                "can_generate_chart = TRUE, "
+                "can_view_graph = TRUE "
+                "WHERE username = :admin_username"
+            ),
+            {"admin_username": settings.admin_username},
+        )
+    if stmts:
+        log.info("User feature flags ensured on users table.")
+    else:
+        log.debug("User feature flags already present on users table.")
 
 
 def _ensure_data_source_preference_columns() -> None:

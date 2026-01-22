@@ -24,6 +24,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    can_use_sql_agent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    can_generate_chart: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    can_view_graph: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     must_reset_password: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
