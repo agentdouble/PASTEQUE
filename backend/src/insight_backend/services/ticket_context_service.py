@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import logging
+import hashlib
 from datetime import date
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
@@ -210,6 +212,50 @@ class TicketContextService:
             "context_chars": context_chars,
             "context_char_limit": char_limit,
         }
+
+    def build_context_cache_key(
+        self,
+        *,
+        allowed_tables: Iterable[str] | None,
+        date_from: str | None,
+        date_to: str | None,
+        periods: list[dict[str, str | None]] | None = None,
+        table: str | None = None,
+        text_column: str | None = None,
+        date_column: str | None = None,
+        selection: dict[str, Any] | None = None,
+    ) -> str:
+        config = self._get_config(table=table, text_column=text_column, date_column=date_column)
+        self._ensure_allowed(config.table_name, allowed_tables)
+        selection_spec = self._normalize_selection(selection)
+        if selection_spec:
+            periods_payload = [{"from": None, "to": None}]
+        else:
+            parsed_periods = self._parse_periods(date_from=date_from, date_to=date_to, periods=periods)
+            periods_payload = [
+                {"from": start.isoformat() if start else None, "to": end.isoformat() if end else None}
+                for start, end in parsed_periods
+            ]
+        context_fields = self._get_context_fields(config=config)
+        key_payload: dict[str, Any] = {
+            "version": 1,
+            "table": config.table_name,
+            "text_column": config.text_column,
+            "title_column": config.title_column,
+            "date_column": config.date_column,
+            "context_fields": context_fields,
+            "periods": periods_payload,
+            "selection": None,
+            "char_limit": int(settings.ticket_context_direct_max_chars),
+        }
+        if selection_spec:
+            pk, values = selection_spec
+            key_payload["selection"] = {"pk": pk, "values": sorted(values)}
+        updated_at = getattr(config, "updated_at", None)
+        if updated_at:
+            key_payload["config_updated_at"] = updated_at.isoformat()
+        raw = json.dumps(key_payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     # -------- Internals --------
     def _prepare_context(

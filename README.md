@@ -63,6 +63,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - En mode tickets, si le contexte brut est sous `TICKET_CONTEXT_DIRECT_MAX_CHARS` (défaut 100000), il est injecté directement dans le chat (un seul agent). Au‑delà, la synthèse multi‑chunks reste utilisée.
 - Le prompt de synthèse tickets reçoit un `total_tickets` stable même quand le contexte est chunké.
 - Le backend journalise le nombre de workers actifs pour la synthèse tickets.
+- Le backend met en cache le contexte tickets par conversation (clé basée sur table/périodes/sélection/colonnes) pour éviter le recalcul à chaque message; invalidation sur changement des paramètres.
 - L’UI indique la charge du contexte tickets avec un pourcentage (`context_chars` / `TICKET_CONTEXT_DIRECT_MAX_CHARS`).
 - En mode tickets, l’UI affiche un indicateur « DeepSearch mode : … » avec variantes aléatoires à cadence lente, sans répétition de mots, et avec certaines variantes exclues au démarrage.
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
