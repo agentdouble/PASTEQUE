@@ -72,6 +72,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le bandeau du panneau affiche le nombre de tickets sélectionnés selon les plages de dates actives.
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l’aperçu des tickets filtrés par les périodes sélectionnées (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché.
 - Lors d’un changement d’onglet (multi‑tables), la vue détail revient à la liste pour éviter un écran vide.
+- Les panels multi‑tables utilisent des clés stables pour éviter l’inversion des données lors de la suppression d’une table.
 - L’exploration permet de sélectionner des tickets (checkboxes) pour limiter le contexte du chat aux éléments choisis, jusqu’à effacement manuel de la sélection.
 - Backend: deux modes LLM (`LLM_MODE=local|api`) — vLLM local via `VLLM_BASE_URL`, provider externe via `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `LLM_MODEL`.
 - Les échanges LLM (question, contexte, réponse) sont tracés dans `logs/llm.log` (JSON multi-lignes) configuré par `LLM_TRACE_LOG_PATH` — fichier local ignoré par Git.

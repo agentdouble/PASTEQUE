@@ -436,6 +436,8 @@ type TicketPanelItem = {
   error?: string
 }
 
+type TicketPreviewItemState = TicketPreviewItem & { previewKey: string }
+
 type TicketSelectionState = {
   values: string[]
   pk?: string
@@ -481,7 +483,7 @@ export default function Chat() {
   const [sqlMode, setSqlMode] = useState(false)
   const [evidenceSpec, setEvidenceSpec] = useState<EvidenceSpec | null>(null)
   const [evidenceData, setEvidenceData] = useState<EvidenceRowsPayload | null>(null)
-  const [ticketPreviewItems, setTicketPreviewItems] = useState<TicketPreviewItem[]>([])
+  const [ticketPreviewItems, setTicketPreviewItems] = useState<TicketPreviewItemState[]>([])
   const [ticketPreviewLoading, setTicketPreviewLoading] = useState(false)
   const [ticketPreviewError, setTicketPreviewError] = useState('')
   const [ticketPreviewTab, setTicketPreviewTab] = useState(0)
@@ -756,15 +758,27 @@ export default function Chat() {
           to: range.to?.trim() || undefined,
         }))
         .filter(period => period.from || period.to)
+    const buildKey = (prefix: string, table: string | undefined, ranges: Array<{ id: string }>) => {
+      const tableKey = table || 'auto'
+      const rangeKey = ranges.map(range => range.id).join(',')
+      return `${prefix}:${tableKey}:${rangeKey}`
+    }
     const periods = normalizePeriods(ticketRanges)
-    const sources = [
-      { table: ticketTable || undefined, periods },
+    const sourcesWithKeys = [
+      {
+        key: buildKey('main', ticketTable, ticketRanges),
+        table: ticketTable || undefined,
+        periods,
+      },
       ...extraTicketSources.map(source => ({
+        key: buildKey(source.id, source.table, source.ranges),
         table: source.table || undefined,
         periods: normalizePeriods(source.ranges || []),
       })),
     ].filter(source => source.table || (source.periods && source.periods.length > 0))
-    return { periods, sources }
+    const sources = sourcesWithKeys.map(({ key, ...rest }) => rest)
+    const sourceKeys = sourcesWithKeys.map(source => source.key)
+    return { periods, sources, sourceKeys }
   }
 
   async function loadExplorerTicketSelection(params: ExplorerSelectionParams) {
@@ -865,7 +879,8 @@ export default function Chat() {
   }
 
   async function loadTicketPreview(
-    sources: Array<{ table?: string; periods?: Array<{ from?: string; to?: string }> }>
+    sources: Array<{ table?: string; periods?: Array<{ from?: string; to?: string }> }>,
+    sourceKeys: string[]
   ) {
     if (ticketPreviewAbortRef.current) {
       ticketPreviewAbortRef.current.abort()
@@ -881,10 +896,11 @@ export default function Chat() {
         signal: controller.signal,
       })
       if (controller.signal.aborted) return
-      const normalized = (items || []).map(item => {
+      const normalized = (items || []).map((item, idx) => {
         const rowsPayload = item?.evidence_rows
+        const previewKey = sourceKeys[idx] || `${item?.table ?? 'tickets'}-${item?.period_label ?? ''}-${idx}`
         if (!rowsPayload || !Array.isArray(rowsPayload.rows)) {
-          return item
+          return { ...item, previewKey }
         }
         const cols = Array.isArray(rowsPayload.columns)
           ? rowsPayload.columns.filter((col): col is string => typeof col === 'string')
@@ -892,6 +908,7 @@ export default function Chat() {
         const rowsNorm = normaliseRows(cols, rowsPayload.rows as any[])
         return {
           ...item,
+          previewKey,
           evidence_rows: {
             ...rowsPayload,
             columns: cols,
@@ -914,7 +931,7 @@ export default function Chat() {
   }
 
   const ticketSourcesForPreview = useMemo(
-    () => buildTicketSources().sources,
+    () => buildTicketSources(),
     [ticketRanges, ticketTable, extraTicketSources]
   )
 
@@ -928,12 +945,12 @@ export default function Chat() {
       setTicketPreviewLoading(false)
       return
     }
-    if (ticketSourcesForPreview.length === 0) {
+    if (ticketSourcesForPreview.sources.length === 0) {
       setTicketPreviewItems([])
       setTicketPreviewError('')
       return
     }
-    void loadTicketPreview(ticketSourcesForPreview)
+    void loadTicketPreview(ticketSourcesForPreview.sources, ticketSourcesForPreview.sourceKeys)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketMode, ticketSourcesForPreview])
 
@@ -1018,7 +1035,7 @@ export default function Chat() {
           }
           setTicketStatus(`Sélection active (${selection.values.length} tickets)`)
         } else {
-          const { periods, sources } = buildTicketSources()
+        const { periods, sources } = buildTicketSources()
           if (periods.length > 0) {
             baseMeta.ticket_periods = periods
             baseMeta.tickets_from = periods[0].from
@@ -1743,8 +1760,8 @@ export default function Chat() {
 
   const panelItems = useMemo<TicketPanelItem[]>(() => {
     if (ticketMode) {
-      return ticketPreviewItems.map((item, idx) => ({
-        key: `${item.table ?? 'tickets'}-${item.period_label ?? ''}-${idx}`,
+      return ticketPreviewItems.map(item => ({
+        key: item.previewKey,
         table: item.table,
         periodLabel: item.period_label,
         spec: item.evidence_spec ?? null,
