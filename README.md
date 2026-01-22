@@ -120,6 +120,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 
 - Une fois connecté avec le compte administrateur, l’UI affiche l’onglet **Admin** permettant de créer de nouveaux couples utilisateur/mot de passe. L’interface a été simplifiée: **Chat**, **Explorer**, **Radar**, **Graph**, **Historique** et **Admin** sont accessibles via des boutons dans le header (top bar). La barre de navigation secondaire a été supprimée pour éviter les doublons.
 - L’espace admin est découpé en onglets (Statistiques, Dictionnaire, Prompts, Explorer, Radar, Chat, Utilisateurs, Feedback). L’ancien chemin `/feedback` redirige vers l’onglet Feedback pour centraliser la revue des avis.
+- Dans l’onglet Chat (Contexte tickets), les sélections de colonnes restent persistantes lorsque vous passez d’une table à l’autre avant sauvegarde.
 - Tout nouvel utilisateur (y compris l’administrateur initial) doit définir un mot de passe définitif lors de sa première connexion. Le backend retourne un code `PASSWORD_RESET_REQUIRED` si un utilisateur tente de se connecter avec son mot de passe provisoire: le frontend affiche alors un formulaire dédié qui impose la saisie du nouveau mot de passe deux fois avant de poursuivre.
 - L’endpoint backend `POST /api/v1/auth/users` (token Bearer requis) accepte `{ "username": "...", "password": "..." }` et renvoie les métadonnées de l’utilisateur créé. La réponse de connexion contient désormais `username` et `is_admin` pour que le frontend sélectionne l’onglet Admin uniquement pour l’administrateur.
 - L’API `POST /api/v1/auth/reset-password` (sans jeton) attend `{ username, current_password, new_password, confirm_password }`. En cas de succès elle renvoie `204` ; le frontend relance automatiquement la connexion avec le nouveau secret.
@@ -143,6 +144,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Admin : les colonnes Date / Category / Sub Category sont configurables par table (persistées via `/data/overview/{source}/column-roles`) et pilotent les filtres date, la répartition Category/Sub Category et l’aperçu.
 - Admin : l’onglet « Chat » configure indépendamment le contexte tickets (table + colonnes texte/date + champs additionnels injectés au LLM), persisté via `/tickets/context/config` et `/data/overview/{source}/column-roles`.
 - Admin : l’onglet « Chat » s’appuie sur l’overview léger (`lightweight=true`) pour charger les colonnes et rôles même si une colonne configurée n’existe plus; la colonne manquante apparaît vide pour correction.
+- Admin : l’onglet « Chat » ignore les réponses réseau obsolètes lors d’un changement de table pour éviter un contexte tickets désynchronisé.
 - Visualisations Chart.js (lignes + barres) avec palette colorée pour timelines et répartitions des valeurs à partir des colonnes détectées automatiquement.
 - Le jeu `tickets_jira` inclut désormais les colonnes `Category` et `Sub Category` (classification ITSM) pour alimenter la répartition affichée dans l’Explorer et les filtres associés.
 - Usage : vérifier la santé et la couverture des jeux de données avant d’ouvrir un chat ou de générer des graphiques.
