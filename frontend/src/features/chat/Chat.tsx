@@ -2671,6 +2671,10 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
   const [selectedPk, setSelectedPk] = useState<string | null>(null)
   const prevScrollTop = useRef(0)
 
+  useEffect(() => {
+    setSelectedPk(null)
+  }, [spec, data])
+
   function openDetail(pk: unknown) {
     if (containerRef?.current) {
       try { prevScrollTop.current = containerRef.current.scrollTop } catch (err) { if (import.meta?.env?.MODE !== 'production') console.warn('TicketPanel: failed reading scrollTop', err) }
