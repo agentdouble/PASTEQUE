@@ -246,22 +246,15 @@ class LoopService:
         for item in entries:
             buckets.setdefault(item["date"], []).append(item)
 
+        if not buckets:
+            return []
+
         limit = max(1, int(settings.loop_max_days))
         today = date.today()
-        ordered_dates: list[date] = [today] + [d for d in sorted(buckets.keys(), reverse=True) if d != today]
-
-        seen: set[date] = set()
-        selected: list[date] = []
-        for d in ordered_dates:
-            if d in seen:
-                continue
-            seen.add(d)
-            selected.append(d)
-            if len(selected) >= limit:
-                break
-
-        if not selected:
-            selected = [today]
+        ordered_dates = sorted(buckets.keys(), reverse=True)
+        if today in buckets:
+            ordered_dates = [today] + [d for d in ordered_dates if d != today]
+        selected = ordered_dates[:limit]
 
         groups: list[dict[str, Any]] = []
         for current in selected:
