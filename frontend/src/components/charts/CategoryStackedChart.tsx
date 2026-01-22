@@ -27,7 +27,7 @@ export default function CategoryStackedChart({
   breakdown,
   onSelect,
   title = 'Répartition Category / Sub Category',
-  subtitle = 'Cliquez sur une catégorie pour ouvrir ses sous-catégories, puis sur une sous-catégorie pour l’aperçu.',
+  subtitle = '',
   height = 224,
   className,
 }: Props) {
