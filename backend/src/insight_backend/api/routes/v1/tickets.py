@@ -122,6 +122,7 @@ def preview_ticket_context(  # type: ignore[valid-type]
     items: list[TicketContextPreviewItem] = []
     for src in payload.sources:
         periods = [p.model_dump(by_alias=True) for p in (src.periods or [])] or None
+        selection = src.selection.model_dump() if src.selection else None
         try:
             preview = service.build_preview(
                 allowed_tables=allowed_tables,
@@ -131,6 +132,7 @@ def preview_ticket_context(  # type: ignore[valid-type]
                 table=src.table,
                 text_column=src.text_column,
                 date_column=src.date_column,
+                selection=selection,
             )
             items.append(TicketContextPreviewItem(**preview))
         except HTTPException as exc:

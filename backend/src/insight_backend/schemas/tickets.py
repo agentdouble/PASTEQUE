@@ -48,12 +48,19 @@ class TicketContextPeriod(BaseModel):
   to: str | None = None
 
 
+class TicketContextSelection(BaseModel):
+  model_config = ConfigDict(extra="forbid")
+  pk: str = Field(..., min_length=1)
+  values: list[str] = Field(..., min_length=1)
+
+
 class TicketContextSource(BaseModel):
   model_config = ConfigDict(extra="forbid")
   table: str | None = None
   text_column: str | None = None
   date_column: str | None = None
   periods: list[TicketContextPeriod] | None = None
+  selection: TicketContextSelection | None = None
 
 
 class TicketContextPreviewRequest(BaseModel):

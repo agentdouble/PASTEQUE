@@ -442,6 +442,15 @@ type TicketSelectionState = {
   table?: string
 }
 
+type TicketPreviewSource = {
+  table?: string
+  periods?: Array<{ from?: string; to?: string }>
+  selection?: {
+    pk: string
+    values: string[]
+  }
+}
+
 export default function Chat() {
   const [_searchParams, setSearchParams] = useSearchParams()
   const { search } = useLocation()
@@ -865,7 +874,7 @@ export default function Chat() {
   }
 
   async function loadTicketPreview(
-    sources: Array<{ table?: string; periods?: Array<{ from?: string; to?: string }> }>
+    sources: TicketPreviewSource[]
   ) {
     if (ticketPreviewAbortRef.current) {
       ticketPreviewAbortRef.current.abort()
@@ -913,10 +922,28 @@ export default function Chat() {
     }
   }
 
-  const ticketSourcesForPreview = useMemo(
-    () => buildTicketSources().sources,
-    [ticketRanges, ticketTable, extraTicketSources]
-  )
+  const ticketSourcesForPreview = useMemo<TicketPreviewSource[]>(() => {
+    const baseSources = buildTicketSources().sources
+    if (!explorerTicketSelection) return baseSources
+    const selection = {
+      pk: explorerTicketSelection.idColumn,
+      values: explorerTicketSelection.values,
+    }
+    const targetTable = explorerTicketSelection.source.trim().toLowerCase()
+    let matched = false
+    const nextSources = baseSources.map(source => {
+      const tableKey = source.table?.trim().toLowerCase()
+      if (tableKey && tableKey === targetTable) {
+        matched = true
+        return { ...source, selection }
+      }
+      return source
+    })
+    if (!matched) {
+      nextSources.push({ table: explorerTicketSelection.source, selection })
+    }
+    return nextSources
+  }, [ticketRanges, ticketTable, extraTicketSources, explorerTicketSelection])
 
   useEffect(() => {
     if (!ticketMode) {
