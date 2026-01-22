@@ -627,12 +627,6 @@ function SelectionPreview({
           <span className="font-semibold text-primary-900">{selection.subCategory}</span>
         </div>
         <div className="flex items-center gap-2">
-          {preview ? (
-            <div className="text-[11px] text-primary-500">
-              {preview.matching_rows.toLocaleString('fr-FR')} lignes correspondantes ·{' '}
-              {rows.length.toLocaleString('fr-FR')} affichées sur {limit} par page
-            </div>
-          ) : null}
           <Button
             variant="primary"
             size="xs"
