@@ -471,6 +471,7 @@ class TicketContextService:
         seen: set[str] = set()
         for name in [
             config.text_column,
+            config.title_column,
             config.date_column,
             *context_fields,
         ]:

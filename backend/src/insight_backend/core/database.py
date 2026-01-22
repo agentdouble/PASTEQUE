@@ -132,6 +132,12 @@ def _ensure_ticket_context_config_columns() -> None:
                 "WHERE title_column IS NULL OR title_column = ''"
             )
         )
+        conn.execute(
+            text(
+                "ALTER TABLE ticket_context_configs "
+                "ALTER COLUMN title_column SET NOT NULL"
+            )
+        )
     log.info("ticket_context_configs title_column ensured.")
 
 
