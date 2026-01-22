@@ -247,21 +247,7 @@ class LoopService:
             buckets.setdefault(item["date"], []).append(item)
 
         limit = max(1, int(settings.loop_max_days))
-        today = date.today()
-        ordered_dates: list[date] = [today] + [d for d in sorted(buckets.keys(), reverse=True) if d != today]
-
-        seen: set[date] = set()
-        selected: list[date] = []
-        for d in ordered_dates:
-            if d in seen:
-                continue
-            seen.add(d)
-            selected.append(d)
-            if len(selected) >= limit:
-                break
-
-        if not selected:
-            selected = [today]
+        selected = sorted(buckets.keys(), reverse=True)[:limit]
 
         groups: list[dict[str, Any]] = []
         for current in selected:
