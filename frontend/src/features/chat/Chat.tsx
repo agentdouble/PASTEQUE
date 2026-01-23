@@ -472,8 +472,8 @@ export default function Chat() {
     ranges: Array<{ id: string; from?: string; to?: string }>
   }>>([])
   const [showTicketPanel, setShowTicketPanel] = useState(true)
-  const [ticketMeta, setTicketMeta] = useState<{ min?: string; max?: string; total?: number; table?: string } | null>(null)
-  const [ticketMetaByTable, setTicketMetaByTable] = useState<Record<string, { min?: string; max?: string; total?: number }>>({})
+  const [ticketMeta, setTicketMeta] = useState<{ min?: string; max?: string; recommendedFrom?: string; total?: number; table?: string } | null>(null)
+  const [ticketMetaByTable, setTicketMetaByTable] = useState<Record<string, { min?: string; max?: string; recommendedFrom?: string; total?: number }>>({})
   const [ticketMetaLoading, setTicketMetaLoading] = useState(false)
   const [ticketMetaError, setTicketMetaError] = useState('')
   const [ticketStatus, setTicketStatus] = useState('')
@@ -700,12 +700,13 @@ export default function Chat() {
       const selectedTable = (tableOverride ?? ticketTable)?.trim() || ''
       const params = new URLSearchParams()
       if (selectedTable) params.set('table', selectedTable)
-      const meta = await apiFetch<{ table: string; date_min?: string; date_max?: string; total_count: number }>(
+      const meta = await apiFetch<{ table: string; date_min?: string; date_max?: string; recommended_from?: string; total_count: number }>(
         params.size ? `/tickets/context/metadata?${params.toString()}` : '/tickets/context/metadata'
       )
       const metaRecord = {
         min: meta?.date_min,
         max: meta?.date_max,
+        recommendedFrom: meta?.recommended_from,
         total: typeof meta?.total_count === 'number' ? meta.total_count : undefined,
       }
       const resolvedTable = selectedTable || meta?.table || ''
@@ -713,6 +714,8 @@ export default function Chat() {
         ...prev,
         ...(resolvedTable ? { [resolvedTable]: metaRecord } : {}),
       }))
+      // Use recommended_from (99% context) as default start date, fallback to date_min
+      const defaultFrom = meta?.recommended_from ?? meta?.date_min
       if (target === 'main') {
         setTicketMeta({ ...metaRecord, table: meta?.table })
         setTicketTable(resolvedTable)
@@ -720,7 +723,7 @@ export default function Chat() {
           const first = prev[0] ?? { id: createMessageId() }
           const updated = {
             ...first,
-            from: first.from ?? meta?.date_min ?? undefined,
+            from: first.from ?? defaultFrom ?? undefined,
             to: first.to ?? meta?.date_max ?? undefined,
           }
           const rest = prev.slice(1)
@@ -729,18 +732,18 @@ export default function Chat() {
         setTicketStatus('')
       } else {
         setExtraTicketSources(prev =>
-          prev.map(src =>
-            src.id === target
-              ? {
-                  ...src,
-                  table: resolvedTable,
-                  ranges:
-                    src.ranges.length > 0
-                      ? src.ranges
-                      : [{ id: createMessageId(), from: meta?.date_min ?? undefined, to: meta?.date_max ?? undefined }],
-                }
-              : src
-          )
+          prev.map(src => {
+            if (src.id !== target) return src
+            // Check if ranges have actual date values
+            const hasValidDates = src.ranges.some(r => r.from || r.to)
+            return {
+              ...src,
+              table: resolvedTable,
+              ranges: hasValidDates
+                ? src.ranges
+                : [{ id: createMessageId(), from: defaultFrom ?? undefined, to: meta?.date_max ?? undefined }],
+            }
+          })
         )
       }
     } catch (err) {
@@ -2020,6 +2023,7 @@ export default function Chat() {
           <div className="text-xs text-red-600">{activeItem.error}</div>
         ) : (
           <TicketPanel
+            key={activeItem?.key}
             spec={activeItem?.spec ?? null}
             data={activeItem?.data ?? null}
             containerRef={containerRef}
@@ -2206,7 +2210,8 @@ export default function Chat() {
                           className="text-xs text-primary-700 underline self-start"
                           onClick={() => {
                             if (ticketMeta) {
-                              setTicketRanges([{ id: createMessageId(), from: ticketMeta.min, to: ticketMeta.max }])
+                              // Use recommendedFrom (99% context) as default, fallback to min
+                              setTicketRanges([{ id: createMessageId(), from: ticketMeta.recommendedFrom ?? ticketMeta.min, to: ticketMeta.max }])
                               setTicketStatus('')
                             } else {
                               setTicketRanges([{ id: createMessageId() }])
@@ -2223,6 +2228,8 @@ export default function Chat() {
                   const meta = source.table ? ticketMetaByTable[source.table] : undefined
                   const minDate = meta?.min ?? ticketMeta?.min
                   const maxDate = meta?.max ?? ticketMeta?.max
+                  // Use recommendedFrom (99% context) as default, fallback to min
+                  const defaultFrom = meta?.recommendedFrom ?? ticketMeta?.recommendedFrom ?? minDate
                   return (
                     <div key={source.id} className="mt-2 border-t border-primary-100 pt-2">
                       <div className="flex items-center justify-between text-xs text-primary-700 mb-1">
@@ -2321,7 +2328,7 @@ export default function Chat() {
                                   ? {
                                       ...s,
                                       ranges: [
-                                        { id: createMessageId(), from: minDate, to: maxDate },
+                                        { id: createMessageId(), from: defaultFrom, to: maxDate },
                                       ],
                                     }
                                   : s
@@ -2339,7 +2346,10 @@ export default function Chat() {
                     <button
                       type="button"
                       className="text-xs text-primary-700 underline self-start"
-                      onClick={() => setExtraTicketSources(prev => [...prev, { id: createMessageId(), ranges: [{ id: createMessageId() }] }])}
+                      onClick={() => setExtraTicketSources(prev => [...prev, {
+                        id: createMessageId(),
+                        ranges: ticketRanges.map(r => ({ id: createMessageId(), from: r.from, to: r.to }))
+                      }])}
                     >
                       + Ajouter une table
                     </button>

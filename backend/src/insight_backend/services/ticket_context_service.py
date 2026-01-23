@@ -62,13 +62,31 @@ class TicketContextService:
                 detail="Aucun ticket exploitable avec cette configuration.",
             )
         dates = [item["date"] for item in entries]
+        char_limit = max(1, int(settings.ticket_context_direct_max_chars))
+        # Calculate recommended_from: date from which ~99% of context char limit is used
+        # Sort entries by date descending (most recent first)
+        sorted_entries = sorted(entries, key=lambda x: x["date"], reverse=True)
+        target_chars = int(char_limit * 0.99)
+        cumulative_chars = 0
+        recommended_from = None
+        for item in sorted_entries:
+            text_len = len(item.get("text") or "")
+            cumulative_chars += text_len + 1  # +1 for newline separator
+            if cumulative_chars >= target_chars:
+                recommended_from = item["date"]
+                break
+        # If we didn't reach the limit, use the oldest date
+        if recommended_from is None and sorted_entries:
+            recommended_from = sorted_entries[-1]["date"]
         return {
             "table": config.table_name,
             "text_column": config.text_column,
             "date_column": config.date_column,
             "date_min": min(dates) if dates else None,
             "date_max": max(dates) if dates else None,
+            "recommended_from": recommended_from,
             "total_count": len(entries),
+            "context_char_limit": char_limit,
         }
 
     def build_context(

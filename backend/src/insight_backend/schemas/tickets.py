@@ -42,7 +42,9 @@ class TicketContextMetadataResponse(BaseModel):
   date_column: str
   date_min: date | None = None
   date_max: date | None = None
+  recommended_from: date | None = None
   total_count: int
+  context_char_limit: int | None = None
 
 
 class TicketContextPeriod(BaseModel):
