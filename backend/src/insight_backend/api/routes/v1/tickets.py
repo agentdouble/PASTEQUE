@@ -58,7 +58,9 @@ def get_ticket_context_metadata(  # type: ignore[valid-type]
         date_column=meta["date_column"],
         date_min=meta["date_min"],
         date_max=meta["date_max"],
+        recommended_from=meta.get("recommended_from"),
         total_count=meta["total_count"],
+        context_char_limit=meta.get("context_char_limit"),
     )
 
 
@@ -122,6 +124,7 @@ def preview_ticket_context(  # type: ignore[valid-type]
     items: list[TicketContextPreviewItem] = []
     for src in payload.sources:
         periods = [p.model_dump(by_alias=True) for p in (src.periods or [])] or None
+        selection = src.selection.model_dump() if src.selection else None
         try:
             preview = service.build_preview(
                 allowed_tables=allowed_tables,
@@ -131,6 +134,7 @@ def preview_ticket_context(  # type: ignore[valid-type]
                 table=src.table,
                 text_column=src.text_column,
                 date_column=src.date_column,
+                selection=selection,
             )
             items.append(TicketContextPreviewItem(**preview))
         except HTTPException as exc:

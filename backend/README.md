@@ -267,7 +267,7 @@ ROUTER_MODE=rule   # rule | local | api | false
 ### Loop – résumés journaliers/hebdomadaires/mensuels
 
 - Endpoints:
-- `GET /api/v1/loop/overview` (auth): renvoie les tables configurées + leurs résumés jour/hebdo/mensuels. Les tables sont filtrées selon les droits d’accès de l’utilisateur (ACL `user_table_permissions`). Le résumé journalier indique explicitement lorsqu’aucun ticket n’est enregistré le jour courant.
+- `GET /api/v1/loop/overview` (auth): renvoie les tables configurées + leurs résumés jour/hebdo/mensuels. Les tables sont filtrées selon les droits d’accès de l’utilisateur (ACL `user_table_permissions`). Le résumé journalier reflète le jour le plus récent disponible.
 - `PUT /api/v1/loop/config` (admin): choisit la table + colonnes texte/date à utiliser (validées sur les CSV en `DATA_TABLES_DIR`). Plusieurs tables peuvent être configurées.
 - `DELETE /api/v1/loop/config/{config_id}` (admin): retire une table du Radar (supprime sa configuration et ses résumés).
 - `POST /api/v1/loop/regenerate` (admin): relance l’agent `looper` pour regénérer les résumés. Paramètre optionnel `table_name` pour cibler une table précise, sinon toutes les tables configurées sont recalculées.
