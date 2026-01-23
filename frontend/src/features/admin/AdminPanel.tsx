@@ -573,6 +573,7 @@ export default function AdminPanel() {
       setTicketStatus({ type: 'error', message: 'Sélectionnez la colonne date.' })
       return
     }
+    const tableBeforeSave = ticketTable
     setTicketSaving(true)
     setTicketStatus(null)
     try {
@@ -592,6 +593,10 @@ export default function AdminPanel() {
           body: JSON.stringify(payload),
         }
       )
+      // Abort state update if user switched to a different table during the save
+      if (ticketTableRef.current !== tableBeforeSave) {
+        return
+      }
       const updated = response ?? payload
       setTicketRoles(prev =>
         prev
@@ -602,12 +607,25 @@ export default function AdminPanel() {
           : prev
       )
       setTicketContextFields(updated.ticket_context_fields ?? contextFields)
+      // Update draft to reflect saved values
+      setTicketDrafts(prev => ({
+        ...prev,
+        [tableBeforeSave]: {
+          textColumn: ticketTextColumn,
+          titleColumn: ticketTitleColumn,
+          dateColumn: ticketDateColumn,
+          contextFields: updated.ticket_context_fields ?? contextFields,
+        },
+      }))
       setTicketStatus({ type: 'success', message: 'Configuration chat enregistrée.' })
     } catch (err) {
-      setTicketStatus({
-        type: 'error',
-        message: err instanceof Error ? err.message : 'Mise à jour impossible.',
-      })
+      // Only show error if still on the same table
+      if (ticketTableRef.current === tableBeforeSave) {
+        setTicketStatus({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'Mise à jour impossible.',
+        })
+      }
     } finally {
       setTicketSaving(false)
     }
