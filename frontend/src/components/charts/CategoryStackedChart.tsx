@@ -27,7 +27,7 @@ export default function CategoryStackedChart({
   breakdown,
   onSelect,
   title = 'Répartition Category / Sub Category',
-  subtitle = 'Cliquez sur une catégorie pour ouvrir ses sous-catégories, puis sur une sous-catégorie pour l’aperçu.',
+  subtitle = '',
   height = 224,
   className,
 }: Props) {
@@ -187,7 +187,7 @@ export default function CategoryStackedChart({
           {isDrilled ? (
             <button
               type="button"
-              className="text-[11px] text-primary-700 hover:text-primary-900 underline underline-offset-4"
+              className="text-xs font-semibold text-primary-900 bg-white border border-primary-200 rounded-full px-3 py-1 shadow-sm hover:bg-primary-50"
               onClick={() => setFocusedCategory(null)}
             >
               Retour catégories

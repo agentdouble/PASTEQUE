@@ -468,6 +468,9 @@ class TicketContextService:
             config.title_column,
             config.date_column,
             *context_fields,
+            "ticket_id",
+            "id",
+            "ref",
         ]:
             if not name:
                 continue
