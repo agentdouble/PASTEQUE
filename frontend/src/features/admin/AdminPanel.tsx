@@ -39,6 +39,14 @@ type TicketDraft = {
   contextFields: string[]
 }
 
+type FeaturePermissionKey = 'can_use_sql_agent' | 'can_generate_chart' | 'can_view_graph'
+
+const FEATURE_PERMISSIONS: { key: FeaturePermissionKey; label: string; title: string }[] = [
+  { key: 'can_use_sql_agent', label: 'Agent SQL', title: 'Accès à l’agent SQL' },
+  { key: 'can_generate_chart', label: 'Graphiques', title: 'Accès à la génération de graphiques' },
+  { key: 'can_view_graph', label: 'Onglet Graph', title: 'Accès à l’onglet Graph' },
+]
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
   const date = new Date(value)
@@ -738,7 +746,12 @@ export default function AdminPanel() {
     const filtered = target.allowed_tables.filter(value => value.toLowerCase() !== tableKey)
     const nextAllowed = nextChecked ? [...filtered, table] : filtered
     nextAllowed.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
-    const payload: UpdateUserPermissionsRequest = { allowed_tables: nextAllowed }
+    const payload: UpdateUserPermissionsRequest = {
+      allowed_tables: nextAllowed,
+      can_use_sql_agent: target.can_use_sql_agent,
+      can_generate_chart: target.can_generate_chart,
+      can_view_graph: target.can_view_graph,
+    }
 
     setUpdatingUsers(prev => {
       const next = new Set(prev)
@@ -772,7 +785,91 @@ export default function AdminPanel() {
           ...prev,
           users: prev.users.map(user =>
             user.username === username
-              ? { ...user, allowed_tables: response.allowed_tables }
+              ? {
+                  ...user,
+                  allowed_tables: response.allowed_tables,
+                  can_use_sql_agent: response.can_use_sql_agent,
+                  can_generate_chart: response.can_generate_chart,
+                  can_view_graph: response.can_view_graph,
+                }
+              : user
+          ),
+        }
+      })
+      setStatus({ type: 'success', message: `Droits mis à jour pour ${username}.` })
+    } catch (err) {
+      await loadPermissions()
+      setStatus({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Mise à jour impossible.'
+      })
+    } finally {
+      setUpdatingUsers(prev => {
+        const next = new Set(prev)
+        next.delete(username)
+        return next
+      })
+    }
+  }
+
+  async function handleToggleFeature(
+    username: string,
+    key: FeaturePermissionKey,
+    nextChecked: boolean,
+  ) {
+    if (!overview || updatingUsers.has(username)) return
+    const target = overview.users.find(user => user.username === username)
+    if (!target || target.is_admin) return
+
+    const nextUser = {
+      ...target,
+      [key]: nextChecked,
+    } as UserWithPermissionsResponse
+
+    const payload: UpdateUserPermissionsRequest = {
+      allowed_tables: nextUser.allowed_tables,
+      can_use_sql_agent: nextUser.can_use_sql_agent,
+      can_generate_chart: nextUser.can_generate_chart,
+      can_view_graph: nextUser.can_view_graph,
+    }
+
+    setUpdatingUsers(prev => {
+      const next = new Set(prev)
+      next.add(username)
+      return next
+    })
+
+    setOverview(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        users: prev.users.map(user =>
+          user.username === username ? nextUser : user
+        ),
+      }
+    })
+
+    try {
+      const response = await apiFetch<UserWithPermissionsResponse>(
+        `/auth/users/${encodeURIComponent(username)}/table-permissions`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        }
+      )
+      setOverview(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          users: prev.users.map(user =>
+            user.username === username
+              ? {
+                  ...user,
+                  allowed_tables: response.allowed_tables,
+                  can_use_sql_agent: response.can_use_sql_agent,
+                  can_generate_chart: response.can_generate_chart,
+                  can_view_graph: response.can_view_graph,
+                }
               : user
           ),
         }
@@ -1678,7 +1775,7 @@ export default function AdminPanel() {
                 Droits d’accès aux tables
               </h3>
               <p className="text-sm text-primary-600">
-                Activez ou désactivez l’accès aux tables pour chaque utilisateur. L’administrateur dispose toujours d’un accès complet.
+                Activez ou désactivez l’accès aux tables et aux fonctionnalités (SQL, graphiques) pour chaque utilisateur. L’administrateur dispose toujours d’un accès complet.
               </p>
             </div>
 
@@ -1706,6 +1803,15 @@ export default function AdminPanel() {
                       <th className="text-left text-xs font-semibold uppercase tracking-wide text-primary-600 px-4 py-3 border-b border-primary-100">
                         Utilisateur
                       </th>
+                      {FEATURE_PERMISSIONS.map(permission => (
+                        <th
+                          key={permission.key}
+                          className="text-center text-xs font-semibold uppercase tracking-wide text-primary-600 px-4 py-3 border-b border-primary-100"
+                          title={permission.title}
+                        >
+                          {permission.label}
+                        </th>
+                      ))}
                       {tables.map(table => (
                         <th
                           key={table}
@@ -1763,6 +1869,25 @@ export default function AdminPanel() {
                               </div>
                             </div>
                           </td>
+                          {FEATURE_PERMISSIONS.map(permission => {
+                            const checked = isAdminRow || Boolean(user[permission.key])
+                            return (
+                              <td
+                                key={`${user.username}-${permission.key}`}
+                                className="text-center px-4 py-3 border-b border-primary-100"
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={checked}
+                                  disabled={isAdminRow || isUpdating}
+                                  onChange={(event) =>
+                                    handleToggleFeature(user.username, permission.key, event.target.checked)
+                                  }
+                                />
+                              </td>
+                            )
+                          })}
                           {tables.map(table => {
                             const checked = isAdminRow || allowedSet.has(table.toLowerCase())
                             return (

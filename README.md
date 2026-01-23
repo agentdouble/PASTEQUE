@@ -21,6 +21,7 @@ Script combiné (depuis la racine):
 - Si un conteneur MindsDB portant `${MINDSDB_CONTAINER_NAME}` existe déjà et tourne, `./start.sh` le réutilise (pas de redémarrage). Sinon il le démarre; le conteneur reste actif à la fin du script (pas d’arrêt automatique).
 - `./start_full.sh` – mêmes étapes que `start.sh`, mais diffuse dans ce terminal les logs temps réel du backend, du frontend et de MindsDB (préfixés pour rester lisibles).
 - Exemple: définir `BACKEND_DEV_URL=http://0.0.0.0:8000`, `FRONTEND_DEV_URL=http://localhost:5173` puis lancer `./start.sh`.
+- Dépannage: si `./start.sh` échoue lors du build frontend (pas de sortie, car redirection), lancer `npm run build -- --mode development` dans `frontend/` pour afficher l'erreur TypeScript/Vite.
 
 Compatibilité shell:
 
@@ -68,12 +69,13 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
-- Le panneau de sélection des tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l’espace du chat sans perdre la configuration active.
+- Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l'espace du chat sans perdre la configuration active.
 - Le bandeau du panneau affiche le nombre de tickets sélectionnés selon les plages de dates actives.
-- En mode tickets, le panneau « Ticket exploration » affiche immédiatement l’aperçu des tickets filtrés par les périodes sélectionnées (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché.
-- Lors d’un changement d’onglet (multi‑tables), la vue détail revient à la liste pour éviter un écran vide.
-- Les panels multi‑tables utilisent des clés stables pour éviter l’inversion des données lors de la suppression d’une table.
-- Lorsqu’une table est supprimée, son aperçu est retiré immédiatement du panel pour éviter les restes visuels.
+- En mode tickets, le panneau « Ticket exploration » affiche immédiatement l'aperçu des tickets filtrés par les périodes sélectionnées ou par une sélection Explorer active (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché, y compris pour la table issue de l'Explorer.
+- Lors d'un changement d'onglet (multi‑tables), la vue détail revient à la liste pour éviter un écran vide.
+- Les panels multi‑tables utilisent des clés stables pour éviter l'inversion des données lors de la suppression d'une table.
+- Lorsqu'une table est supprimée, son aperçu est retiré immédiatement du panel pour éviter les restes visuels.
+- Par défaut, la sélection de dates charge 99% du contexte autorisé (données les plus récentes). Des boutons rapides (7j, 30j, 1 an, Tout) et des champs de saisie permettent une sélection manuelle.
 - L’exploration permet de sélectionner des tickets (checkboxes) pour limiter le contexte du chat aux éléments choisis, jusqu’à effacement manuel de la sélection.
 - Backend: deux modes LLM (`LLM_MODE=local|api`) — vLLM local via `VLLM_BASE_URL`, provider externe via `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `LLM_MODEL`.
 - Les échanges LLM (question, contexte, réponse) sont tracés dans `logs/llm.log` (JSON multi-lignes) configuré par `LLM_TRACE_LOG_PATH` — fichier local ignoré par Git.
@@ -136,6 +138,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Le panneau admin inclut maintenant une matrice des droits sur les tables CSV/TSV présentes dans le répertoire de tables configuré (`DATA_TABLES_DIR`, par défaut `data/`). Chaque case permet d’autoriser ou de retirer l’accès par utilisateur; l’administrateur conserve un accès complet par défaut.
 - Les droits sont stockés dans la table Postgres `user_table_permissions`. Les API `GET /api/v1/auth/users` (inventaire des tables + droits) et `PUT /api/v1/auth/users/{username}/table-permissions` (mise à jour atomique) pilotent ces ACL.
 - Le backend applique ces restrictions pour les listings/ schémas (`GET /api/v1/data/...`) ainsi que pour le NL→SQL et les graphiques via `/api/v1/chat/*`: un utilisateur ne voit ni n’utilise de table qui ne lui a pas été accordée.
+- L’onglet Utilisateurs pilote aussi l’accès à l’agent SQL, à la génération de graphiques et à l’onglet Graph. Les boutons associés dans le chat sont masqués si l’accès est désactivé, l’onglet Graph est caché, et l’API refuse `/api/v1/mcp/chart` et `/api/v1/charts` sans droits adaptés.
 - Les administrateurs peuvent créer/éditer/supprimer les dictionnaires de données directement depuis l’onglet **Admin** → carte « Dictionnaire de données ». Les fichiers YAML sont persistés dans `DATA_DICTIONARY_DIR` (par défaut `data/dictionary`). API: `GET /api/v1/dictionary` (liste), `GET/PUT /api/v1/dictionary/{table}` (lecture/écriture), `DELETE /api/v1/dictionary/{table}` (suppression). Les colonnes sont validées contre le schéma réel, sans mécanismes de secours.
 - Un onglet **Prompts** permet d’éditer les templates LLM (tickets, NL→SQL, router, MCP chart, etc.). Les prompts sont stockés dans `data/prompts.yml` (chemin configurable via `PROMPTS_PATH`) et les variables sont écrites en `{{variable}}` avec validation des placeholders autorisés.
 
@@ -156,16 +159,18 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 ### Explorer (navigation Category/Sub Category)
 
 - Onglet « Explorer » dans le header pour explorer les données par paires `Category` / `Sub Category` quand ces colonnes existent.
-- Les colonnes Date / Category / Sub Category sont configurables par l’admin (Explorer) et persistées via `/api/v1/data/overview/{source}/column-roles`.
+- Les colonnes Date / Category / Sub Category sont configurables par l’admin via l’onglet Admin → Explorer et persistées via `/api/v1/data/overview/{source}/column-roles`.
 - Chaque source affichant ces colonnes est listée avec ses catégories et sous-catégories cliquables : un clic déclenche un aperçu (`/api/v1/data/explore/{source}`) limité à 25 lignes, avec le volume total de lignes correspondantes.
 - Si une source ne possède pas les deux colonnes, la vue l’ignore et affiche un message explicite plutôt que de masquer l’erreur.
 - Les aperçus sont paginés (25 lignes/page) avec navigation précédente/suivante et un tri par colonne `date` (desc/asc) quand la colonne est présente.
 - Depuis l’aperçu, un bouton « Discuter dans le chat » ouvre le chat en mode tickets avec la sélection Category/Sub Category préchargée (capée à 500 tickets, compteur affiché).
+- Le panneau tickets du chat se cale sur la sélection Explorer, même si d’autres tables sont ouvertes (onglets séparés).
 - Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage sélectionnée est appliquée côté backend (`/data/overview` + `/data/explore`) pour recalculer les volumes, avec un rail unique qui met en évidence la plage choisie.
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
-- Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et les listes cliquables.
-- Les catégories sont maintenant sélectionnables via un dropdown, avec un filtre texte pour cibler les sous-catégories affichées dans une liste scrollable.
+- Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et le donut.
+- La navigation se fait directement via le donut (clic catégorie puis sous-catégorie).
+- L’aperçu des tickets sélectionnés s’affiche désormais sous le donut de la source, et la liste de sous-catégories sous le graphique a été retirée.
 
 ### Radar – résumés journaliers/hebdo/mensuels
 

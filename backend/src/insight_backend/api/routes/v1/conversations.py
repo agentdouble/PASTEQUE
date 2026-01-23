@@ -4,7 +4,7 @@ from typing import Any, List, Dict
 import logging
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ....core.database import get_session
@@ -287,6 +287,11 @@ def append_chart_event(  # type: ignore[valid-type]
 
     Body fields (subset used): chart_url (required), tool_name, chart_title, chart_description, chart_spec.
     """
+    if not (user_is_admin(current_user) or current_user.can_generate_chart):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chart generation access required",
+        )
     repo = ConversationRepository(session)
     conv = repo.get_by_id(conversation_id) if user_is_admin(current_user) else repo.get_by_id_for_user(conversation_id, current_user.id)
     if not conv:
