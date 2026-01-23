@@ -58,7 +58,9 @@ def get_ticket_context_metadata(  # type: ignore[valid-type]
         date_column=meta["date_column"],
         date_min=meta["date_min"],
         date_max=meta["date_max"],
+        recommended_from=meta.get("recommended_from"),
         total_count=meta["total_count"],
+        context_char_limit=meta.get("context_char_limit"),
     )
 
 

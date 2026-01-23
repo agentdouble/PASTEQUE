@@ -69,8 +69,13 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
-- Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l’espace du chat sans perdre la configuration active.
-- En mode tickets, le panneau « Ticket exploration » affiche immédiatement l’aperçu des tickets filtrés par les périodes sélectionnées ou par une sélection Explorer active (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché, y compris pour la table issue de l’Explorer.
+- Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l'espace du chat sans perdre la configuration active.
+- Le bandeau du panneau affiche le nombre de tickets sélectionnés selon les plages de dates actives.
+- En mode tickets, le panneau « Ticket exploration » affiche immédiatement l'aperçu des tickets filtrés par les périodes sélectionnées ou par une sélection Explorer active (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché, y compris pour la table issue de l'Explorer.
+- Lors d'un changement d'onglet (multi‑tables), la vue détail revient à la liste pour éviter un écran vide.
+- Les panels multi‑tables utilisent des clés stables pour éviter l'inversion des données lors de la suppression d'une table.
+- Lorsqu'une table est supprimée, son aperçu est retiré immédiatement du panel pour éviter les restes visuels.
+- Par défaut, la sélection de dates charge 99% du contexte autorisé (données les plus récentes). Des boutons rapides (7j, 30j, 1 an, Tout) et des champs de saisie permettent une sélection manuelle.
 - L’exploration permet de sélectionner des tickets (checkboxes) pour limiter le contexte du chat aux éléments choisis, jusqu’à effacement manuel de la sélection.
 - Backend: deux modes LLM (`LLM_MODE=local|api`) — vLLM local via `VLLM_BASE_URL`, provider externe via `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `LLM_MODEL`.
 - Les échanges LLM (question, contexte, réponse) sont tracés dans `logs/llm.log` (JSON multi-lignes) configuré par `LLM_TRACE_LOG_PATH` — fichier local ignoré par Git.
@@ -95,7 +100,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 
 ### Données utilisées — visibilité + exclusions
 
-- UI dans le chat: bouton « Données » pour voir les tables disponibles et décocher celles à exclure (par conversation). Un bouton/checkbox « Sauvegarder comme valeur par défaut » permet d’enregistrer ces exclusions au niveau du compte (opt‑in). Les exclusions sont appliquées au prochain message.
+- UI: le bouton « Données » n’est plus affiché dans le chat; les exclusions passent par `metadata.exclude_tables` (persistées par conversation).
 - Backend: `GET /api/v1/data/tables` expose les tables autorisées par l’ACL; `POST /chat/stream` accepte `metadata.exclude_tables: string[]` et publie `meta.effective_tables` (tables réellement actives) pendant le streaming.
 - Persistance: les exclusions sont sauvegardées par conversation (colonne JSON `conversations.settings`) et réappliquées automatiquement aux requêtes suivantes de la même conversation.
 - Sécurité: pas de mécanismes de secours. Si toutes les tables sont exclues, la réponse l’indique explicitement et NL→SQL n’est pas tenté (`provider: nl2sql-acl`).
