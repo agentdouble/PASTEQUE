@@ -25,7 +25,14 @@ export default function App() {
           <Route index element={<Navigate to="/chat" replace />} />
           <Route path="chat" element={<Chat />} />
           <Route path="ia" element={<IaView />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute requireGraphAccess>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="radar" element={<Loop />} />
           <Route
             path="admin"
