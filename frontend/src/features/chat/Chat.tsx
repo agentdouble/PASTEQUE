@@ -222,13 +222,6 @@ function toDateIso(value?: number): string | undefined {
   return new Date(value).toISOString().slice(0, 10)
 }
 
-function formatTicketDate(value?: string): string {
-  if (!value) return '—'
-  const date = new Date(`${value}T00:00:00Z`)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('fr-FR')
-}
-
 const EXPLORER_SELECTION_LIMIT = 500
 
 type ExplorerSelectionParams = {
@@ -342,16 +335,89 @@ function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderP
     })
   }
 
+  // Quick selection helpers
+  const setQuickRange = (days: number | 'all') => {
+    if (days === 'all') {
+      onChange({ from: minDate, to: maxDate })
+    } else {
+      const endDate = new Date(maxTs)
+      const startDate = new Date(maxTs)
+      startDate.setDate(startDate.getDate() - days)
+      // Clamp to minDate if needed
+      const clampedStart = Math.max(startDate.getTime(), minTs)
+      onChange({
+        from: toDateIso(clampedStart),
+        to: toDateIso(endDate.getTime()),
+      })
+    }
+  }
+
+  const handleFromInputChange = (value: string) => {
+    if (!value) return
+    const ts = toDateTimestamp(value)
+    if (ts !== undefined) {
+      const clamped = Math.min(Math.max(ts, minTs), endTs)
+      onChange({
+        from: toDateIso(clamped),
+        to: range.to ?? maxDate,
+      })
+    }
+  }
+
+  const handleToInputChange = (value: string) => {
+    if (!value) return
+    const ts = toDateTimestamp(value)
+    if (ts !== undefined) {
+      const clamped = Math.max(Math.min(ts, maxTs), startTs)
+      onChange({
+        from: range.from ?? minDate,
+        to: toDateIso(clamped),
+      })
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-[11px] text-primary-600">
-        <span>
-          Du <span className="font-semibold text-primary-900">{range.from ? formatTicketDate(range.from) : '…'}</span>
-        </span>
-        <span>
-          au <span className="font-semibold text-primary-900">{range.to ? formatTicketDate(range.to) : '…'}</span>
-        </span>
+      {/* Quick selection buttons */}
+      <div className="flex flex-wrap gap-1">
+        {[
+          { label: '7j', days: 7 },
+          { label: '30j', days: 30 },
+          { label: '1 an', days: 365 },
+          { label: 'Tout', days: 'all' as const },
+        ].map(({ label, days }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setQuickRange(days)}
+            className="text-[10px] px-2 py-0.5 rounded border border-primary-200 bg-white text-primary-700 hover:bg-primary-50 transition-colors"
+          >
+            {label}
+          </button>
+        ))}
       </div>
+      {/* Date inputs */}
+      <div className="flex items-center gap-2 text-[11px]">
+        <label className="text-primary-600">Du</label>
+        <input
+          type="date"
+          value={range.from ?? ''}
+          min={minDate}
+          max={range.to ?? maxDate}
+          onChange={e => handleFromInputChange(e.target.value)}
+          className="border border-primary-200 rounded px-1.5 py-0.5 text-[11px] text-primary-900 focus:outline-none focus:border-primary-400"
+        />
+        <label className="text-primary-600">au</label>
+        <input
+          type="date"
+          value={range.to ?? ''}
+          min={range.from ?? minDate}
+          max={maxDate}
+          onChange={e => handleToInputChange(e.target.value)}
+          className="border border-primary-200 rounded px-1.5 py-0.5 text-[11px] text-primary-900 focus:outline-none focus:border-primary-400"
+        />
+      </div>
+      {/* Slider */}
       <div className="relative h-10" ref={sliderRef}>
         <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-100" />
         <div
@@ -418,11 +484,6 @@ function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderP
           style={{ zIndex: 31, background: 'transparent', left: `${endPercent}%` }}
         />
       </div>
-      {inactive ? (
-        <div className="text-[11px] text-primary-500">
-          Glissez pour définir une période.
-        </div>
-      ) : null}
     </div>
   )
 }
