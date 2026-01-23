@@ -14,12 +14,28 @@ class TicketContextConfigRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_config(self) -> TicketContextConfig | None:
-        return (
+    def list_configs(self) -> list[TicketContextConfig]:
+        """Return all ticket context configs ordered by most recent first."""
+        items = (
             self.session.query(TicketContextConfig)
             .order_by(TicketContextConfig.updated_at.desc(), TicketContextConfig.id.desc())
-            .first()
+            .all()
         )
+        log.debug("Loaded %d ticket context configs", len(items))
+        return items
+
+    def get_config_by_table(self, table_name: str) -> TicketContextConfig | None:
+        """Return the config for a specific table (case-insensitive match)."""
+        lookup = table_name.casefold()
+        for config in self.list_configs():
+            if config.table_name.casefold() == lookup:
+                return config
+        return None
+
+    def get_config(self) -> TicketContextConfig | None:
+        """Return the most recently updated config (for backward compatibility)."""
+        items = self.list_configs()
+        return items[0] if items else None
 
     def save_config(
         self,
@@ -29,7 +45,7 @@ class TicketContextConfigRepository:
         title_column: str,
         date_column: str,
     ) -> TicketContextConfig:
-        config = self.get_config()
+        config = self.get_config_by_table(table_name)
         if config is None:
             config = TicketContextConfig(
                 table_name=table_name,
@@ -46,7 +62,6 @@ class TicketContextConfigRepository:
                 date_column,
             )
         else:
-            config.table_name = table_name
             config.text_column = text_column
             config.title_column = title_column
             config.date_column = date_column

@@ -236,9 +236,12 @@ export default function AdminPanel() {
       setTicketError('')
       setTicketStatus(null)
       try {
-        const [colsResponse, overview] = await Promise.all([
+        const [colsResponse, overview, savedConfig] = await Promise.all([
           apiFetch<ColumnInfo[]>(`/data/schema/${encodeURIComponent(tableName)}`),
           apiFetch<DataOverviewResponse>('/data/overview?include_disabled=true&lightweight=true'),
+          apiFetch<TicketContextConfig | null>(
+            `/tickets/context/config?table=${encodeURIComponent(tableName)}`
+          ).catch(() => null),
         ])
         if (
           requestId !== ticketConfigRequestRef.current ||
@@ -274,19 +277,45 @@ export default function AdminPanel() {
         const contextFromDraft = (draft?.contextFields ?? []).filter(name =>
           columnLookup.has(name.toLowerCase())
         )
-        const textFromConfig =
+        const textFromOpts =
           opts?.textColumn && columnLookup.has(opts.textColumn.toLowerCase()) ? opts.textColumn : ''
-        const titleFromConfig =
+        const titleFromOpts =
           opts?.titleColumn && columnLookup.has(opts.titleColumn.toLowerCase()) ? opts.titleColumn : ''
-        const dateFromConfig =
+        const dateFromOpts =
           opts?.dateColumn && columnLookup.has(opts.dateColumn.toLowerCase()) ? opts.dateColumn : ''
+        const textFromSaved =
+          savedConfig?.text_column && columnLookup.has(savedConfig.text_column.toLowerCase())
+            ? savedConfig.text_column
+            : ''
+        const titleFromSaved =
+          savedConfig?.title_column && columnLookup.has(savedConfig.title_column.toLowerCase())
+            ? savedConfig.title_column
+            : ''
+        const dateFromSaved =
+          savedConfig?.date_column && columnLookup.has(savedConfig.date_column.toLowerCase())
+            ? savedConfig.date_column
+            : ''
+        const contextFromSaved = (savedConfig?.ticket_context_fields ?? []).filter(name =>
+          columnLookup.has(name.toLowerCase())
+        )
         const contextFields = (roles.ticket_context_fields ?? []).filter(name =>
           columnLookup.has(name.toLowerCase())
         )
-        setTicketTextColumn(hasDraft ? textFromDraft : textFromConfig)
-        setTicketTitleColumn(hasDraft ? titleFromDraft : titleFromConfig)
-        setTicketDateColumn(hasDraft ? dateFromDraft : dateFromConfig || roles.date_field || '')
-        setTicketContextFields(hasDraft ? contextFromDraft : contextFields)
+        // Priority: draft > opts (from loadTicketContextConfig) > savedConfig > roles/inferred
+        setTicketTextColumn(hasDraft ? textFromDraft : textFromOpts || textFromSaved)
+        setTicketTitleColumn(hasDraft ? titleFromDraft : titleFromOpts || titleFromSaved)
+        setTicketDateColumn(
+          hasDraft
+            ? dateFromDraft
+            : dateFromOpts || dateFromSaved || roles.date_field || ''
+        )
+        setTicketContextFields(
+          hasDraft
+            ? contextFromDraft
+            : contextFromSaved.length > 0
+            ? contextFromSaved
+            : contextFields
+        )
       } catch (err) {
         if (
           requestId !== ticketConfigRequestRef.current ||
