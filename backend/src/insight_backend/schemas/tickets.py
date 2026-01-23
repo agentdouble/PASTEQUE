@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class TicketContextConfigRequest(BaseModel):
   table_name: str = Field(..., min_length=1)
   text_column: str = Field(..., min_length=1)
+  title_column: str = Field(..., min_length=1)
   date_column: str = Field(..., min_length=1)
   ticket_context_fields: list[str] | None = None
 
@@ -17,6 +18,7 @@ class TicketContextConfigResponse(BaseModel):
   id: int
   table_name: str
   text_column: str
+  title_column: str
   date_column: str
   updated_at: datetime
   ticket_context_fields: list[str] = Field(default_factory=list)
@@ -27,6 +29,7 @@ class TicketContextConfigResponse(BaseModel):
       id=config.id,
       table_name=config.table_name,
       text_column=config.text_column,
+      title_column=config.title_column,
       date_column=config.date_column,
       updated_at=config.updated_at,
       ticket_context_fields=ticket_context_fields or [],
