@@ -714,34 +714,27 @@ export default function Chat() {
         ...prev,
         ...(resolvedTable ? { [resolvedTable]: metaRecord } : {}),
       }))
-      // Use recommended_from (99% context) as default start date, fallback to date_min
+      // Always use recommended_from (99% context) when loading metadata
       const defaultFrom = meta?.recommended_from ?? meta?.date_min
       if (target === 'main') {
         setTicketMeta({ ...metaRecord, table: meta?.table })
         setTicketTable(resolvedTable)
-        setTicketRanges(prev => {
-          const first = prev[0] ?? { id: createMessageId() }
-          const updated = {
-            ...first,
-            from: first.from ?? defaultFrom ?? undefined,
-            to: first.to ?? meta?.date_max ?? undefined,
-          }
-          const rest = prev.slice(1)
-          return [updated, ...rest]
-        })
+        // Always reset to recommended dates (99% context) on metadata load
+        setTicketRanges([{
+          id: createMessageId(),
+          from: defaultFrom ?? undefined,
+          to: meta?.date_max ?? undefined,
+        }])
         setTicketStatus('')
       } else {
         setExtraTicketSources(prev =>
           prev.map(src => {
             if (src.id !== target) return src
-            // Check if ranges have actual date values
-            const hasValidDates = src.ranges.some(r => r.from || r.to)
+            // Always reset to recommended dates (99% context) on metadata load
             return {
               ...src,
               table: resolvedTable,
-              ranges: hasValidDates
-                ? src.ranges
-                : [{ id: createMessageId(), from: defaultFrom ?? undefined, to: meta?.date_max ?? undefined }],
+              ranges: [{ id: createMessageId(), from: defaultFrom ?? undefined, to: meta?.date_max ?? undefined }],
             }
           })
         )
