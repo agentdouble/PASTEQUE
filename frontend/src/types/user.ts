@@ -13,9 +13,6 @@ export interface UserWithPermissionsResponse {
   is_admin: boolean
   created_at: string
   allowed_tables: string[]
-  can_use_sql_agent: boolean
-  can_generate_chart: boolean
-  can_view_graph: boolean
 }
 
 export interface UserPermissionsOverviewResponse {
@@ -24,10 +21,7 @@ export interface UserPermissionsOverviewResponse {
 }
 
 export interface UpdateUserPermissionsRequest {
-  allowed_tables?: string[]
-  can_use_sql_agent?: boolean
-  can_generate_chart?: boolean
-  can_view_graph?: boolean
+  allowed_tables: string[]
 }
 
 export interface AdminResetPasswordResponse {

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from ....core.database import get_session
@@ -14,20 +14,12 @@ from ....services.chart_service import ChartService
 router = APIRouter(prefix="/charts")
 
 
-def _require_graph_access(user: User) -> None:
-    if user_is_admin(user):
-        return
-    if not user.can_view_graph:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Graph access required")
-
-
 @router.post("", response_model=ChartResponse, status_code=status.HTTP_201_CREATED)
 def save_chart(  # type: ignore[valid-type]
     payload: ChartSaveRequest,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> ChartResponse:
-    _require_graph_access(current_user)
     service = ChartService(ChartRepository(session))
     chart = service.save_chart(
         user=current_user,
@@ -48,7 +40,6 @@ def list_charts(  # type: ignore[valid-type]
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> list[ChartResponse]:
-    _require_graph_access(current_user)
     service = ChartService(ChartRepository(session))
     charts = service.list_charts(current_user)
     is_admin = user_is_admin(current_user)
@@ -68,7 +59,6 @@ def delete_chart(  # type: ignore[valid-type]
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> Response:
-    _require_graph_access(current_user)
     service = ChartService(ChartRepository(session))
     service.delete_chart(chart_id=chart_id, user=current_user)
     session.commit()

@@ -29,17 +29,7 @@ export function getAuth(): AuthState | null {
   const raw = window.localStorage.getItem(AUTH_KEY)
   if (!raw) return null
   try {
-    const parsed = JSON.parse(raw) as Partial<AuthState>
-    const isAdmin = Boolean(parsed?.isAdmin)
-    return {
-      token: String(parsed?.token ?? ''),
-      tokenType: String(parsed?.tokenType ?? 'bearer'),
-      username: String(parsed?.username ?? ''),
-      isAdmin,
-      canUseSqlAgent: isAdmin || Boolean(parsed?.canUseSqlAgent),
-      canGenerateChart: isAdmin || Boolean(parsed?.canGenerateChart),
-      canViewGraph: isAdmin || Boolean(parsed?.canViewGraph),
-    }
+    return JSON.parse(raw) as AuthState
   } catch (err) {
     console.error('Invalid auth state, clearing.', err)
     clearAuth()
@@ -104,9 +94,6 @@ export async function login(username: string, password: string): Promise<AuthSta
     tokenType: data.token_type || 'bearer',
     username: data.username,
     isAdmin: Boolean(data.is_admin),
-    canUseSqlAgent: Boolean(data.can_use_sql_agent),
-    canGenerateChart: Boolean(data.can_generate_chart),
-    canViewGraph: Boolean(data.can_view_graph),
   }
   storeAuth(auth)
   return auth

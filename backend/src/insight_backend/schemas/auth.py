@@ -19,9 +19,6 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     username: str
     is_admin: bool
-    can_use_sql_agent: bool
-    can_generate_chart: bool
-    can_view_graph: bool
 
 
 class CreateUserRequest(BaseModel):
@@ -53,10 +50,7 @@ class UserResponse(BaseModel):
 
 
 class UpdateUserPermissionsRequest(BaseModel):
-    allowed_tables: list[str] | None = None
-    can_use_sql_agent: bool | None = None
-    can_generate_chart: bool | None = None
-    can_view_graph: bool | None = None
+    allowed_tables: list[str] = Field(default_factory=list)
 
 
 class UserWithPermissionsResponse(BaseModel):
@@ -65,9 +59,6 @@ class UserWithPermissionsResponse(BaseModel):
     is_admin: bool
     created_at: datetime
     allowed_tables: list[str]
-    can_use_sql_agent: bool
-    can_generate_chart: bool
-    can_view_graph: bool
 
     @classmethod
     def from_model(
@@ -83,9 +74,6 @@ class UserWithPermissionsResponse(BaseModel):
             is_admin=is_admin,
             created_at=user.created_at,
             allowed_tables=sorted(set(allowed_tables), key=str.casefold),
-            can_use_sql_agent=True if is_admin else bool(user.can_use_sql_agent),
-            can_generate_chart=True if is_admin else bool(user.can_generate_chart),
-            can_view_graph=True if is_admin else bool(user.can_view_graph),
         )
 
 

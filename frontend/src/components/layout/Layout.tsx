@@ -9,7 +9,6 @@ import { useCallback } from 'react'
 export default function Layout() {
   const navigate = useNavigate()
   const [auth, setAuth] = useState(() => getAuth())
-  const canViewGraph = Boolean(auth?.isAdmin || auth?.canViewGraph)
 
   useEffect(() => {
     const currentAuth = getAuth()
@@ -61,11 +60,9 @@ export default function Layout() {
               <Button variant="secondary" size="sm" onClick={goTo('/radar')} className="!rounded-full">
                 Radar
               </Button>
-              {canViewGraph && (
-                <Button variant="secondary" size="sm" onClick={goTo('/dashboard')} className="!rounded-full">
-                  Graph
-                </Button>
-              )}
+              <Button variant="secondary" size="sm" onClick={goTo('/dashboard')} className="!rounded-full">
+                Graph
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"

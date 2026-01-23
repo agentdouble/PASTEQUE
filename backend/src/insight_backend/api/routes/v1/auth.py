@@ -32,18 +32,7 @@ async def login(payload: LoginRequest, session: Session = Depends(get_session)) 
     service = AuthService(UserRepository(session))
     user, token = service.authenticate(username=payload.username, password=payload.password)
     is_admin = user_is_admin(user)
-    can_use_sql_agent = True if is_admin else bool(user.can_use_sql_agent)
-    can_generate_chart = True if is_admin else bool(user.can_generate_chart)
-    can_view_graph = True if is_admin else bool(user.can_view_graph)
-    return TokenResponse(
-        access_token=token,
-        token_type="bearer",
-        username=user.username,
-        is_admin=is_admin,
-        can_use_sql_agent=can_use_sql_agent,
-        can_generate_chart=can_generate_chart,
-        can_view_graph=can_view_graph,
-    )
+    return TokenResponse(access_token=token, token_type="bearer", username=user.username, is_admin=is_admin)
 
 
 @router.get("/auth/users", response_model=UserPermissionsOverviewResponse)
@@ -125,23 +114,12 @@ async def update_user_table_permissions(
         )
 
     data_service = DataService()
-    filtered: list[str] | None = None
-    if payload.allowed_tables is not None:
-        available_tables = [info.name for info in data_service.list_tables()]
-        available_lookup = {name.casefold() for name in available_tables}
-        filtered = [name for name in payload.allowed_tables if name.casefold() in available_lookup]
+    available_tables = [info.name for info in data_service.list_tables()]
+    available_lookup = {name.casefold() for name in available_tables}
+    filtered = [name for name in payload.allowed_tables if name.casefold() in available_lookup]
 
-    if payload.can_use_sql_agent is not None:
-        target.can_use_sql_agent = payload.can_use_sql_agent
-    if payload.can_generate_chart is not None:
-        target.can_generate_chart = payload.can_generate_chart
-    if payload.can_view_graph is not None:
-        target.can_view_graph = payload.can_view_graph
-
-    updated = [perm.table_name for perm in target.table_permissions]
-    if filtered is not None:
-        permissions_repo = UserTablePermissionRepository(session)
-        updated = permissions_repo.set_allowed_tables(target.id, filtered)
+    permissions_repo = UserTablePermissionRepository(session)
+    updated = permissions_repo.set_allowed_tables(target.id, filtered)
     session.commit()
     session.refresh(target)
     return UserWithPermissionsResponse.from_model(
