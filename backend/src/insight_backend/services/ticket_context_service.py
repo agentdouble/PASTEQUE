@@ -63,6 +63,7 @@ class TicketContextService:
             )
         dates = [item["date"] for item in entries]
         char_limit = max(1, int(settings.ticket_context_direct_max_chars))
+        context_fields = self._get_context_fields(config=config)
         # Calculate recommended_from: date from which ~99% of context char limit is used
         # Sort entries by date descending (most recent first)
         sorted_entries = sorted(entries, key=lambda x: x["date"], reverse=True)
@@ -70,8 +71,16 @@ class TicketContextService:
         cumulative_chars = 0
         recommended_from = None
         for item in sorted_entries:
-            text_len = len(item.get("text") or "")
-            cumulative_chars += text_len + 1  # +1 for newline separator
+            # Use actual context line formatting for accurate char count
+            if context_fields:
+                line = self._format_context_line(item, context_fields=context_fields, config=config)
+                line_chars = len(line) + 1  # +1 for newline separator
+            else:
+                # Fallback: estimate using text + date
+                text = truncate_text(item.get("text") or "")
+                date_str = item["date"].isoformat()
+                line_chars = len(text) + len(date_str) + 5  # +5 for separators
+            cumulative_chars += line_chars
             if cumulative_chars >= target_chars:
                 recommended_from = item["date"]
                 break
