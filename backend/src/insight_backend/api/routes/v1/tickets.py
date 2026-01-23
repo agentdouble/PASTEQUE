@@ -68,14 +68,23 @@ def get_ticket_context_metadata(  # type: ignore[valid-type]
 def get_ticket_context_config(  # type: ignore[valid-type]
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
+    table: str | None = None,
 ) -> TicketContextConfigResponse:
     if not user_is_admin(current_user):
         raise HTTPException(status_code=403, detail="Admin requis")
     service = _service(session)
-    config = service.get_default_config()
+    if table:
+        config = service.get_config_for_table(table_name=table, allowed_tables=None)
+    else:
+        config = service.get_default_config()
     if not config:
         raise HTTPException(status_code=404, detail="Configuration contexte tickets manquante.")
-    return TicketContextConfigResponse.from_model(config)
+    pref_repo = DataSourcePreferenceRepository(session)
+    preferences = pref_repo.get_preferences_for_source(source=config.table_name)
+    return TicketContextConfigResponse.from_model(
+        config,
+        ticket_context_fields=preferences.ticket_context_fields if preferences else [],
+    )
 
 
 @router.put("/context/config", response_model=TicketContextConfigResponse)
