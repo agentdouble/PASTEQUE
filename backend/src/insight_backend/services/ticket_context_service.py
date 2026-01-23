@@ -291,9 +291,9 @@ class TicketContextService:
         if table:
             canon = self._canonical_table(table, None)
             if self.ticket_config_repo is not None and not text_column and not date_column and not title_column:
-                default = self.ticket_config_repo.get_config()
-                if default and default.table_name.casefold() == canon.casefold():
-                    return default
+                saved = self.ticket_config_repo.get_config_by_table(canon)
+                if saved:
+                    return saved
             inferred_text, inferred_date = self._infer_columns(canon)
             t_col = text_column or inferred_text
             d_col = date_column or inferred_date
@@ -327,9 +327,11 @@ class TicketContextService:
             )
         return config
 
-    def get_default_config(self):
+    def get_default_config(self, *, table_name: str | None = None):
         if self.ticket_config_repo is None:
             return None
+        if table_name:
+            return self.ticket_config_repo.get_config_by_table(table_name)
         return self.ticket_config_repo.get_config()
 
     def save_default_config(self, *, table_name: str, text_column: str, title_column: str, date_column: str):
