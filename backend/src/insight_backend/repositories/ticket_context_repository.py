@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..models.ticket_context_config import TicketContextConfig
@@ -21,6 +22,17 @@ class TicketContextConfigRepository:
             .first()
         )
 
+    def get_config_by_table(self, table_name: str) -> TicketContextConfig | None:
+        lookup = (table_name or "").strip()
+        if not lookup:
+            return None
+        return (
+            self.session.query(TicketContextConfig)
+            .filter(func.lower(TicketContextConfig.table_name) == lookup.casefold())
+            .order_by(TicketContextConfig.updated_at.desc(), TicketContextConfig.id.desc())
+            .first()
+        )
+
     def save_config(
         self,
         *,
@@ -29,7 +41,7 @@ class TicketContextConfigRepository:
         title_column: str,
         date_column: str,
     ) -> TicketContextConfig:
-        config = self.get_config()
+        config = self.get_config_by_table(table_name)
         if config is None:
             config = TicketContextConfig(
                 table_name=table_name,

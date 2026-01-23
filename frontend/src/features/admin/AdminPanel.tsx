@@ -236,9 +236,26 @@ export default function AdminPanel() {
       setTicketError('')
       setTicketStatus(null)
       try {
-        const [colsResponse, overview] = await Promise.all([
+        const configPromise = (async () => {
+          if (opts?.textColumn || opts?.titleColumn || opts?.dateColumn) {
+            return null
+          }
+          try {
+            return await apiFetch<TicketContextConfig>(
+              `/tickets/context/config?table=${encodeURIComponent(tableName)}`
+            )
+          } catch (err) {
+            if (err instanceof Error && err.message.startsWith('API 404:')) {
+              return null
+            }
+            throw err
+          }
+        })()
+
+        const [colsResponse, overview, savedConfig] = await Promise.all([
           apiFetch<ColumnInfo[]>(`/data/schema/${encodeURIComponent(tableName)}`),
           apiFetch<DataOverviewResponse>('/data/overview?include_disabled=true&lightweight=true'),
+          configPromise,
         ])
         if (
           requestId !== ticketConfigRequestRef.current ||
@@ -274,12 +291,15 @@ export default function AdminPanel() {
         const contextFromDraft = (draft?.contextFields ?? []).filter(name =>
           columnLookup.has(name.toLowerCase())
         )
+        const configText = opts?.textColumn ?? savedConfig?.text_column
+        const configTitle = opts?.titleColumn ?? savedConfig?.title_column
+        const configDate = opts?.dateColumn ?? savedConfig?.date_column
         const textFromConfig =
-          opts?.textColumn && columnLookup.has(opts.textColumn.toLowerCase()) ? opts.textColumn : ''
+          configText && columnLookup.has(configText.toLowerCase()) ? configText : ''
         const titleFromConfig =
-          opts?.titleColumn && columnLookup.has(opts.titleColumn.toLowerCase()) ? opts.titleColumn : ''
+          configTitle && columnLookup.has(configTitle.toLowerCase()) ? configTitle : ''
         const dateFromConfig =
-          opts?.dateColumn && columnLookup.has(opts.dateColumn.toLowerCase()) ? opts.dateColumn : ''
+          configDate && columnLookup.has(configDate.toLowerCase()) ? configDate : ''
         const contextFields = (roles.ticket_context_fields ?? []).filter(name =>
           columnLookup.has(name.toLowerCase())
         )
