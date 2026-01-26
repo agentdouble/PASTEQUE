@@ -42,6 +42,61 @@ from ....utils.validation import normalize_table_names
 
 
 _last_settings_update_ts_by_user: dict[int, float] = {}
+_ticket_context_cache_locks: dict[str, threading.Lock] = {}
+
+
+def _get_ticket_context_lock(key: str) -> threading.Lock:
+    lock = _ticket_context_cache_locks.get(key)
+    if lock is None:
+        lock = threading.Lock()
+        _ticket_context_cache_locks[key] = lock
+    return lock
+
+
+def _build_ticket_context_cache_payload(ticket_context: dict[str, object]) -> dict[str, object]:
+    keys = [
+        "system_message",
+        "period_label",
+        "count",
+        "total",
+        "chunks",
+        "table",
+        "date_from",
+        "date_to",
+        "context_chars",
+        "context_char_limit",
+        "context_mode",
+        "evidence_spec",
+        "evidence_rows",
+    ]
+    return {key: ticket_context.get(key) for key in keys}
+
+
+def _extract_ticket_context_cache(
+    cache: dict[str, object] | None,
+    *,
+    expected_key: str,
+    conversation_id: int | None,
+) -> dict[str, object] | None:
+    if not isinstance(cache, dict):
+        return None
+    if cache.get("key") != expected_key:
+        return None
+    payload = cache.get("payload")
+    if not isinstance(payload, dict):
+        log.warning(
+            "Ticket context cache payload invalid (conversation_id=%s)",
+            conversation_id,
+        )
+        return None
+    system_message = payload.get("system_message")
+    if not isinstance(system_message, str) or not system_message.strip():
+        log.warning(
+            "Ticket context cache missing system_message (conversation_id=%s)",
+            conversation_id,
+        )
+        return None
+    return payload
 
 def _markdown_system_prompt() -> ChatMessage:
     prompt = get_prompt_store().get("chat_markdown_system").template
@@ -395,7 +450,7 @@ def chat_stream(  # type: ignore[valid-type]
             if isinstance(raw_table, str) and raw_table.strip():
                 selection_table = raw_table.strip()
         try:
-            ticket_context = ticket_service.build_context(
+            cache_key = ticket_service.build_context_cache_key(
                 allowed_tables=allowed_tables,
                 date_from=meta_in.get("tickets_from"),
                 date_to=meta_in.get("tickets_to"),
@@ -405,6 +460,52 @@ def chat_stream(  # type: ignore[valid-type]
                 date_column=meta_in.get("ticket_date_column"),
                 selection=selection,
             )
+            lock = _get_ticket_context_lock(f"{conversation_id}:{cache_key}")
+            with lock:
+                cached = repo.get_ticket_context_cache(conversation_id=conversation_id) if conversation_id else None
+                cached_payload = _extract_ticket_context_cache(
+                    cached,
+                    expected_key=cache_key,
+                    conversation_id=conversation_id,
+                )
+                if cached_payload is not None:
+                    ticket_context = cached_payload
+                    log.info(
+                        "Ticket context cache hit (conversation_id=%s, key=%s)",
+                        conversation_id,
+                        cache_key[:8],
+                    )
+                else:
+                    ticket_context = ticket_service.build_context(
+                        allowed_tables=allowed_tables,
+                        date_from=meta_in.get("tickets_from"),
+                        date_to=meta_in.get("tickets_to"),
+                        periods=periods,
+                        table=selection_table or meta_in.get("ticket_table"),
+                        text_column=meta_in.get("ticket_text_column"),
+                        date_column=meta_in.get("ticket_date_column"),
+                        selection=selection,
+                    )
+                    log.info(
+                        "Ticket context cache miss (conversation_id=%s, key=%s)",
+                        conversation_id,
+                        cache_key[:8],
+                    )
+                    cache_payload = _build_ticket_context_cache_payload(ticket_context)
+                    try:
+                        with transactional(session):
+                            repo.set_ticket_context_cache(
+                                conversation_id=conversation_id,
+                                key=cache_key,
+                                payload=cache_payload,
+                            )
+                    except SQLAlchemyError:
+                        log.warning(
+                            "Failed to persist ticket context cache (conversation_id=%s, key=%s)",
+                            conversation_id,
+                            cache_key[:8],
+                            exc_info=True,
+                        )
             sys_msg = ticket_context.get("system_message")
             if sys_msg:
                 payload.messages = [ChatMessage(role="system", content=str(sys_msg))] + list(payload.messages or [])

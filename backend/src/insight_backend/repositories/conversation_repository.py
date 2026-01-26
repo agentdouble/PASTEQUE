@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 import json
+from datetime import datetime, timezone
 from sqlalchemy import text
 
 from sqlalchemy.orm import Session, joinedload
@@ -103,6 +104,54 @@ class ConversationRepository:
         self.session.flush()
         log.info("Conversation settings updated (conversation_id=%s, keys=%s)", conversation_id, ",".join(sorted(payload.keys())))
         return payload
+
+    def get_ticket_context_cache(self, *, conversation_id: int) -> dict[str, Any] | None:
+        settings = self.get_settings(conversation_id=conversation_id)
+        if not isinstance(settings, dict):
+            return None
+        cache = settings.get("ticket_context_cache")
+        if not isinstance(cache, dict):
+            return None
+        return cache
+
+    def set_ticket_context_cache(
+        self,
+        *,
+        conversation_id: int,
+        key: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        entry = {
+            "key": key,
+            "payload": json.loads(json.dumps(payload or {})),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        bind = self.session.get_bind()
+        if bind is not None and bind.dialect.name.startswith("postgres"):
+            payload_json = json.dumps(entry)
+            self.session.execute(
+                text(
+                    "UPDATE conversations "
+                    "SET settings = jsonb_set(COALESCE(settings::jsonb, '{}'::jsonb), '{ticket_context_cache}', (:payload)::jsonb, true)::json, "
+                    "    updated_at = NOW() "
+                    "WHERE id = :cid"
+                ),
+                {"payload": payload_json, "cid": conversation_id},
+            )
+            self.session.flush()
+            log.info(
+                "Ticket context cache updated via jsonb_set (conversation_id=%s, key=%s)",
+                conversation_id,
+                key[:8],
+            )
+            return entry
+
+        current = self.get_settings(conversation_id=conversation_id)
+        current["ticket_context_cache"] = entry
+        self.set_settings(conversation_id=conversation_id, settings=current)
+        log.info("Ticket context cache updated (conversation_id=%s, key=%s)", conversation_id, key[:8])
+        return entry
 
     def get_excluded_tables(self, *, conversation_id: int) -> list[str]:
         s = self.get_settings(conversation_id=conversation_id)
