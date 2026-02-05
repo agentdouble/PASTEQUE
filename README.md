@@ -320,6 +320,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Sur la page Chat, le layout passe en hauteur pleine (`h-screen` + `h-full`) et retire les anciens offsets `calc(100vh-120px)` / `top-20` pour que le panneau tickets et la zone chat descendent bien jusqu’en bas de la page.
 - 2026-02-05: Correction du scroll infini sur `/chat` en verrouillant la page sur `100dvh` (`Layout` + `aside` + `main`) et en gardant le scroll uniquement dans les zones internes du chat.
 - 2026-02-05: Ajustement de la chaîne flex du chat (`min-h-0`, `overflow-hidden`, composer `shrink-0`) pour maintenir durablement la barre « Posez votre question » collée en bas de viewport.
+- 2026-02-05: Verrouillage explicite du scroll global (`html/body overflow: hidden`) sur la route `/chat` pour supprimer le scroll page résiduel; seul le scroll interne des panneaux reste actif.
 
 ## Maintenance
 

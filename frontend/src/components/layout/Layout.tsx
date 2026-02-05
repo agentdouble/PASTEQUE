@@ -12,11 +12,27 @@ export default function Layout() {
   const [auth, setAuth] = useState(() => getAuth())
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const canViewGraph = Boolean(auth?.isAdmin || auth?.canViewGraph)
+  const isChatRoute = location.pathname === '/chat'
 
   useEffect(() => {
     const currentAuth = getAuth()
     setAuth(currentAuth)
   }, [])
+
+  useEffect(() => {
+    if (!isChatRoute) return
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    const previousBodyOverflow = document.body.style.overflow
+    const previousBodyOverscroll = document.body.style.overscrollBehavior
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    document.body.style.overscrollBehavior = 'none'
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow
+      document.body.style.overflow = previousBodyOverflow
+      document.body.style.overscrollBehavior = previousBodyOverscroll
+    }
+  }, [isChatRoute])
 
   const handleLogout = () => {
     clearAuth()
@@ -31,7 +47,6 @@ export default function Layout() {
     [navigate]
   )
 
-  const isChatRoute = location.pathname === '/chat'
   const historyOpen = isChatRoute && new URLSearchParams(location.search).get('history') === '1'
   const navItems: Array<{ key: string; label: string; shortLabel: string; onClick: () => void; active: boolean }> = [
     {
