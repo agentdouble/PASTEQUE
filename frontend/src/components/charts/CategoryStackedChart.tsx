@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { Doughnut, getElementAtEvent } from 'react-chartjs-2'
 import { ArcElement, Chart as ChartJS, Legend, Tooltip, type ChartData, type ChartOptions } from 'chart.js'
-import { Card } from '@/components/ui'
 import type { CategorySubCategoryCount } from '@/types/data'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -170,10 +169,10 @@ export default function CategoryStackedChart({
     }
   }
 
-  const cardClass = ['bg-primary-50', className].filter(Boolean).join(' ')
+  const wrapperClass = ['bg-primary-50 rounded-xl p-3', className].filter(Boolean).join(' ')
 
   return (
-    <Card padding="sm" className={cardClass || undefined}>
+    <div className={wrapperClass || undefined}>
       {title || subtitle ? (
         <div className="flex items-center justify-between mb-2">
           <div>
@@ -204,6 +203,6 @@ export default function CategoryStackedChart({
           onClick={handleClick}
         />
       </div>
-    </Card>
+    </div>
   )
 }

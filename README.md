@@ -160,6 +160,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 
 - Onglet « Explorer » dans le header pour explorer les données par paires `Category` / `Sub Category` quand ces colonnes existent.
 - Le bandeau principal de l’onglet affiche désormais « Catégorisation automatique par IA » (logo et snapshot retirés).
+- Le filtre date global est intégré directement au bloc de visualisation (en tête de la première carte source) pour éviter les cartes imbriquées.
 - Les colonnes Date / Category / Sub Category sont configurables par l’admin via l’onglet Admin → Explorer et persistées via `/api/v1/data/overview/{source}/column-roles`.
 - Chaque source affichant ces colonnes est listée avec ses catégories et sous-catégories cliquables : un clic déclenche un aperçu (`/api/v1/data/explore/{source}`) limité à 25 lignes, avec le volume total de lignes correspondantes.
 - Si une source ne possède pas les deux colonnes, la vue l’ignore et affiche un message explicite plutôt que de masquer l’erreur.
@@ -167,6 +168,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Depuis l’aperçu, un bouton « Discuter dans le chat » ouvre le chat en mode tickets avec la sélection Category/Sub Category préchargée (capée à 500 tickets, compteur affiché).
 - Le panneau tickets du chat se cale sur la sélection Explorer, même si d’autres tables sont ouvertes (onglets séparés).
 - Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage est appliquée automatiquement (sans bouton « Appliquer ») côté backend (`/data/overview` + `/data/explore`) et la réinitialisation passe par un bouton icône flèche.
+- Le donut Category/Sub Category n’est plus encapsulé dans une carte interne: le rendu est homogénéisé (pas de « carré dans carré »).
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
 - Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et le donut.

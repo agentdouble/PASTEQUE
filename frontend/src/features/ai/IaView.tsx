@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CategoryStackedChart from '@/components/charts/CategoryStackedChart'
 import { Card, Loader, Button } from '@/components/ui'
@@ -336,86 +336,26 @@ export default function IaView() {
   }
 
   const selectionHasDate = selection ? sourceHasDate(selection.source) : false
-
-  return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-bold text-primary-950">Catégorisation automatique par IA</h2>
-      </div>
-
-      {hasGlobalDate && minTs !== undefined && maxTs !== undefined ? (
-        <Card variant="elevated" className="space-y-3">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-primary-700">
-              <span className="font-semibold text-primary-900">Filtre date</span>
-            </div>
-            <div className="text-[11px] text-primary-600 flex gap-2">
-              <span>
-                De <span className="font-semibold text-primary-900">{formatDate(pendingRange?.from ?? globalBounds.min)}</span>
-              </span>
-              <span>
-                À <span className="font-semibold text-primary-900">{formatDate(pendingRange?.to ?? globalBounds.max)}</span>
-              </span>
-            </div>
+  const globalDateFilterControl =
+    hasGlobalDate && minTs !== undefined && maxTs !== undefined ? (
+      <div className="space-y-3 pb-4 border-b border-primary-100">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-primary-700">
+            <span className="font-semibold text-primary-900">Filtre date global</span>
           </div>
-          <div className="relative h-10" ref={sliderRef}>
-            <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-100" />
-            <div
-              className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-900/60 transition-all duration-200"
-              style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
-            />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-950 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
-              style={{ left: `calc(${startPercent}% - 8px)` }}
-            />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-900 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
-              style={{ left: `calc(${endPercent}% - 8px)` }}
-            />
-            <button
-              type="button"
-              aria-label="Début de période"
-              className="absolute top-0 h-full w-11 -translate-x-1/2"
-              onPointerDown={event => {
-                event.preventDefault()
-                const ts = tsFromPointer(event.clientX)
-                if (ts !== undefined) handleRangeStartChange(ts)
-                const move = (evt: PointerEvent) => {
-                  const next = tsFromPointer(evt.clientX)
-                  if (next !== undefined) handleRangeStartChange(next)
-                }
-                const stop = () => {
-                  window.removeEventListener('pointermove', move)
-                  window.removeEventListener('pointerup', stop)
-                }
-                window.addEventListener('pointermove', move)
-                window.addEventListener('pointerup', stop, { once: true })
-              }}
-              style={{ zIndex: 30, background: 'transparent', left: `${startPercent}%` }}
-            />
-            <button
-              type="button"
-              aria-label="Fin de période"
-              className="absolute top-0 h-full w-11 -translate-x-1/2"
-              onPointerDown={event => {
-                event.preventDefault()
-                const ts = tsFromPointer(event.clientX)
-                if (ts !== undefined) handleRangeEndChange(ts)
-                const move = (evt: PointerEvent) => {
-                  const next = tsFromPointer(evt.clientX)
-                  if (next !== undefined) handleRangeEndChange(next)
-                }
-                const stop = () => {
-                  window.removeEventListener('pointermove', move)
-                  window.removeEventListener('pointerup', stop)
-                }
-                window.addEventListener('pointermove', move)
-                window.addEventListener('pointerup', stop, { once: true })
-              }}
-              style={{ zIndex: 31, background: 'transparent', left: `${endPercent}%` }}
-            />
-          </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 text-[11px] text-primary-600">
+            <span>
+              De{' '}
+              <span className="font-semibold text-primary-900">
+                {formatDate(pendingRange?.from ?? globalBounds.min)}
+              </span>
+            </span>
+            <span>
+              A{' '}
+              <span className="font-semibold text-primary-900">
+                {formatDate(pendingRange?.to ?? globalBounds.max)}
+              </span>
+            </span>
             <Button
               variant="ghost"
               size="sm"
@@ -428,8 +368,72 @@ export default function IaView() {
               <HiArrowPath className="w-4 h-4" />
             </Button>
           </div>
-        </Card>
-      ) : null}
+        </div>
+        <div className="relative h-10" ref={sliderRef}>
+          <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-100" />
+          <div
+            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-900/60 transition-all duration-200"
+            style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
+          />
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-950 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
+            style={{ left: `calc(${startPercent}% - 8px)` }}
+          />
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-900 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
+            style={{ left: `calc(${endPercent}% - 8px)` }}
+          />
+          <button
+            type="button"
+            aria-label="Début de période"
+            className="absolute top-0 h-full w-11 -translate-x-1/2"
+            onPointerDown={event => {
+              event.preventDefault()
+              const ts = tsFromPointer(event.clientX)
+              if (ts !== undefined) handleRangeStartChange(ts)
+              const move = (evt: PointerEvent) => {
+                const next = tsFromPointer(evt.clientX)
+                if (next !== undefined) handleRangeStartChange(next)
+              }
+              const stop = () => {
+                window.removeEventListener('pointermove', move)
+                window.removeEventListener('pointerup', stop)
+              }
+              window.addEventListener('pointermove', move)
+              window.addEventListener('pointerup', stop, { once: true })
+            }}
+            style={{ zIndex: 30, background: 'transparent', left: `${startPercent}%` }}
+          />
+          <button
+            type="button"
+            aria-label="Fin de période"
+            className="absolute top-0 h-full w-11 -translate-x-1/2"
+            onPointerDown={event => {
+              event.preventDefault()
+              const ts = tsFromPointer(event.clientX)
+              if (ts !== undefined) handleRangeEndChange(ts)
+              const move = (evt: PointerEvent) => {
+                const next = tsFromPointer(evt.clientX)
+                if (next !== undefined) handleRangeEndChange(next)
+              }
+              const stop = () => {
+                window.removeEventListener('pointermove', move)
+                window.removeEventListener('pointerup', stop)
+              }
+              window.addEventListener('pointermove', move)
+              window.addEventListener('pointerup', stop, { once: true })
+            }}
+            style={{ zIndex: 31, background: 'transparent', left: `${endPercent}%` }}
+          />
+        </div>
+      </div>
+    ) : null
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+      <div>
+        <h2 className="text-2xl font-bold text-primary-950">Catégorisation automatique par IA</h2>
+      </div>
 
       {loading ? (
         <Card variant="elevated" className="py-12 flex justify-center">
@@ -444,10 +448,11 @@ export default function IaView() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {sourcesWithCategories.map(source => (
+          {sourcesWithCategories.map((source, index) => (
             <SourceCategoryCard
               key={source.source}
               source={source}
+              dateFilterContent={index === 0 ? globalDateFilterControl : null}
               onSelect={handleSelect}
               selection={selection}
               preview={preview}
@@ -473,6 +478,7 @@ export default function IaView() {
 
 function SourceCategoryCard({
   source,
+  dateFilterContent,
   onSelect,
   selection,
   preview,
@@ -490,6 +496,7 @@ function SourceCategoryCard({
   canDiscuss,
 }: {
   source: DataSourceOverview
+  dateFilterContent?: ReactNode
   onSelect: (source: string, category: string, subCategory: string) => void
   selection: Selection | null
   preview: TableExplorePreview | null
@@ -535,6 +542,7 @@ function SourceCategoryCard({
 
   return (
     <Card variant="elevated" padding="md" className="space-y-3">
+      {dateFilterContent ? <div>{dateFilterContent}</div> : null}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-primary-500">{source.source}</p>
