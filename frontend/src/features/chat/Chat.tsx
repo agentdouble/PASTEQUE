@@ -2193,7 +2193,7 @@ export default function Chat() {
 
       {/* Colonne droite: Chat */}
       <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7">
-        <div className="bg-white p-0 flex flex-col min-h-[calc(100vh-120px)]">
+        <div className="bg-transparent p-0 flex flex-col min-h-[calc(100vh-120px)]">
           {/* Messages */}
           <div ref={listRef} className="flex-1 px-4 pb-4 pt-2 space-y-4 overflow-auto">
             {/* Mobile toolbar (Exploration uniquement) */}
