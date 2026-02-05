@@ -10,7 +10,6 @@ import type {
   TableExplorePreview,
   TableRow,
 } from '@/types/data'
-import { HiSparkles } from 'react-icons/hi2'
 
 type CategoryNode = {
   name: string
@@ -325,16 +324,8 @@ export default function IaView() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary-900 text-white rounded-lg">
-            <HiSparkles className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-primary-950">Explorer</h2>
-            <p className="text-primary-600">
-              Naviguez par Category / Sub Category pour inspecter les données cliquables.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold text-primary-950">Catégorisation automatique par IA</h2>
         </div>
         <div className="text-right text-sm text-primary-600">
           {overview?.generated_at ? (
