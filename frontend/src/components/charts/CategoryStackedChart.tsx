@@ -137,7 +137,8 @@ export default function CategoryStackedChart({
           borderColor: 'rgba(255,255,255,0.9)',
           borderWidth: 2,
           borderRadius: 6,
-          spacing: 2,
+          spacing: 1,
+          clip: 16,
           hoverOffset: 8,
         },
       ],
@@ -176,6 +177,9 @@ export default function CategoryStackedChart({
       animation: {
         duration: 280,
         easing: 'easeOutQuart',
+      },
+      layout: {
+        padding: 16,
       },
       cutout: '62%',
     }),
@@ -239,7 +243,7 @@ export default function CategoryStackedChart({
 
   return (
     <div
-      className={`relative overflow-hidden border border-primary-200/70 rounded-2xl p-4 ${wrapperClass}`}
+      className={`relative border border-primary-200/70 rounded-2xl p-4 ${wrapperClass}`}
       style={{
         background:
           'radial-gradient(circle at 12% 8%, rgba(14,165,233,0.14), transparent 42%), radial-gradient(circle at 88% 92%, rgba(139,92,246,0.12), transparent 38%), linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.96))',
@@ -274,7 +278,7 @@ export default function CategoryStackedChart({
         </div>
       )}
       <div className="relative grid gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-center">
-        <div className="relative mx-auto w-full max-w-[360px]" style={{ height }}>
+        <div className="relative mx-auto w-full max-w-[360px] p-1" style={{ height }}>
           <Doughnut ref={chartRef} data={chartData} options={options} onClick={handleClick} />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-2 text-center shadow-sm backdrop-blur-sm">
