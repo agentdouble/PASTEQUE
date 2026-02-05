@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useCallback } from 'react'
 import clsx from 'clsx'
+import { HiChevronDoubleLeft, HiChevronDoubleRight } from 'react-icons/hi2'
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -134,11 +135,15 @@ export default function Layout() {
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(prev => !prev)}
-              className="!rounded-lg !p-0 h-8 w-8 shrink-0 border border-primary-200 bg-white/70 hover:bg-white"
+              className="h-7 w-7 shrink-0 !rounded-full !p-0 border border-primary-200/80 bg-white/65 text-primary-600 hover:bg-primary-50 hover:text-primary-900"
               aria-label={sidebarCollapsed ? 'Déplier le bandeau' : 'Replier le bandeau'}
               title={sidebarCollapsed ? 'Déplier' : 'Replier'}
             >
-              {sidebarCollapsed ? '>>' : '<<'}
+              {sidebarCollapsed ? (
+                <HiChevronDoubleRight className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <HiChevronDoubleLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
             </Button>
           </div>
           <nav className="flex-1 overflow-y-auto" aria-label="Navigation principale">
@@ -156,11 +161,11 @@ export default function Layout() {
                   size="sm"
                   onClick={item.onClick}
                   className={clsx(
-                    '!rounded-xl w-full whitespace-nowrap border',
-                    sidebarCollapsed ? 'justify-center !px-0 h-10' : 'justify-start',
+                    '!rounded-xl w-full whitespace-nowrap !border-0 !shadow-none no-focus-ring',
+                    sidebarCollapsed ? 'justify-center !px-0 h-10' : 'justify-start px-2',
                     item.active
-                      ? 'border-primary-200 bg-primary-100 text-primary-950 shadow-sm'
-                      : 'border-transparent text-primary-700 hover:text-primary-900 hover:bg-primary-50 hover:border-primary-100'
+                      ? 'bg-transparent text-primary-950 font-semibold'
+                      : 'text-primary-700 hover:text-primary-900 hover:bg-primary-50'
                   )}
                   aria-current={item.active ? 'page' : undefined}
                   title={item.label}
