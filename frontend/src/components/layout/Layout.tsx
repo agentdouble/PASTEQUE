@@ -104,8 +104,8 @@ export default function Layout() {
               </Button>
             </div>
           </div>
-          <nav className="overflow-x-auto scrollbar-none" aria-label="Navigation principale">
-            <div className="inline-flex min-w-full md:min-w-0 items-center gap-1 rounded-2xl border border-primary-200 bg-white/90 p-1">
+          <nav className="flex" aria-label="Navigation principale">
+            <div className="inline-flex w-full sm:w-72 flex-col gap-1 rounded-2xl border border-primary-200 bg-white/90 p-1">
               {navItems.map(item => (
                 <Button
                   key={item.key}
@@ -114,7 +114,7 @@ export default function Layout() {
                   size="sm"
                   onClick={item.onClick}
                   className={clsx(
-                    '!rounded-xl whitespace-nowrap',
+                    '!rounded-xl w-full justify-start whitespace-nowrap',
                     item.active
                       ? 'shadow-sm'
                       : 'text-primary-700 hover:text-primary-900 hover:bg-primary-100'

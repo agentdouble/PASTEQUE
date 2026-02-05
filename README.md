@@ -315,6 +315,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le panneau tickets (colonne gauche) n’affiche plus de ligne vide réservée à « Tout effacer » quand aucune sélection manuelle n’est active, pour aligner visuellement le haut des deux panneaux.
 - 2026-02-05: Le flux de messages du panneau chat utilise désormais `flex + gap` (au lieu de `space-y`) pour éviter un décalage vertical quand la toolbar mobile est masquée sur desktop; les deux panneaux démarrent au même niveau.
 - 2026-02-05: Le header a été réorganisé avec une vraie barre de navigation (Chat/Explorer/Radar/Graph/Historique/Admin), un état actif visible et un comportement responsive horizontal pour améliorer la lisibilité des boutons.
+- 2026-02-05: La navigation du header est affichée en bandeau vertical (colonne de boutons pleine largeur) avec maintien de l’état actif.
 
 ## Maintenance
 
