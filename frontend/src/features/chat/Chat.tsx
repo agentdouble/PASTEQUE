@@ -2178,19 +2178,19 @@ export default function Chat() {
   }
 
   return (
-    <div className="grid h-full grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
+    <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
       {/* Colonne gauche: Ticket exploration */}
-      <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5 h-full">
-        <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm px-3 pb-3 pt-1.5 h-full overflow-auto">
+      <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5 h-full min-h-0">
+        <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm px-3 pb-3 pt-1.5 h-full min-h-0 overflow-auto">
           {renderTicketPanels(ticketPanelRef)}
         </div>
       </aside>
 
       {/* Colonne droite: Chat */}
-      <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7 h-full">
-        <div className="bg-transparent p-0 flex flex-col h-full">
+      <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7 h-full min-h-0">
+        <div className="bg-transparent p-0 flex flex-col h-full min-h-0 overflow-hidden">
           {/* Messages */}
-          <div ref={listRef} className="flex-1 px-4 pb-4 pt-1.5 flex flex-col gap-4 overflow-auto">
+          <div ref={listRef} className="flex-1 min-h-0 px-4 pb-4 pt-1.5 flex flex-col gap-4 overflow-auto">
             {/* Mobile toolbar (Exploration uniquement) */}
             <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 px-4 pt-3 pb-2 bg-white/95 backdrop-blur border-b lg:hidden">
               <div className="flex items-center justify-end gap-2">
@@ -2536,7 +2536,7 @@ export default function Chat() {
           </div>
 
           {/* Composer */}
-          <div className="p-3">
+          <div className="p-3 shrink-0">
             <div className="relative">
               <div className="absolute left-2 top-1/2 -translate-y-1/2 transform inline-flex items-center gap-2">
                 {canUseSqlAgent && (

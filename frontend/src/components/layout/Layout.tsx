@@ -170,11 +170,11 @@ export default function Layout() {
       <main
         className={clsx(
           'box-border px-3 md:px-4 transition-[margin-left] duration-200',
-          isChatRoute ? 'h-[100dvh] overflow-hidden py-0' : 'py-4'
+          isChatRoute ? 'h-[100dvh] min-h-0 overflow-hidden py-0' : 'py-4'
         )}
         style={{ marginLeft: sidebarWidthPx }}
       >
-        <div className={clsx('mx-auto max-w-screen-2xl', isChatRoute && 'h-full')}>
+        <div className={clsx('mx-auto max-w-screen-2xl', isChatRoute && 'h-full min-h-0')}>
           <Outlet />
         </div>
       </main>
