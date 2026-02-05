@@ -329,6 +329,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le bandeau latéral est plus compact verticalement en mode ouvert (espacements réduits) et masque désormais le logo en mode replié.
 - 2026-02-05: La page `/radar` n’affiche plus de bouton « Actualiser »; les données se chargent automatiquement à l’ouverture.
 - 2026-02-05: Le sélecteur de mode sur `/radar` utilise désormais un segmented control (3 segments alignés) avec état actif plus contrasté.
+- 2026-02-05: La carte de synthèse `/radar` n’affiche plus le rappel « Table sélectionnée » pour éviter la redondance avec le sélecteur.
 
 ## Maintenance
 

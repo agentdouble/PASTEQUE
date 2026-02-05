@@ -178,10 +178,6 @@ export default function Loop() {
 
               {selectedItem ? (
                 <Card variant="elevated" className="p-5 space-y-4">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-xs uppercase tracking-wide text-primary-500">Table sélectionnée</p>
-                    <h3 className="text-xl font-semibold text-primary-950">{selectedItem.config.table_name}</h3>
-                  </div>
                   <SummaryList
                     title={selectedModeMeta?.title ?? 'Synthèse'}
                     summary={selectedSummary}
