@@ -317,6 +317,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le cadre visuel externe de la colonne chat (bordure/ombre/arrondi du conteneur principal) a été supprimé dans l’onglet Chat pour alléger la vue.
 - 2026-02-05: Le fond du conteneur principal du chat est passé en transparent pour reprendre exactement le background global de l’application.
 - 2026-02-05: Le numéro de discussion (`Discussion #...`) n’est plus affiché dans l’onglet Chat; l’historique utilise désormais le fallback « Conversation sans titre ».
+- 2026-02-05: Le panneau tickets (colonne gauche) n’affiche plus de ligne vide réservée à « Tout effacer » quand aucune sélection manuelle n’est active, pour aligner visuellement le haut des deux panneaux.
 
 ## Maintenance
 

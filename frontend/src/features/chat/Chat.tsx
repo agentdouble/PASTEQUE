@@ -2143,17 +2143,12 @@ export default function Chat() {
             })}
           </div>
         )}
-        {ticketMode && activeItem && (
-          <div className="flex min-h-[18px] items-center justify-end text-[11px] text-primary-600">
+        {ticketMode && activeItem && selectionCount > 0 && (
+          <div className="flex items-center justify-end text-[11px] text-primary-600">
             <button
               type="button"
-              className={clsx(
-                'text-primary-700 underline transition-opacity',
-                selectionCount > 0 ? 'opacity-100' : 'invisible opacity-0 pointer-events-none'
-              )}
+              className="text-primary-700 underline transition-opacity"
               aria-label="Effacer la sélection des tickets"
-              aria-hidden={selectionCount === 0}
-              tabIndex={selectionCount > 0 ? 0 : -1}
               onClick={() => clearTicketSelection(activeItem.key)}
             >
               Tout effacer
