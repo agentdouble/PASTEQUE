@@ -331,6 +331,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le sélecteur de mode sur `/radar` utilise désormais un segmented control (3 segments alignés) avec état actif plus contrasté.
 - 2026-02-05: La carte de synthèse `/radar` n’affiche plus le rappel « Table sélectionnée » pour éviter la redondance avec le sélecteur.
 - 2026-02-05: La carte de synthèse `/radar` n’affiche plus l’intitulé redondant du mode (« Flash du jour », « Panorama du mois », etc.), le mode actif étant déjà visible dans le segmented control.
+- 2026-02-05: Le bloc de filtres `/radar` est réorganisé en pile intégrée: sélection de table en haut, puis segmented control du mode centré juste en dessous.
 
 ## Maintenance
 

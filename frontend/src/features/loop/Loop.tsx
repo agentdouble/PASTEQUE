@@ -127,15 +127,15 @@ export default function Loop() {
             </Card>
           ) : (
             <div className="space-y-6">
-              <Card variant="elevated" className="p-5 space-y-4">
-                <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-                  <div className="flex-1 space-y-1">
+              <Card variant="elevated" className="p-5">
+                <div className="mx-auto w-full max-w-4xl space-y-5">
+                  <div className="space-y-1">
                     <label htmlFor="radar-table" className="text-xs uppercase tracking-wide text-primary-500">
                       Table
                     </label>
                     <select
                       id="radar-table"
-                      className="w-full rounded-md border border-primary-200 px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
+                      className="w-full rounded-md border border-primary-200 bg-white px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
                       value={selectedTable}
                       onChange={(event) => setSelectedTable(event.target.value)}
                     >
@@ -146,9 +146,9 @@ export default function Loop() {
                       ))}
                     </select>
                   </div>
-                  <div className="w-full lg:max-w-md space-y-1">
-                    <p className="text-xs uppercase tracking-wide text-primary-500">Mode</p>
-                    <div className="grid w-full grid-cols-3 gap-1 rounded-lg border border-primary-200 bg-primary-50/70 p-1 shadow-sm">
+                  <div className="space-y-2">
+                    <p className="text-center text-xs uppercase tracking-wide text-primary-500">Mode</p>
+                    <div className="mx-auto grid w-full max-w-xl grid-cols-3 gap-1 rounded-lg border border-primary-200 bg-primary-50/70 p-1 shadow-sm">
                       {modeOptions.map(option => {
                         const isActive = selectedMode === option.key
                         return (
