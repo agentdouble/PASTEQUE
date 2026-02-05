@@ -557,6 +557,8 @@ function SourceCategoryCard({
       <CategoryStackedChart
         breakdown={source.category_breakdown ?? []}
         onSelect={handleChartSelect}
+        selectedCategory={selectionForCard?.category ?? null}
+        selectedSubCategory={selectionForCard?.subCategory ?? null}
         className="bg-primary-50/80"
       />
 
@@ -624,10 +626,20 @@ function SelectionPreview({
   return (
     <Card variant="outlined" className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-primary-700">
-          <span className="font-semibold text-primary-900">{selection.source}</span> ·{' '}
-          <span className="font-semibold text-primary-900">{selection.category}</span> /{' '}
-          <span className="font-semibold text-primary-900">{selection.subCategory}</span>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">
+            {selection.source}
+          </p>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-semibold text-primary-700">Sélection active</span>
+            <span className="inline-flex items-center rounded-full border border-primary-200 bg-white px-2.5 py-1 font-semibold text-primary-900">
+              Category: {selection.category}
+            </span>
+            <span className="text-primary-500">→</span>
+            <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-900 px-2.5 py-1 font-semibold text-white">
+              Sub Category: {selection.subCategory}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
