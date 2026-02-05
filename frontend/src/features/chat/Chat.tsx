@@ -2190,7 +2190,7 @@ export default function Chat() {
       <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7">
         <div className="bg-transparent p-0 flex flex-col min-h-[calc(100vh-120px)]">
           {/* Messages */}
-          <div ref={listRef} className="flex-1 px-4 pb-4 pt-2 space-y-4 overflow-auto">
+          <div ref={listRef} className="flex-1 px-4 pb-4 pt-1.5 flex flex-col gap-4 overflow-auto">
             {/* Mobile toolbar (Exploration uniquement) */}
             <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 px-4 pt-3 pb-2 bg-white/95 backdrop-blur border-b lg:hidden">
               <div className="flex items-center justify-end gap-2">
