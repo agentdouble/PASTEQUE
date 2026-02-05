@@ -23,7 +23,7 @@ import type {
   FeedbackValue
 } from '@/types/chat'
 import type { TableExplorePreview } from '@/types/data'
-import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip } from 'react-icons/hi2'
+import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip, HiCheck, HiPlus } from 'react-icons/hi2'
 import clsx from 'clsx'
 import { renderMarkdown } from '@/utils/markdown'
 
@@ -1937,7 +1937,7 @@ export default function Chat() {
     [panelItems]
   )
 
-  const selectedTicketsCount = useMemo(() => {
+  const autoSelectedTicketsCount = useMemo(() => {
     if (!ticketMode) return null
     let total = 0
     let hasCount = false
@@ -1950,10 +1950,27 @@ export default function Chat() {
     return hasCount ? total : null
   }, [ticketMode, ticketPreviewItems])
 
-  const selectedTicketsLabel = useMemo(() => {
-    if (selectedTicketsCount == null) return ''
-    return selectedTicketsCount === 1 ? '1 ticket sélectionné' : `${selectedTicketsCount} tickets sélectionnés`
-  }, [selectedTicketsCount])
+  const autoSelectedPeriodLabel = useMemo(() => {
+    if (!ticketMode) return ''
+    const labels = Array.from(
+      new Set(
+        ticketPreviewItems
+          .map(item => (typeof item.period_label === 'string' ? item.period_label.trim() : ''))
+          .filter(label => label.length > 0)
+      )
+    )
+    if (labels.length === 0) return ''
+    return labels.join(' ; ')
+  }, [ticketMode, ticketPreviewItems])
+
+  const autoSelectedTicketsLabel = useMemo(() => {
+    if (autoSelectedTicketsCount == null) return ''
+    const base = autoSelectedTicketsCount === 1
+      ? '1 ticket sélectionné'
+      : `${autoSelectedTicketsCount} tickets sélectionnés`
+    if (!autoSelectedPeriodLabel) return base
+    return `${base} (${autoSelectedPeriodLabel})`
+  }, [autoSelectedTicketsCount, autoSelectedPeriodLabel])
 
   const panelTitle = panelItems.length === 1 && panelItems[0].spec?.entity_label
     ? panelItems[0].spec!.entity_label
@@ -2030,7 +2047,12 @@ export default function Chat() {
   }, [ticketMode, activeSelectionCount, previewUsage, ticketPreviewLoading])
 
   const contextUsageLabel = useMemo(() => formatContextUsage(ticketContextUsage), [ticketContextUsage])
-  const ticketSummaryLabel = ticketMetaError || ticketStatus || selectedTicketsLabel
+  const ticketSummaryLabel = useMemo(() => {
+    if (ticketMetaError) return ticketMetaError
+    if (ticketStatus) return ticketStatus
+    if (activeSelectionCount > 0) return ''
+    return autoSelectedTicketsLabel
+  }, [ticketMetaError, ticketStatus, activeSelectionCount, autoSelectedTicketsLabel])
 
   function formatPeriodLabel(item: TicketPanelItem | null): string | null {
     if (!item) return null
@@ -3031,24 +3053,19 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
                   aria-label={`${isSelected ? 'Désélectionner' : 'Sélectionner'} le ticket ${rowLabel}`}
                   title={`${isSelected ? 'Désélectionner' : 'Sélectionner'} ce ticket`}
                   className={clsx(
-                    'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors',
+                    'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-1',
                     isSelected
-                      ? 'border-primary-700 bg-primary-700 text-white'
-                      : 'border-primary-300 bg-white text-primary-700 hover:bg-primary-50'
+                      ? 'border-primary-700 bg-primary-700 text-white shadow-sm'
+                      : 'border-primary-300 bg-white text-primary-700 hover:border-primary-500 hover:bg-primary-50'
                   )}
                 >
-                  <span
-                    aria-hidden="true"
-                    className={clsx(
-                      'inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] leading-none',
-                      isSelected
-                        ? 'border-white/80 bg-white/20 text-white'
-                        : 'border-primary-400 text-primary-600'
-                    )}
-                  >
-                    {isSelected ? '✓' : '+'}
-                  </span>
+                  {isSelected ? (
+                    <HiCheck className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <HiPlus className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">{isSelected ? 'Sélectionné' : 'Non sélectionné'}</span>
                 </button>
               )}
               <div className="flex-1 min-w-0">
