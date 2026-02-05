@@ -3004,6 +3004,7 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
         const rowId = pkKey && pk != null ? String(pk) : ''
         const canSelect = selectionEnabled && Boolean(rowId)
         const isSelected = canSelect && selectedSet.has(rowId)
+        const rowLabel = String(title ?? pk ?? `#${idx + 1}`)
         return (
           <div
             key={uniqueKey}
@@ -3015,18 +3016,41 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
               'border rounded-md p-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300',
               isSelected ? 'border-primary-300 bg-primary-50' : 'border-primary-100 hover:bg-primary-50'
             )}
-            aria-label={`Voir le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
+            aria-label={`Voir le ticket ${rowLabel}`}
           >
             <div className="flex items-start gap-2">
               {canSelect && (
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={isSelected}
-                  onChange={e => toggleSelection(rowId, e.target.checked)}
-                  onClick={e => e.stopPropagation()}
-                  aria-label={`Sélectionner le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
-                />
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation()
+                    toggleSelection(rowId, !isSelected)
+                  }}
+                  onKeyDown={e => e.stopPropagation()}
+                  aria-pressed={isSelected}
+                  aria-label={`${isSelected ? 'Désélectionner' : 'Sélectionner'} le ticket ${rowLabel}`}
+                  title={`${isSelected ? 'Désélectionner' : 'Sélectionner'} ce ticket`}
+                  className={clsx(
+                    'mt-0.5 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-1',
+                    isSelected
+                      ? 'border-primary-700 bg-primary-700 text-white'
+                      : 'border-primary-300 bg-white text-primary-700 hover:bg-primary-50'
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={clsx(
+                      'inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] leading-none',
+                      isSelected
+                        ? 'border-white/80 bg-white/20 text-white'
+                        : 'border-primary-400 text-primary-600'
+                    )}
+                  >
+                    {isSelected ? '✓' : '+'}
+                  </span>
+                  <span>{isSelected ? 'Sélectionné' : 'Sélectionner'}</span>
+                </button>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
