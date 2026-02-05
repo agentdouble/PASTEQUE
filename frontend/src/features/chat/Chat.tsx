@@ -2178,17 +2178,17 @@ export default function Chat() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
+    <div className="grid h-full grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
       {/* Colonne gauche: Ticket exploration */}
-      <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5">
-        <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm px-3 pb-3 pt-1.5 sticky top-20 max-h-[calc(100vh-120px)] overflow-auto">
+      <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5 h-full">
+        <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm px-3 pb-3 pt-1.5 h-full overflow-auto">
           {renderTicketPanels(ticketPanelRef)}
         </div>
       </aside>
 
       {/* Colonne droite: Chat */}
-      <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7">
-        <div className="bg-transparent p-0 flex flex-col min-h-[calc(100vh-120px)]">
+      <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7 h-full">
+        <div className="bg-transparent p-0 flex flex-col h-full">
           {/* Messages */}
           <div ref={listRef} className="flex-1 px-4 pb-4 pt-1.5 flex flex-col gap-4 overflow-auto">
             {/* Mobile toolbar (Exploration uniquement) */}
