@@ -44,7 +44,7 @@ export default function CategoryStackedChart({
   actionSlot,
   title = 'Répartition Category / Sub Category',
   subtitle = '',
-  height = 260,
+  height = 300,
   className,
 }: Props) {
   const sanitized = useMemo(
@@ -137,9 +137,10 @@ export default function CategoryStackedChart({
           borderColor: 'rgba(255,255,255,0.9)',
           borderWidth: 2,
           borderRadius: 6,
-          spacing: 1,
-          clip: 16,
-          hoverOffset: 8,
+          spacing: 0,
+          clip: false,
+          radius: '88%',
+          hoverOffset: 6,
         },
       ],
     }),
@@ -179,7 +180,7 @@ export default function CategoryStackedChart({
         easing: 'easeOutQuart',
       },
       layout: {
-        padding: 16,
+        padding: 28,
       },
       cutout: '62%',
     }),
@@ -278,7 +279,7 @@ export default function CategoryStackedChart({
         </div>
       )}
       <div className="relative grid gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-center">
-        <div className="relative mx-auto w-full max-w-[360px] p-1" style={{ height }}>
+        <div className="relative mx-auto w-full max-w-[380px] overflow-visible p-3" style={{ height }}>
           <Doughnut ref={chartRef} data={chartData} options={options} onClick={handleClick} />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-2 text-center shadow-sm backdrop-blur-sm">
