@@ -532,6 +532,9 @@ function SourceCategoryCard({
   )
 
   const selectionForCard = selection?.source === source.source ? selection : null
+  const selectionAnimationKey = selectionForCard
+    ? `${selectionForCard.category}::${selectionForCard.subCategory}`
+    : 'none'
 
   if (!categoryNodes.length) {
     return (
@@ -575,22 +578,24 @@ function SourceCategoryCard({
         className="bg-primary-50/80"
       />
 
-      <SelectionPreview
-        selection={selectionForCard}
-        preview={selectionForCard ? preview : null}
-        loading={selectionForCard ? previewLoading : false}
-        error={selectionForCard ? previewError : ''}
-        limit={limit}
-        page={page}
-        matchingRows={matchingRows}
-        sortDirection={sortDirection}
-        onPageChange={onPageChange}
-        onToggleSort={onToggleSort}
-        canSort={canSort}
-        dateField={source.date_field ?? null}
-        onDiscuss={onDiscuss}
-        canDiscuss={canDiscuss}
-      />
+      <div key={selectionAnimationKey} className={selectionForCard ? 'animate-slide-up' : ''}>
+        <SelectionPreview
+          selection={selectionForCard}
+          preview={selectionForCard ? preview : null}
+          loading={selectionForCard ? previewLoading : false}
+          error={selectionForCard ? previewError : ''}
+          limit={limit}
+          page={page}
+          matchingRows={matchingRows}
+          sortDirection={sortDirection}
+          onPageChange={onPageChange}
+          onToggleSort={onToggleSort}
+          canSort={canSort}
+          dateField={source.date_field ?? null}
+          onDiscuss={onDiscuss}
+          canDiscuss={canDiscuss}
+        />
+      </div>
     </Card>
   )
 }
@@ -640,6 +645,7 @@ function SelectionPreview({
   const sortableDateColumn = canSort
     ? (dateField ? findColumnInsensitive(dateField) : null) ?? findColumnInsensitive('date')
     : null
+  const selectionKey = `${selection.category}::${selection.subCategory}`
 
   return (
     <Card variant="outlined" className="space-y-3">
@@ -648,7 +654,7 @@ function SelectionPreview({
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">
             {selection.source}
           </p>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div key={selectionKey} className="flex flex-wrap items-center gap-2 text-xs animate-fade-in">
             <span className="font-semibold text-primary-700">Sélection active</span>
             <span className="inline-flex items-center rounded-full border border-primary-200 bg-white px-2.5 py-1 font-semibold text-primary-900">
               Category: {selection.category}

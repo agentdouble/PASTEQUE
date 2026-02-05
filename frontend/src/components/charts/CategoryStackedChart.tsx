@@ -181,6 +181,11 @@ export default function CategoryStackedChart({
 
   const wrapperClass = ['bg-primary-50 rounded-xl p-3', className].filter(Boolean).join(' ')
   const hasActiveSelection = Boolean(selectedCategory && selectedSubCategory)
+  const activeSelectionKey =
+    selectedCategory && selectedSubCategory
+      ? `${selectedCategory}::${selectedSubCategory}`
+      : 'none'
+  const chartStateKey = isDrilled ? `sub-${focusedCategory}` : 'categories'
 
   return (
     <div className={wrapperClass || undefined}>
@@ -206,7 +211,10 @@ export default function CategoryStackedChart({
             ) : null}
           </div>
           {hasActiveSelection ? (
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div
+              key={activeSelectionKey}
+              className="flex flex-wrap items-center gap-2 text-xs animate-fade-in"
+            >
               <span className="font-semibold text-primary-700">Sélection active</span>
               <span className="inline-flex items-center rounded-full border border-primary-200 bg-white px-2.5 py-1 font-semibold text-primary-900">
                 Category: {selectedCategory}
@@ -219,9 +227,9 @@ export default function CategoryStackedChart({
           ) : null}
         </div>
       ) : null}
-      <div style={{ height }}>
+      <div key={chartStateKey} style={{ height }} className="animate-fade-in">
         <Doughnut
-          key={isDrilled ? `sub-${focusedCategory}` : 'categories'}
+          key={chartStateKey}
           ref={chartRef}
           data={chartData}
           options={options}
