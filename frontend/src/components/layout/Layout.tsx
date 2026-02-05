@@ -97,7 +97,7 @@ export default function Layout() {
       active: location.pathname === '/admin',
     })
   }
-  const sidebarWidthPx = sidebarCollapsed ? 84 : 272
+  const sidebarWidthPx = sidebarCollapsed ? 76 : 248
 
   if (!auth) {
     navigate('/login')
@@ -149,24 +149,22 @@ export default function Layout() {
           <nav className="flex-1 overflow-y-auto" aria-label="Navigation principale">
             <div className="flex flex-col gap-1">
               {navItems.map(item => (
-                <Button
+                <button
                   key={item.key}
                   type="button"
-                  variant="ghost"
-                  size="sm"
                   onClick={item.onClick}
                   className={clsx(
-                    '!rounded-xl w-full whitespace-nowrap !border-0 !shadow-none no-focus-ring',
-                    sidebarCollapsed ? 'justify-center !px-0 h-10' : 'justify-start px-2',
+                    'w-full rounded-xl no-focus-ring transition-colors duration-200',
+                    sidebarCollapsed ? 'h-10 px-0 text-center' : 'px-2 py-1.5 text-left',
                     item.active
                       ? 'bg-transparent text-primary-950 font-semibold'
                       : 'text-primary-700 hover:text-primary-900 hover:bg-primary-50'
                   )}
                   aria-current={item.active ? 'page' : undefined}
-                  title={item.label}
+                  title={sidebarCollapsed ? item.label : undefined}
                 >
                   {sidebarCollapsed ? item.shortLabel : item.label}
-                </Button>
+                </button>
               ))}
             </div>
           </nav>

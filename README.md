@@ -325,6 +325,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le menu du bandeau latéral n’utilise plus un conteneur “carte” encadré; les onglets sont désormais intégrés directement au rail vertical avec un état actif plus discret.
 - 2026-02-05: Le bouton de repli du bandeau latéral passe en icône chevrons (style plus fin) et la sélection d’onglet n’affiche plus de contour/badge encadré.
 - 2026-02-05: Le libellé “Navigation” est supprimé du bandeau latéral pour alléger l’en-tête de menu.
+- 2026-02-05: La largeur du bandeau latéral est réduite (ouvert/replié) pour une empreinte visuelle plus légère.
 
 ## Maintenance
 
