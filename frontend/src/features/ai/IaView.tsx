@@ -544,8 +544,10 @@ function SourceCategoryCard({
       {dateFilterContent ? <div>{dateFilterContent}</div> : null}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-primary-500">{source.source}</p>
           <h3 className="text-lg font-semibold text-primary-950">{source.title}</h3>
+          {selectionForCard ? (
+            <p className="text-[11px] font-semibold text-primary-700">Table sélectionnée</p>
+          ) : null}
           <p className="text-xs text-primary-500">
             {source.total_rows.toLocaleString('fr-FR')} lignes ·{' '}
             {categoryNodes.length.toLocaleString('fr-FR')} catégories
@@ -633,9 +635,6 @@ function SelectionPreview({
     <Card variant="outlined" className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">
-            {selection.source}
-          </p>
           <div key={selectionKey} className="flex flex-wrap items-center gap-2 text-xs animate-fade-in">
             <span className="font-semibold text-primary-700">Sélection active</span>
             <span className="inline-flex items-center rounded-full border border-primary-200 bg-white px-2.5 py-1 font-semibold text-primary-900">
