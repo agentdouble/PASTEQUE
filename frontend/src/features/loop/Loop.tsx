@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Card, Button, Loader } from '@/components/ui'
+import { Card, Loader } from '@/components/ui'
 import { apiFetch } from '@/services/api'
 import type { LoopKind, LoopOverview, LoopSummary, LoopTableOverview } from '@/types/loop'
 import { marked, Renderer } from 'marked'
@@ -148,19 +148,29 @@ export default function Loop() {
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-1">
+                  <div className="w-full lg:max-w-md space-y-1">
                     <p className="text-xs uppercase tracking-wide text-primary-500">Mode</p>
-                    <div className="flex flex-wrap gap-2">
-                      {modeOptions.map(option => (
-                        <Button
-                          key={option.key}
-                          variant={selectedMode === option.key ? 'primary' : 'secondary'}
-                          size="sm"
-                          onClick={() => setSelectedMode(option.key)}
-                        >
-                          {option.label}
-                        </Button>
-                      ))}
+                    <div className="grid w-full grid-cols-3 gap-1 rounded-lg border border-primary-200 bg-primary-50/70 p-1 shadow-sm">
+                      {modeOptions.map(option => {
+                        const isActive = selectedMode === option.key
+                        return (
+                          <button
+                            key={option.key}
+                            type="button"
+                            onClick={() => setSelectedMode(option.key)}
+                            aria-pressed={isActive}
+                            className={
+                              `rounded-md px-3 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
+                                isActive
+                                  ? 'bg-primary-900 text-white shadow-sm'
+                                  : 'text-primary-700 hover:bg-white hover:text-primary-900'
+                              }`
+                            }
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
