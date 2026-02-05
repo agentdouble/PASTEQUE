@@ -2088,8 +2088,6 @@ export default function Chat() {
     const showTabs = ticketMode && panelItems.length > 1
     const activeIndex = showTabs ? Math.min(ticketPreviewTab, panelItems.length - 1) : 0
     const activeItem = showTabs ? panelItems[activeIndex] : panelItems[0]
-    const activeLabel = activeItem?.table || activeItem?.spec?.entity_label || 'Tickets'
-    const activePeriod = formatPeriodLabel(activeItem)
     const selectionValues = ticketMode && activeItem ? ticketSelections[activeItem.key]?.values ?? [] : []
     const selectionCount = selectionValues.length
     return (
@@ -2118,28 +2116,21 @@ export default function Chat() {
             })}
           </div>
         )}
-        {ticketMode && selectionCount > 0 && activeItem && (
-          <div className="flex items-center justify-end text-[11px] text-primary-600">
+        {ticketMode && activeItem && (
+          <div className="flex min-h-[18px] items-center justify-end text-[11px] text-primary-600">
             <button
               type="button"
-              className="text-primary-700 underline"
+              className={clsx(
+                'text-primary-700 underline transition-opacity',
+                selectionCount > 0 ? 'opacity-100' : 'invisible opacity-0 pointer-events-none'
+              )}
               aria-label="Effacer la sélection des tickets"
+              aria-hidden={selectionCount === 0}
+              tabIndex={selectionCount > 0 ? 0 : -1}
               onClick={() => clearTicketSelection(activeItem.key)}
             >
               Tout effacer
             </button>
-          </div>
-        )}
-        {activePeriod && (
-          <div className="text-[11px] text-primary-500">
-            {showTabs ? (
-              <>
-                <span className="font-semibold text-primary-800">{activeLabel}</span>
-                <span className="ml-2">{activePeriod}</span>
-              </>
-            ) : (
-              activePeriod
-            )}
           </div>
         )}
         {activeItem?.error ? (
