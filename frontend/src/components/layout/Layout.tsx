@@ -142,20 +142,25 @@ export default function Layout() {
             </Button>
           </div>
           <nav className="flex-1 overflow-y-auto" aria-label="Navigation principale">
-            <div className="flex flex-col gap-1 rounded-2xl border border-primary-200 bg-white/90 p-1">
+            {!sidebarCollapsed && (
+              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-primary-500">
+                Navigation
+              </div>
+            )}
+            <div className="flex flex-col gap-1">
               {navItems.map(item => (
                 <Button
                   key={item.key}
                   type="button"
-                  variant={item.active ? 'primary' : 'ghost'}
+                  variant="ghost"
                   size="sm"
                   onClick={item.onClick}
                   className={clsx(
-                    '!rounded-xl w-full whitespace-nowrap',
-                    sidebarCollapsed ? 'justify-center !px-0' : 'justify-start',
+                    '!rounded-xl w-full whitespace-nowrap border',
+                    sidebarCollapsed ? 'justify-center !px-0 h-10' : 'justify-start',
                     item.active
-                      ? 'shadow-sm'
-                      : 'text-primary-700 hover:text-primary-900 hover:bg-primary-100'
+                      ? 'border-primary-200 bg-primary-100 text-primary-950 shadow-sm'
+                      : 'border-transparent text-primary-700 hover:text-primary-900 hover:bg-primary-50 hover:border-primary-100'
                   )}
                   aria-current={item.active ? 'page' : undefined}
                   title={item.label}
