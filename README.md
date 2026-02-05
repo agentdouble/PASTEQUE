@@ -326,6 +326,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le bouton de repli du bandeau latéral passe en icône chevrons (style plus fin) et la sélection d’onglet n’affiche plus de contour/badge encadré.
 - 2026-02-05: Le libellé “Navigation” est supprimé du bandeau latéral pour alléger l’en-tête de menu.
 - 2026-02-05: La largeur du bandeau latéral est réduite (ouvert/replié) pour une empreinte visuelle plus légère.
+- 2026-02-05: Le bandeau latéral est plus compact verticalement en mode ouvert (espacements réduits) et masque désormais le logo en mode replié.
 
 ## Maintenance
 

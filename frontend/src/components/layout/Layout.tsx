@@ -115,21 +115,21 @@ export default function Layout() {
         className="fixed left-0 top-0 z-50 h-[100dvh] border-r-2 border-primary-100 bg-white/90 backdrop-blur-sm transition-[width] duration-200"
         style={{ width: sidebarWidthPx }}
       >
-        <div className="flex h-full flex-col gap-3 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex items-center gap-2">
-              <img
-                src={`${import.meta.env.BASE_URL}insight.svg`}
-                alt="Logo FoyerInsight"
-                className="h-8 w-8 shrink-0"
-              />
-              {!sidebarCollapsed && (
+        <div className={clsx('flex h-full flex-col', sidebarCollapsed ? 'gap-3 p-3' : 'gap-2 px-2.5 py-2')}>
+          <div className={clsx('flex items-center', sidebarCollapsed ? 'justify-center' : 'justify-between gap-2')}>
+            {!sidebarCollapsed && (
+              <div className="min-w-0 flex items-center gap-2">
+                <img
+                  src={`${import.meta.env.BASE_URL}insight.svg`}
+                  alt="Logo FoyerInsight"
+                  className="h-7 w-7 shrink-0"
+                />
                 <div className="min-w-0">
-                  <h1 className="truncate text-lg font-bold text-primary-950 tracking-tight">FoyerInsight</h1>
+                  <h1 className="truncate text-base font-bold text-primary-950 tracking-tight">FoyerInsight</h1>
                   <p className="truncate text-xs text-primary-600">De la donnée à l'action</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -155,7 +155,7 @@ export default function Layout() {
                   onClick={item.onClick}
                   className={clsx(
                     'w-full rounded-xl no-focus-ring transition-colors duration-200',
-                    sidebarCollapsed ? 'h-10 px-0 text-center' : 'px-2 py-1.5 text-left',
+                    sidebarCollapsed ? 'h-10 px-0 text-center' : 'px-2 py-1 text-left',
                     item.active
                       ? 'bg-transparent text-primary-950 font-semibold'
                       : 'text-primary-700 hover:text-primary-900 hover:bg-primary-50'
@@ -168,14 +168,14 @@ export default function Layout() {
               ))}
             </div>
           </nav>
-          <div className="pt-1 border-t border-primary-100">
+          <div className={clsx('border-t border-primary-100', sidebarCollapsed ? 'pt-1' : 'pt-0.5')}>
             <Button
               variant="ghost"
               onClick={handleLogout}
               size="sm"
               className={clsx(
                 '!rounded-xl w-full border border-primary-200 bg-white/70 hover:bg-white',
-                sidebarCollapsed ? 'justify-center !px-0' : 'justify-start'
+                sidebarCollapsed ? 'justify-center !px-0' : 'justify-start !py-1'
               )}
               title="Déconnexion"
             >
