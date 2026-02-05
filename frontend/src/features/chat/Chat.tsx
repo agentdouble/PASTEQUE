@@ -2196,9 +2196,25 @@ export default function Chat() {
               <>
                 {showTicketPanel ? (
                   <div className="mb-3 border rounded-2xl bg-primary-50 p-3 flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-xs text-primary-700">
-                      <span>Tickets</span>
-                      <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <label className="text-[11px] text-primary-600">Source</label>
+                        <select
+                          value={ticketTable}
+                          onChange={e => {
+                            const next = e.target.value
+                            setTicketTable(next)
+                            void loadTicketMetadata(next || undefined, { target: 'main' })
+                          }}
+                          className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
+                        >
+                          <option value="">Auto (config chat)</option>
+                          {ticketTables.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-primary-700">
                         {ticketSummaryLabel && (
                           <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                             {ticketSummaryLabel}
@@ -2245,23 +2261,6 @@ export default function Chat() {
                         </span>
                       </div>
                     ) : null}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <label className="text-[11px] text-primary-600">Table</label>
-                      <select
-                        value={ticketTable}
-                        onChange={e => {
-                          const next = e.target.value
-                          setTicketTable(next)
-                          void loadTicketMetadata(next || undefined, { target: 'main' })
-                        }}
-                        className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
-                      >
-                        <option value="">Auto (config chat)</option>
-                        {ticketTables.map(name => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex flex-col gap-2 w-full">
                         {ticketRanges.map((range, idx) => (
