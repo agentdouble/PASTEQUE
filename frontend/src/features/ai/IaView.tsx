@@ -204,12 +204,18 @@ export default function IaView() {
     sel: Selection,
     pageIndex: number,
     direction: 'asc' | 'desc',
-    range: { from?: string; to?: string } | null = appliedRange
+    range: { from?: string; to?: string } | null = appliedRange,
+    restoreScrollY?: number
   ) => {
     const offset = pageIndex * PAGE_SIZE
     setPreview(null)
     setPreviewError('')
     setPreviewLoading(true)
+    if (restoreScrollY !== undefined) {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: restoreScrollY })
+      })
+    }
     const requestId = requestRef.current + 1
     requestRef.current = requestId
     const includeDate = sourceHasDate(sel.source)
@@ -252,40 +258,49 @@ export default function IaView() {
       } finally {
         if (requestRef.current === requestId) {
           setPreviewLoading(false)
+          if (restoreScrollY !== undefined) {
+            window.requestAnimationFrame(() => {
+              window.scrollTo({ top: restoreScrollY })
+            })
+          }
         }
       }
     })()
   }
 
   const handleSelect = (source: string, category: string, subCategory: string) => {
+    const restoreScrollY = window.scrollY
     const nextSelection: Selection = { source, category, subCategory }
     setSelection(nextSelection)
     setPage(0)
     setMatchingRows(0)
-    fetchPreview(nextSelection, 0, sortDirection, appliedRange)
+    fetchPreview(nextSelection, 0, sortDirection, appliedRange, restoreScrollY)
   }
 
   const handlePageChange = (nextPage: number) => {
     if (!selection) return
     if (nextPage < 0) return
+    const restoreScrollY = window.scrollY
     const total = matchingRows || preview?.matching_rows || 0
     const maxPage = total ? Math.max(Math.ceil(total / PAGE_SIZE) - 1, 0) : 0
     const target = Math.min(nextPage, maxPage)
     setPage(target)
-    fetchPreview(selection, target, sortDirection, appliedRange)
+    fetchPreview(selection, target, sortDirection, appliedRange, restoreScrollY)
   }
 
   const handleToggleSort = () => {
     if (!selection) return
     if (!sourceHasDate(selection.source)) return
+    const restoreScrollY = window.scrollY
     const nextDirection = sortDirection === 'desc' ? 'asc' : 'desc'
     setSortDirection(nextDirection)
     setPage(0)
-    fetchPreview(selection, 0, nextDirection, appliedRange)
+    fetchPreview(selection, 0, nextDirection, appliedRange, restoreScrollY)
   }
 
   const handleResetRange = () => {
     if (!hasGlobalDate || !globalBounds.min || !globalBounds.max) return
+    const restoreScrollY = window.scrollY
     const fullRange = { from: globalBounds.min, to: globalBounds.max }
     setPendingRange(fullRange)
     setAppliedRange(fullRange)
@@ -293,7 +308,7 @@ export default function IaView() {
     void (async () => {
       await loadOverview(fullRange)
       if (selection) {
-        fetchPreview(selection, 0, sortDirection, fullRange)
+        fetchPreview(selection, 0, sortDirection, fullRange, restoreScrollY)
       }
     })()
   }
@@ -307,12 +322,13 @@ export default function IaView() {
       return
     }
     const timeoutId = window.setTimeout(() => {
+      const restoreScrollY = window.scrollY
       setAppliedRange(pendingRange)
       setPage(0)
       void (async () => {
         await loadOverview(pendingRange, false)
         if (selection) {
-          fetchPreview(selection, 0, sortDirection, pendingRange)
+          fetchPreview(selection, 0, sortDirection, pendingRange, restoreScrollY)
         }
       })()
     }, 180)
