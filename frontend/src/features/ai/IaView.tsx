@@ -465,7 +465,6 @@ export default function IaView() {
               onPageChange={handlePageChange}
               onToggleSort={handleToggleSort}
               canSort={selectionHasDate}
-              activeRange={appliedRange}
               onDiscuss={handleDiscussSelection}
               canDiscuss={selectionHasDate}
             />
@@ -491,7 +490,6 @@ function SourceCategoryCard({
   onPageChange,
   onToggleSort,
   canSort,
-  activeRange,
   onDiscuss,
   canDiscuss,
 }: {
@@ -509,7 +507,6 @@ function SourceCategoryCard({
   onPageChange: (nextPage: number) => void
   onToggleSort: () => void
   canSort: boolean
-  activeRange: { from?: string; to?: string } | null
   onDiscuss: () => void
   canDiscuss: boolean
 }) {
@@ -574,7 +571,7 @@ function SourceCategoryCard({
         onPageChange={onPageChange}
         onToggleSort={onToggleSort}
         canSort={canSort}
-        activeRange={activeRange}
+        dateField={source.date_field ?? null}
         onDiscuss={onDiscuss}
         canDiscuss={canDiscuss}
       />
@@ -594,7 +591,7 @@ function SelectionPreview({
   onPageChange,
   onToggleSort,
   canSort,
-  activeRange,
+  dateField,
   onDiscuss,
   canDiscuss,
 }: {
@@ -609,7 +606,7 @@ function SelectionPreview({
   onPageChange: (nextPage: number) => void
   onToggleSort: () => void
   canSort: boolean
-  activeRange: { from?: string; to?: string } | null
+  dateField: string | null
   onDiscuss: () => void
   canDiscuss: boolean
 }) {
@@ -622,6 +619,11 @@ function SelectionPreview({
   const currentPage = Math.min(page, totalPages - 1)
   const hasPrev = currentPage > 0
   const hasNext = currentPage < totalPages - 1
+  const findColumnInsensitive = (target: string) =>
+    columns.find(col => col.trim().toLowerCase() === target.trim().toLowerCase()) ?? null
+  const sortableDateColumn = canSort
+    ? (dateField ? findColumnInsensitive(dateField) : null) ?? findColumnInsensitive('date')
+    : null
 
   return (
     <Card variant="outlined" className="space-y-3">
@@ -653,44 +655,26 @@ function SelectionPreview({
           </Button>
         </div>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onToggleSort}
-            disabled={loading || !canSort}
-            className="!rounded-full"
-          >
-            Tri date {sortDirection === 'desc' ? '↓' : '↑'}
-          </Button>
-          {activeRange?.from || activeRange?.to ? (
-            <span className="text-[11px] text-primary-600">
-              Filtre appliqué : {activeRange?.from ?? '…'} → {activeRange?.to ?? '…'}
-            </span>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={!hasPrev || loading}
-          >
-            Précédent
-          </Button>
-          <span className="text-[11px] text-primary-600">
-            Page {currentPage + 1} / {totalPages} · {limit} lignes/page
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={!hasNext || loading}
-          >
-            Suivant
-          </Button>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={!hasPrev || loading}
+        >
+          Précédent
+        </Button>
+        <span className="text-[11px] text-primary-600">
+          Page {currentPage + 1} / {totalPages} · {limit} lignes/page
+        </span>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={!hasNext || loading}
+        >
+          Suivant
+        </Button>
       </div>
 
       {loading ? (
@@ -711,7 +695,21 @@ function SelectionPreview({
                     key={col}
                     className="px-2 py-2 font-semibold text-primary-800 whitespace-nowrap"
                   >
-                    {col}
+                    {sortableDateColumn &&
+                    col.trim().toLowerCase() === sortableDateColumn.trim().toLowerCase() ? (
+                      <button
+                        type="button"
+                        onClick={onToggleSort}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1 hover:text-primary-700 disabled:opacity-50"
+                        title="Trier par date"
+                      >
+                        <span>{col}</span>
+                        <span className="text-[11px]">{sortDirection === 'desc' ? '↓' : '↑'}</span>
+                      </button>
+                    ) : (
+                      col
+                    )}
                   </th>
                 ))}
               </tr>
