@@ -73,6 +73,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l'espace du chat sans perdre la configuration active.
 - Le bandeau du panneau n’affiche plus le nom de table (déjà visible dans le champ Table) et utilise une icône flèche minimaliste pour le masquage.
 - Le bandeau du panneau affiche le nombre de tickets sélectionnés; sans sélection manuelle, il affiche le volume auto‑sélectionné par les plages de dates avec la période.
+- Le compteur de sélection n’est plus dupliqué dans le panel de tickets: le nombre reste affiché uniquement dans le bandeau supérieur.
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l'aperçu des tickets filtrés par les périodes sélectionnées ou par une sélection Explorer active (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché, y compris pour la table issue de l'Explorer.
 - Le panel « Ticket exploration » gère désormais les noms de colonnes très longs (retour à la ligne automatique + largeur bornée) pour éviter les débordements visuels.
 - La sélection de tickets dans le panel utilise un bouton compact, minimaliste (icône seule), avec états visuels contrastés et focus clavier renforcé pour l’accessibilité.

@@ -2092,9 +2092,6 @@ export default function Chat() {
     const activePeriod = formatPeriodLabel(activeItem)
     const selectionValues = ticketMode && activeItem ? ticketSelections[activeItem.key]?.values ?? [] : []
     const selectionCount = selectionValues.length
-    const selectionLabel = selectionCount === 1
-      ? '1 ticket sélectionné'
-      : `${selectionCount} tickets sélectionnés`
     return (
       <div className="space-y-3">
         {showTabs && (
@@ -2122,11 +2119,11 @@ export default function Chat() {
           </div>
         )}
         {ticketMode && selectionCount > 0 && activeItem && (
-          <div className="flex items-center justify-between text-[11px] text-primary-600">
-            <span>{selectionLabel}</span>
+          <div className="flex items-center justify-end text-[11px] text-primary-600">
             <button
               type="button"
               className="text-primary-700 underline"
+              aria-label="Effacer la sélection des tickets"
               onClick={() => clearTicketSelection(activeItem.key)}
             >
               Tout effacer
