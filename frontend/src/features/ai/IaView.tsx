@@ -10,6 +10,7 @@ import type {
   TableExplorePreview,
   TableRow,
 } from '@/types/data'
+import { HiArrowPath } from 'react-icons/hi2'
 
 type CategoryNode = {
   name: string
@@ -71,6 +72,7 @@ export default function IaView() {
   const [pendingRange, setPendingRange] = useState<{ from?: string; to?: string } | null>(null)
   const [appliedRange, setAppliedRange] = useState<{ from?: string; to?: string } | null>(null)
   const requestRef = useRef(0)
+  const overviewRequestRef = useRef(0)
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const navigate = useNavigate()
 
@@ -88,6 +90,8 @@ export default function IaView() {
     range: { from?: string; to?: string } | null = appliedRange,
     withLoader = true
   ) => {
+    const requestId = overviewRequestRef.current + 1
+    overviewRequestRef.current = requestId
     if (withLoader) {
       setLoading(true)
       setError('')
@@ -98,6 +102,7 @@ export default function IaView() {
     const url = params.size ? `/data/overview?${params.toString()}` : '/data/overview'
     try {
       const res = await apiFetch<DataOverviewResponse>(url)
+      if (overviewRequestRef.current !== requestId) return
       const data = res ?? { generated_at: '', sources: [] }
       setOverview(data)
       const bounds = computeGlobalBounds(data.sources)
@@ -109,11 +114,11 @@ export default function IaView() {
         setAppliedRange(range ?? { from: bounds.min, to: bounds.max })
       }
     } catch (err) {
-      if (withLoader) {
+      if (withLoader && overviewRequestRef.current === requestId) {
         setError(err instanceof Error ? err.message : 'Chargement impossible.')
       }
     } finally {
-      if (withLoader) {
+      if (withLoader && overviewRequestRef.current === requestId) {
         setLoading(false)
       }
     }
@@ -279,18 +284,6 @@ export default function IaView() {
     fetchPreview(selection, 0, nextDirection, appliedRange)
   }
 
-  const handleApplyRange = () => {
-    if (!pendingRange || !hasGlobalDate) return
-    setAppliedRange(pendingRange)
-    setPage(0)
-    void (async () => {
-      await loadOverview(pendingRange)
-      if (selection) {
-        fetchPreview(selection, 0, sortDirection, pendingRange)
-      }
-    })()
-  }
-
   const handleResetRange = () => {
     if (!hasGlobalDate || !globalBounds.min || !globalBounds.max) return
     const fullRange = { from: globalBounds.min, to: globalBounds.max }
@@ -304,6 +297,29 @@ export default function IaView() {
       }
     })()
   }
+
+  useEffect(() => {
+    if (!pendingRange || !hasGlobalDate) return
+    if (
+      pendingRange.from === appliedRange?.from &&
+      pendingRange.to === appliedRange?.to
+    ) {
+      return
+    }
+    const timeoutId = window.setTimeout(() => {
+      setAppliedRange(pendingRange)
+      setPage(0)
+      void (async () => {
+        await loadOverview(pendingRange, false)
+        if (selection) {
+          fetchPreview(selection, 0, sortDirection, pendingRange)
+        }
+      })()
+    }, 180)
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [pendingRange, hasGlobalDate, appliedRange?.from, appliedRange?.to, selection, sortDirection])
 
   const handleDiscussSelection = () => {
     if (!selection) return
@@ -323,19 +339,8 @@ export default function IaView() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-primary-950">Catégorisation automatique par IA</h2>
-        </div>
-        <div className="text-right text-sm text-primary-600">
-          {overview?.generated_at ? (
-            <span className="font-semibold text-primary-900">
-              Snapshot : {new Date(overview.generated_at).toLocaleString('fr-FR')}
-            </span>
-          ) : (
-            'Chargement…'
-          )}
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-primary-950">Catégorisation automatique par IA</h2>
       </div>
 
       {hasGlobalDate && minTs !== undefined && maxTs !== undefined ? (
@@ -412,16 +417,15 @@ export default function IaView() {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="secondary"
+              variant="ghost"
               size="sm"
-              onClick={handleApplyRange}
-              className="!rounded-full"
+              onClick={handleResetRange}
               disabled={loading}
+              className="!rounded-full !p-2"
+              aria-label="Réinitialiser le filtre date"
+              title="Réinitialiser le filtre date"
             >
-              Appliquer le filtre
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleResetRange} disabled={loading}>
-              Réinitialiser
+              <HiArrowPath className="w-4 h-4" />
             </Button>
           </div>
         </Card>
