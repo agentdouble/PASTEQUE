@@ -2778,6 +2778,10 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
   // Preview caps (configurable)
   const PREVIEW_COL_MAX = TICKETS_CONFIG.PREVIEW_COL_MAX
   const PREVIEW_CHAR_MAX = TICKETS_CONFIG.PREVIEW_CHAR_MAX
+  const COLUMN_NAME_CELL_CLASS =
+    'w-40 max-w-[10rem] pr-2 py-1 text-primary-400 align-top break-words [overflow-wrap:anywhere]'
+  const COLUMN_VALUE_CELL_CLASS =
+    'py-1 text-primary-800 break-words [overflow-wrap:anywhere]'
 
   const count = data?.row_count ?? data?.rows?.length ?? 0
   const limit = spec?.limit ?? 100
@@ -2970,12 +2974,12 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
               </div>
             )}
             <div className="mt-2 overflow-auto">
-              <table className="min-w-full text-[11px]">
+              <table className="min-w-full table-fixed text-[11px]">
                 <tbody>
                   {orderedColumns.map((c) => (
                     <tr key={c} className="border-t border-primary-100">
-                      <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
-                      <td className="py-1 text-primary-800 break-all">{String(row[c] ?? '')}</td>
+                      <td className={COLUMN_NAME_CELL_CLASS} title={c}>{c}</td>
+                      <td className={COLUMN_VALUE_CELL_CLASS}>{String(row[c] ?? '')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -3043,12 +3047,12 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
                 )}
                 {previewColumns && previewColumns.length > 0 && (
                   <div className="mt-2 overflow-auto">
-                    <table className="min-w-full text-[11px]">
+                    <table className="min-w-full table-fixed text-[11px]">
                       <tbody>
                         {previewColumns.map((c) => (
                           <tr key={c} className="border-t border-primary-100">
-                            <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
-                            <td className="py-1 text-primary-800 break-all" title={String(row[c] ?? '')}>{truncate(row[c])}</td>
+                            <td className={COLUMN_NAME_CELL_CLASS} title={c}>{c}</td>
+                            <td className={COLUMN_VALUE_CELL_CLASS} title={String(row[c] ?? '')}>{truncate(row[c])}</td>
                           </tr>
                         ))}
                       </tbody>
