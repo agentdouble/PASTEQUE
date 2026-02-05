@@ -2229,7 +2229,7 @@ export default function Chat() {
             {ticketMode && (
               <>
                 {showTicketPanel ? (
-                  <div className="mb-3 border rounded-2xl bg-primary-50 p-3 flex flex-col gap-2">
+                  <div className="mb-3 border rounded-2xl bg-primary-50 px-3 pb-3 pt-2 flex flex-col gap-1.5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <label className="text-[11px] text-primary-600">Source</label>
@@ -2295,8 +2295,7 @@ export default function Chat() {
                         </span>
                       </div>
                     ) : null}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex flex-col gap-2 w-full">
+                    <div className="flex flex-col gap-2 w-full">
                         {ticketRanges.map(range => (
                           <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
                             <DateRangeSlider
@@ -2359,7 +2358,6 @@ export default function Chat() {
                             Réinit.
                           </button>
                         </div>
-                      </div>
                     </div>
 
                 {/* Tables supplémentaires */}
