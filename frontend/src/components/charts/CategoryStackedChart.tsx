@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { Doughnut, getElementAtEvent } from 'react-chartjs-2'
 import { ArcElement, Chart as ChartJS, Legend, Tooltip, type ChartData, type ChartOptions } from 'chart.js'
 import type { CategorySubCategoryCount } from '@/types/data'
@@ -17,6 +17,7 @@ type Props = {
   breakdown: CategorySubCategoryCount[]
   onSelect?: (category: string, subCategory?: string) => void
   selectedCategory?: string | null
+  actionSlot?: ReactNode
   title?: string
   subtitle?: string
   height?: number
@@ -27,6 +28,7 @@ export default function CategoryStackedChart({
   breakdown,
   onSelect,
   selectedCategory,
+  actionSlot,
   title = 'Répartition Category / Sub Category',
   subtitle = '',
   height = 224,
@@ -193,15 +195,18 @@ export default function CategoryStackedChart({
               ) : null}
               {subtitle ? <p className="text-[11px] text-primary-500">{subtitle}</p> : null}
             </div>
-            {isDrilled ? (
-              <button
-                type="button"
-                className="text-xs font-semibold text-primary-900 bg-white border border-primary-200 rounded-full px-3 py-1 shadow-sm hover:bg-primary-50"
-                onClick={() => setFocusedCategory(null)}
-              >
-                Retour catégories
-              </button>
-            ) : null}
+            <div className="flex items-center gap-2">
+              {actionSlot ? <div>{actionSlot}</div> : null}
+              {isDrilled ? (
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-primary-900 bg-white border border-primary-300 rounded-full px-3.5 py-1.5 shadow-sm hover:bg-primary-50"
+                  onClick={() => setFocusedCategory(null)}
+                >
+                  ← Retour catégories
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}

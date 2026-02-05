@@ -559,6 +559,19 @@ function SourceCategoryCard({
         breakdown={source.category_breakdown ?? []}
         onSelect={handleChartSelect}
         selectedCategory={selectionForCard?.category ?? null}
+        actionSlot={
+          selectionForCard ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onDiscuss}
+              disabled={!canDiscuss || previewLoading}
+              className="!rounded-full"
+            >
+              Discuter avec ces données
+            </Button>
+          ) : null
+        }
         className="bg-primary-50/80"
       />
 
@@ -576,8 +589,6 @@ function SourceCategoryCard({
           onToggleSort={onToggleSort}
           canSort={canSort}
           dateField={source.date_field ?? null}
-          onDiscuss={onDiscuss}
-          canDiscuss={canDiscuss}
         />
       </div>
     </Card>
@@ -597,8 +608,6 @@ function SelectionPreview({
   onToggleSort,
   canSort,
   dateField,
-  onDiscuss,
-  canDiscuss,
 }: {
   selection: Selection | null
   preview: TableExplorePreview | null
@@ -612,8 +621,6 @@ function SelectionPreview({
   onToggleSort: () => void
   canSort: boolean
   dateField: string | null
-  onDiscuss: () => void
-  canDiscuss: boolean
 }) {
   if (!selection) return null
 
@@ -633,7 +640,7 @@ function SelectionPreview({
 
   return (
     <Card variant="outlined" className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2">
         <div className="space-y-1">
           <div key={selectionKey} className="flex flex-wrap items-center gap-2 text-xs animate-fade-in">
             <span className="font-semibold text-primary-700">Sélection active</span>
@@ -645,17 +652,6 @@ function SelectionPreview({
               Sub Category: {selection.subCategory}
             </span>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onDiscuss}
-            disabled={!canDiscuss || loading}
-            className="!rounded-full"
-          >
-            Discuter avec ces données
-          </Button>
         </div>
       </div>
       <div className="flex items-center justify-end gap-2">

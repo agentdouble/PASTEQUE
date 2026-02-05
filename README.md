@@ -170,6 +170,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage est appliquée automatiquement (sans bouton « Appliquer ») côté backend (`/data/overview` + `/data/explore`) et la réinitialisation passe par un bouton icône flèche.
 - Le donut Category/Sub Category n’est plus encapsulé dans une carte interne: le rendu est homogénéisé (pas de « carré dans carré »).
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
+- Les actions `Discuter avec ces données` et `Retour catégories` sont regroupées en haut du bloc donut pour une meilleure visibilité.
 - La catégorie et la sous-catégorie en cours sont mises en évidence avec des badges « Sélection active » dans l’aperçu pour clarifier le contexte courant.
 - Le nom de table n’est affiché qu’une seule fois dans la carte sélectionnée pour éviter les répétitions visuelles.
 - Une animation courte (fade/slide) est déclenchée lors d’un changement de catégorie/sous-catégorie pour rendre la transition visuelle plus claire.
