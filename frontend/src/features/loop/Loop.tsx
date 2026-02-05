@@ -34,18 +34,17 @@ function renderMarkdown(content: string) {
   )
 }
 
-const modeOptions: Array<{ key: LoopKind; label: string; title: string }> = [
-  { key: 'daily', label: 'Journalier', title: 'Flash du jour' },
-  { key: 'weekly', label: 'Hebdomadaire', title: 'Focus de la semaine' },
-  { key: 'monthly', label: 'Mensuel', title: 'Panorama du mois' },
+const modeOptions: Array<{ key: LoopKind; label: string }> = [
+  { key: 'daily', label: 'Journalier' },
+  { key: 'weekly', label: 'Hebdomadaire' },
+  { key: 'monthly', label: 'Mensuel' },
 ]
 
-function SummaryList({ title, summary }: { title: string; summary?: LoopSummary }) {
+function SummaryList({ summary }: { summary?: LoopSummary }) {
   const emptyText = 'Aucune synthèse disponible.'
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-base font-semibold text-primary-900">{title}</h3>
+    <div>
       {summary ? (
         <Card
           variant="elevated"
@@ -96,7 +95,6 @@ export default function Loop() {
 
   const items = overview?.items ?? []
   const selectedItem = items.find(item => item.config.table_name === selectedTable)
-  const selectedModeMeta = modeOptions.find(option => option.key === selectedMode)
   const selectedSummary = selectedItem
     ? selectedMode === 'daily'
       ? selectedItem.daily?.[0]
@@ -178,10 +176,7 @@ export default function Loop() {
 
               {selectedItem ? (
                 <Card variant="elevated" className="p-5 space-y-4">
-                  <SummaryList
-                    title={selectedModeMeta?.title ?? 'Synthèse'}
-                    summary={selectedSummary}
-                  />
+                  <SummaryList summary={selectedSummary} />
                 </Card>
               ) : (
                 <Card variant="elevated" className="p-6">
