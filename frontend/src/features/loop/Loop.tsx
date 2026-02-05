@@ -127,7 +127,7 @@ export default function Loop() {
             </Card>
           ) : (
             <div className="space-y-6">
-              <Card variant="elevated" className="p-5">
+              <div className="px-1">
                 <div className="mx-auto w-full max-w-4xl space-y-5">
                   <div className="space-y-1">
                     <label htmlFor="radar-table" className="text-xs uppercase tracking-wide text-primary-500">
@@ -172,7 +172,7 @@ export default function Loop() {
                     </div>
                   </div>
                 </div>
-              </Card>
+              </div>
 
               {selectedItem ? (
                 <Card variant="elevated" className="p-5 space-y-4">
