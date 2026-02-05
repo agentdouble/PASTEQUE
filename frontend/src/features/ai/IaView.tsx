@@ -574,7 +574,6 @@ function SourceCategoryCard({
         breakdown={source.category_breakdown ?? []}
         onSelect={handleChartSelect}
         selectedCategory={selectionForCard?.category ?? null}
-        selectedSubCategory={selectionForCard?.subCategory ?? null}
         className="bg-primary-50/80"
       />
 

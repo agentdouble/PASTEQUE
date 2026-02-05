@@ -17,7 +17,6 @@ type Props = {
   breakdown: CategorySubCategoryCount[]
   onSelect?: (category: string, subCategory?: string) => void
   selectedCategory?: string | null
-  selectedSubCategory?: string | null
   title?: string
   subtitle?: string
   height?: number
@@ -28,7 +27,6 @@ export default function CategoryStackedChart({
   breakdown,
   onSelect,
   selectedCategory,
-  selectedSubCategory,
   title = 'Répartition Category / Sub Category',
   subtitle = '',
   height = 224,
@@ -180,12 +178,7 @@ export default function CategoryStackedChart({
   }
 
   const wrapperClass = ['bg-primary-50 rounded-xl p-3', className].filter(Boolean).join(' ')
-  const hasActiveSelection = Boolean(selectedCategory && selectedSubCategory)
-  const activeSelectionKey =
-    selectedCategory && selectedSubCategory
-      ? `${selectedCategory}::${selectedSubCategory}`
-      : 'none'
-  const chartStateKey = isDrilled ? `sub-${focusedCategory}` : 'categories'
+  const titleKey = isDrilled ? `title-${focusedCategory}` : 'title-categories'
 
   return (
     <div className={wrapperClass || undefined}>
@@ -194,7 +187,7 @@ export default function CategoryStackedChart({
           <div className="flex items-center justify-between">
             <div>
               {title ? (
-                <p className="text-sm font-semibold text-primary-800">
+                <p key={titleKey} className="text-sm font-semibold text-primary-800 animate-fade-in">
                   {isDrilled && focusedCategory ? `${title} – ${focusedCategory}` : title}
                 </p>
               ) : null}
@@ -210,26 +203,11 @@ export default function CategoryStackedChart({
               </button>
             ) : null}
           </div>
-          {hasActiveSelection ? (
-            <div
-              key={activeSelectionKey}
-              className="flex flex-wrap items-center gap-2 text-xs animate-fade-in"
-            >
-              <span className="font-semibold text-primary-700">Sélection active</span>
-              <span className="inline-flex items-center rounded-full border border-primary-200 bg-white px-2.5 py-1 font-semibold text-primary-900">
-                Category: {selectedCategory}
-              </span>
-              <span className="text-primary-500">→</span>
-              <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-900 px-2.5 py-1 font-semibold text-white">
-                Sub Category: {selectedSubCategory}
-              </span>
-            </div>
-          ) : null}
         </div>
       ) : null}
-      <div key={chartStateKey} style={{ height }} className="animate-fade-in">
+      <div style={{ height }}>
         <Doughnut
-          key={chartStateKey}
+          key={isDrilled ? `sub-${focusedCategory}` : 'categories'}
           ref={chartRef}
           data={chartData}
           options={options}
