@@ -416,27 +416,6 @@ function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderP
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        {/* Quick selection segmented control */}
-        <div className="inline-flex w-fit items-center overflow-hidden rounded-lg border border-primary-200 bg-white shadow-sm">
-          {presetItems.map((preset, idx) => (
-            <button
-              key={preset.key}
-              type="button"
-              onClick={() => setQuickRange(preset.days)}
-              className={clsx(
-                'px-2.5 py-1 text-[10px] font-medium transition-colors',
-                idx > 0 && 'border-l border-primary-200',
-                selectedPresetKey === preset.key
-                  ? 'bg-primary-900 text-white'
-                  : 'bg-white text-primary-700 hover:bg-primary-50'
-              )}
-              aria-pressed={selectedPresetKey === preset.key}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        <span className="text-[11px] font-medium text-primary-500">ou</span>
         {/* Date inputs */}
         <div className="flex items-center gap-2 text-[11px]">
           <label className="text-primary-600">Du</label>
@@ -457,6 +436,27 @@ function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderP
             onChange={e => handleToInputChange(e.target.value)}
             className="border border-primary-200 rounded px-1.5 py-0.5 text-[11px] text-primary-900 focus:outline-none focus:border-primary-400"
           />
+        </div>
+        <span className="text-[11px] font-medium text-primary-500">ou</span>
+        {/* Quick selection segmented control */}
+        <div className="inline-flex w-fit items-center overflow-hidden rounded-lg border border-primary-200 bg-white shadow-sm">
+          {presetItems.map((preset, idx) => (
+            <button
+              key={preset.key}
+              type="button"
+              onClick={() => setQuickRange(preset.days)}
+              className={clsx(
+                'px-2.5 py-1 text-[10px] font-medium transition-colors',
+                idx > 0 && 'border-l border-primary-200',
+                selectedPresetKey === preset.key
+                  ? 'bg-primary-900 text-white'
+                  : 'bg-white text-primary-700 hover:bg-primary-50'
+              )}
+              aria-pressed={selectedPresetKey === preset.key}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
       </div>
       {/* Slider */}

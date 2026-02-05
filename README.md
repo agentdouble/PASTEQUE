@@ -78,7 +78,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le compteur de sélection n’est plus dupliqué dans le panel de tickets: le nombre reste affiché uniquement dans le bandeau supérieur.
 - La période sélectionnée n’est plus répétée dans la liste de tickets à gauche (elle reste visible dans le sélecteur de dates et le bandeau supérieur).
 - La zone d’action « Tout effacer » conserve une hauteur stable pour éviter les sauts visuels du panel lors des sélections.
-- Les presets de période (`7j`, `30j`, `1 an`, `Tout`) sont intégrés en segmented control et alignés sur la même ligne que `Du/au`, séparés par `ou`.
+- `Du/au` apparaît en premier sur la ligne de période, puis `ou`, puis les presets rapides (`7j`, `30j`, `1 an`, `Tout`) en segmented control.
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l'aperçu des tickets filtrés par les périodes sélectionnées ou par une sélection Explorer active (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché, y compris pour la table issue de l'Explorer.
 - Le panel « Ticket exploration » gère désormais les noms de colonnes très longs (retour à la ligne automatique + largeur bornée) pour éviter les débordements visuels.
 - La sélection de tickets dans le panel utilise un bouton compact, minimaliste (icône seule), avec états visuels contrastés et focus clavier renforcé pour l’accessibilité.
