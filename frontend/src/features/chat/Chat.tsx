@@ -2198,7 +2198,7 @@ export default function Chat() {
       <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7">
         <div className="border rounded-lg bg-white shadow-sm p-0 flex flex-col min-h-[calc(100vh-120px)]">
           {/* Messages */}
-          <div ref={listRef} className="flex-1 p-4 space-y-4 overflow-auto">
+          <div ref={listRef} className="flex-1 px-4 pb-4 pt-2 space-y-4 overflow-auto">
             {/* Mobile toolbar (Exploration uniquement) */}
             <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 px-4 pt-3 pb-2 bg-white/95 backdrop-blur border-b lg:hidden">
               <div className="flex items-center justify-between gap-2">
@@ -2222,15 +2222,17 @@ export default function Chat() {
               </div>
             </div>
             {/* Desktop toolbar (sans boutons Historique/Chat pour éviter doublons avec le header) */}
-            <div className="hidden lg:flex items-center justify-between mb-2">
-              <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : ''}</div>
-            </div>
+            {conversationId ? (
+              <div className="hidden lg:flex items-center justify-between mb-2">
+                <div className="text-xs text-primary-500">{`Discussion #${conversationId}`}</div>
+              </div>
+            ) : null}
 
             {ticketMode && (
               <>
                 {showTicketPanel ? (
-                  <div className="mb-3 border rounded-2xl bg-primary-50 px-3 pb-3 pt-2 flex flex-col gap-1.5">
-                    <div className="flex items-start justify-between gap-3">
+                  <div className="mb-3 border rounded-2xl bg-primary-50 px-3 pb-3 pt-1.5 flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <label className="text-[11px] text-primary-600">Source</label>
                         <select
