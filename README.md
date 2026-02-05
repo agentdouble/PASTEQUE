@@ -335,6 +335,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le bloc de filtres `/radar` n’est plus encadré par une carte externe (cadre/ombre retirés) pour un rendu plus léger.
 - 2026-02-05: La zone d’output `/radar` n’utilise plus de cartes imbriquées; le double cadre visuel autour de la synthèse a été supprimé.
 - 2026-02-05: Le titre de page « Radar » est retiré de `/radar` pour alléger l’en-tête (la navigation active sert déjà de repère).
+- 2026-02-05: Dans `/chat`, un bouton `Nouveau chat` est ajouté dans la barre sticky supérieure du flux pour réinitialiser rapidement la session sans passer par la navigation latérale.
 
 ## Maintenance
 

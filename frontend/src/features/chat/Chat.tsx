@@ -1629,6 +1629,11 @@ export default function Chat() {
     setAwaitingFirstDelta(false)
   }
 
+  function startNewChat() {
+    onNewChat()
+    setSearchParams({}, { replace: true })
+  }
+
   async function onFeedback(messageId: string, vote: FeedbackValue) {
     if (!conversationId) return
     const idx = messages.findIndex(m => m.id === messageId)
@@ -2191,10 +2196,18 @@ export default function Chat() {
         <div className="bg-transparent p-0 flex flex-col h-full min-h-0 overflow-hidden">
           {/* Messages */}
           <div ref={listRef} className="flex-1 min-h-0 px-4 pb-4 pt-1.5 flex flex-col gap-4 overflow-auto">
-            {/* Mobile toolbar (Exploration uniquement) */}
-            <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 px-4 pt-3 pb-2 bg-white/95 backdrop-blur border-b lg:hidden">
-              <div className="flex items-center justify-end gap-2">
-                <div className="flex items-center gap-2">
+            {/* Top toolbar (nouveau chat + actions mobile) */}
+            <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 border-b bg-white/95 px-4 pb-2 pt-3 backdrop-blur">
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={startNewChat}
+                  className="inline-flex items-center gap-2 rounded-full border border-primary-300 bg-white px-3 py-1 text-xs text-primary-700 transition-colors hover:bg-primary-50"
+                >
+                  <HiPlus className="h-4 w-4" />
+                  Nouveau chat
+                </button>
+                <div className="flex items-center gap-2 lg:hidden">
                   <button
                     type="button"
                     onClick={() => setShowTicketsSheet(true)}
