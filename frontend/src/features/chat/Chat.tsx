@@ -23,7 +23,7 @@ import type {
   FeedbackValue
 } from '@/types/chat'
 import type { TableExplorePreview } from '@/types/data'
-import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip, HiCheck, HiPlus } from 'react-icons/hi2'
+import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip, HiCheck, HiPlus, HiChevronUp } from 'react-icons/hi2'
 import clsx from 'clsx'
 import { renderMarkdown } from '@/utils/markdown'
 
@@ -2216,7 +2216,7 @@ export default function Chat() {
                 {showTicketPanel ? (
                   <div className="mb-3 border rounded-2xl bg-primary-50 p-3 flex flex-col gap-2">
                     <div className="flex items-center justify-between text-xs text-primary-700">
-                      <span>{ticketMeta?.table ? `Tickets (${ticketMeta.table})` : 'Tickets'}</span>
+                      <span>Tickets</span>
                       <div className="flex flex-wrap items-center gap-3">
                         {ticketSummaryLabel && (
                           <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
@@ -2235,10 +2235,12 @@ export default function Chat() {
                         )}
                         <button
                           type="button"
-                          className="text-[11px] text-primary-600 underline"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-primary-200 text-primary-600 hover:bg-primary-100"
                           onClick={() => setShowTicketPanel(false)}
+                          aria-label="Masquer le panneau tickets"
+                          title="Masquer"
                         >
-                          Masquer
+                          <HiChevronUp className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>

@@ -71,6 +71,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
 - Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l'espace du chat sans perdre la configuration active.
+- Le bandeau du panneau n’affiche plus le nom de table (déjà visible dans le champ Table) et utilise une icône flèche minimaliste pour le masquage.
 - Le bandeau du panneau affiche le nombre de tickets sélectionnés; sans sélection manuelle, il affiche le volume auto‑sélectionné par les plages de dates avec la période.
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l'aperçu des tickets filtrés par les périodes sélectionnées ou par une sélection Explorer active (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché, y compris pour la table issue de l'Explorer.
 - Le panel « Ticket exploration » gère désormais les noms de colonnes très longs (retour à la ligne automatique + largeur bornée) pour éviter les débordements visuels.
