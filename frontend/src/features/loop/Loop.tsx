@@ -175,9 +175,7 @@ export default function Loop() {
               </div>
 
               {selectedItem ? (
-                <Card variant="elevated" className="p-5 space-y-4">
-                  <SummaryList summary={selectedSummary} />
-                </Card>
+                <SummaryList summary={selectedSummary} />
               ) : (
                 <Card variant="elevated" className="p-6">
                   <p className="text-primary-700 text-sm">
