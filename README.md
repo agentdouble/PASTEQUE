@@ -76,6 +76,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le sélecteur de source de données est positionné en haut du panel de dates pour un accès direct.
 - Le header du panel de dates est compacté (moins de vide en tête) pour remonter visuellement la sélection des périodes.
 - Le bloc `Discussion #...` desktop n’est affiché que lorsqu’une conversation est active, pour éviter un espace vide en haut.
+- Le panneau de visualisation tickets (colonne gauche desktop) n’affiche plus le titre “Tickets” et démarre plus haut pour supprimer le blanc.
 - Le bandeau du panneau affiche toujours le nombre de tickets sélectionnés en haut à droite (sélection manuelle ou auto).
 - Sans sélection manuelle, le libellé auto n’affiche plus la période (ex: `552 tickets sélectionnés`).
 - Le compteur de sélection n’est plus dupliqué dans le panel de tickets: le nombre reste affiché uniquement dans le bandeau supérieur.
