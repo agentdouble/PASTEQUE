@@ -384,23 +384,54 @@ function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderP
     }
   }
 
+  const presetItems = [
+    { key: '7d', label: '7j', days: 7 },
+    { key: '30d', label: '30j', days: 30 },
+    { key: '365d', label: '1 an', days: 365 },
+    { key: 'all', label: 'Tout', days: 'all' as const },
+  ] as const
+  const currentFromIso = toDateIso(startTs)
+  const currentToIso = toDateIso(endTs)
+  const allFromIso = minDate ?? ''
+  const allToIso = maxDate ?? ''
+  const selectedPresetKey = (() => {
+    if (currentFromIso === allFromIso && currentToIso === allToIso) {
+      return 'all'
+    }
+    for (const preset of presetItems) {
+      if (preset.days === 'all') continue
+      const endDate = new Date(maxTs)
+      const startDate = new Date(maxTs)
+      startDate.setDate(startDate.getDate() - preset.days)
+      const clampedStart = Math.max(startDate.getTime(), minTs)
+      const fromIso = toDateIso(clampedStart)
+      const toIso = toDateIso(endDate.getTime())
+      if (currentFromIso === fromIso && currentToIso === toIso) {
+        return preset.key
+      }
+    }
+    return null
+  })()
+
   return (
     <div className="flex flex-col gap-2">
-      {/* Quick selection buttons */}
-      <div className="flex flex-wrap gap-1">
-        {[
-          { label: '7j', days: 7 },
-          { label: '30j', days: 30 },
-          { label: '1 an', days: 365 },
-          { label: 'Tout', days: 'all' as const },
-        ].map(({ label, days }) => (
+      {/* Quick selection segmented control */}
+      <div className="inline-flex w-fit items-center overflow-hidden rounded-lg border border-primary-200 bg-white shadow-sm">
+        {presetItems.map((preset, idx) => (
           <button
-            key={label}
+            key={preset.key}
             type="button"
-            onClick={() => setQuickRange(days)}
-            className="text-[10px] px-2 py-0.5 rounded border border-primary-200 bg-white text-primary-700 hover:bg-primary-50 transition-colors"
+            onClick={() => setQuickRange(preset.days)}
+            className={clsx(
+              'px-2.5 py-1 text-[10px] font-medium transition-colors',
+              idx > 0 && 'border-l border-primary-200',
+              selectedPresetKey === preset.key
+                ? 'bg-primary-900 text-white'
+                : 'bg-white text-primary-700 hover:bg-primary-50'
+            )}
+            aria-pressed={selectedPresetKey === preset.key}
           >
-            {label}
+            {preset.label}
           </button>
         ))}
       </div>
