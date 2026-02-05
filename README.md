@@ -70,7 +70,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
-- Les actions d’ajout sont regroupées en 2 boutons courts (`Période`, `Table`) avec icônes explicites (calendrier/table), positionnés ensemble sous la sélection de dates.
+- Les actions sont regroupées sous la sélection de dates en boutons courts avec icônes explicites: `Période`, `Table`, `Réinit.` (flèche loop).
 - Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l'espace du chat sans perdre la configuration active.
 - Le bandeau du panneau n’affiche plus le nom de table (déjà visible dans le champ Table) et utilise une icône flèche minimaliste pour le masquage.
 - Le sélecteur de source de données est positionné en haut du panel de dates pour un accès direct.
