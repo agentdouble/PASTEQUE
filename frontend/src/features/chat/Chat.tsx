@@ -205,6 +205,13 @@ function formatContextUsage(usage: { chars: number; limit: number } | null): { l
   return { label, overLimit: safeChars > safeLimit }
 }
 
+function shouldShowContextDisclaimer(usage: { chars: number; limit: number } | null): boolean {
+  if (!usage) return false
+  const { chars, limit } = usage
+  if (!Number.isFinite(chars) || !Number.isFinite(limit) || limit <= 0) return false
+  return chars / limit > 0.99
+}
+
 function createMessageId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
@@ -1099,6 +1106,12 @@ export default function Chat() {
   async function onSend() {
     const text = input.trim()
     if (!text || loading) return
+    if (shouldShowContextDisclaimer(ticketContextUsage)) {
+      const confirmed = window.confirm(
+        "Vous dépassez les capacités de contexte de l'IA, les réponses peuvent être imprécises.\n\nVoulez-vous continuer ?"
+      )
+      if (!confirmed) return
+    }
     setError('')
     const userMessage: Message = { id: createMessageId(), role: 'user', content: text }
     const next = [...messages, userMessage]

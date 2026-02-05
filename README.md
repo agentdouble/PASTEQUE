@@ -65,6 +65,7 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le prompt de synthèse tickets reçoit un `total_tickets` stable même quand le contexte est chunké.
 - Le backend journalise le nombre de workers actifs pour la synthèse tickets.
 - L’UI indique la charge du contexte tickets avec un pourcentage (`context_chars` / `TICKET_CONTEXT_DIRECT_MAX_CHARS`).
+- À l’envoi d’une requête, si la charge contexte dépasse 99%, une fenêtre de disclaimer avertit que les réponses peuvent être imprécises avant confirmation.
 - En mode tickets, l’UI affiche un indicateur « DeepSearch mode : … » avec variantes aléatoires à cadence lente, sans répétition de mots, et avec certaines variantes exclues au démarrage.
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
