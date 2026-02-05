@@ -172,7 +172,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
 - La catégorie et la sous-catégorie en cours sont mises en évidence avec des badges « Sélection active » dans l’aperçu pour clarifier le contexte courant.
 - Une animation courte (fade/slide) est déclenchée lors d’un changement de catégorie/sous-catégorie pour rendre la transition visuelle plus claire.
-- Les actions Explorer (sélection dans le donut, tri date, pagination, ajustement du filtre date) conservent désormais la position de scroll pour éviter les retours en haut de page.
+- Les actions Explorer (sélection dans le donut, tri date, pagination, ajustement du filtre date) gardent l’aperçu visible pendant le chargement pour éviter les flashes et les sauts visuels.
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
 - Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et le donut.
 - La navigation se fait directement via le donut (clic catégorie puis sous-catégorie).

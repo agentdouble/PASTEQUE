@@ -207,7 +207,6 @@ export default function CategoryStackedChart({
       ) : null}
       <div style={{ height }}>
         <Doughnut
-          key={isDrilled ? `sub-${focusedCategory}` : 'categories'}
           ref={chartRef}
           data={chartData}
           options={options}
