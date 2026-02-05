@@ -316,6 +316,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
  - 2025-10-21: Ajout d'un petit avertissement sous la zone de saisie: « L'IA peut faire des erreurs, FoyerInsight aussi. »
 - 2026-02-05: Le cadre visuel externe de la colonne chat (bordure/ombre/arrondi du conteneur principal) a été supprimé dans l’onglet Chat pour alléger la vue.
 - 2026-02-05: Le fond du conteneur principal du chat est passé en transparent pour reprendre exactement le background global de l’application.
+- 2026-02-05: Le numéro de discussion (`Discussion #...`) n’est plus affiché dans l’onglet Chat; l’historique utilise désormais le fallback « Conversation sans titre ».
 
 ## Maintenance
 

@@ -2198,8 +2198,7 @@ export default function Chat() {
           <div ref={listRef} className="flex-1 px-4 pb-4 pt-2 space-y-4 overflow-auto">
             {/* Mobile toolbar (Exploration uniquement) */}
             <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 px-4 pt-3 pb-2 bg-white/95 backdrop-blur border-b lg:hidden">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : ''}</div>
+              <div className="flex items-center justify-end gap-2">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -2218,12 +2217,6 @@ export default function Chat() {
                 </div>
               </div>
             </div>
-            {/* Desktop toolbar (sans boutons Historique/Chat pour éviter doublons avec le header) */}
-            {conversationId ? (
-              <div className="hidden lg:flex items-center justify-between mb-2">
-                <div className="text-xs text-primary-500">{`Discussion #${conversationId}`}</div>
-              </div>
-            ) : null}
 
             {ticketMode && (
               <>
@@ -2754,7 +2747,7 @@ export default function Chat() {
                       className="text-left text-sm text-primary-900 hover:underline"
                       onClick={() => loadConversation(item.id)}
                     >
-                      <div className="font-medium truncate max-w-[42ch]">{item.title || `Discussion #${item.id}`}</div>
+                      <div className="font-medium truncate max-w-[42ch]">{item.title || 'Conversation sans titre'}</div>
                       <div className="text-xs text-primary-500">{new Date(item.updated_at).toLocaleString()}</div>
                     </button>
                     <button
