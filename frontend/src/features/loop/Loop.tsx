@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react'
 import { Card, Button, Loader } from '@/components/ui'
 import { apiFetch } from '@/services/api'
 import type { LoopKind, LoopOverview, LoopSummary, LoopTableOverview } from '@/types/loop'
-import { HiArrowPath } from 'react-icons/hi2'
 import { marked, Renderer } from 'marked'
 
 const escapeHtml = (text: string) =>
@@ -67,13 +66,12 @@ export default function Loop() {
   const [overview, setOverview] = useState<LoopOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [refreshing, setRefreshing] = useState(false)
   const [selectedMode, setSelectedMode] = useState<LoopKind>('daily')
   const [selectedTable, setSelectedTable] = useState('')
 
   const fetchOverview = useCallback(async () => {
     setError('')
-    setRefreshing(true)
+    setLoading(true)
     try {
       const data = await apiFetch<LoopOverview>('/loop/overview')
       setOverview(data ?? null)
@@ -81,7 +79,6 @@ export default function Loop() {
       setError(err instanceof Error ? err.message : 'Chargement impossible')
     } finally {
       setLoading(false)
-      setRefreshing(false)
     }
   }, [])
 
@@ -110,22 +107,8 @@ export default function Loop() {
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-primary-950">Radar</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={fetchOverview}
-            disabled={refreshing}
-            className="inline-flex items-center gap-2"
-          >
-            <HiArrowPath className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-primary-950">Radar</h2>
       </div>
 
       {loading ? (

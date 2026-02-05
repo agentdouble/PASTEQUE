@@ -188,7 +188,7 @@ Le garde‑fou bloquant du routeur a été supprimé du flux chat: les messages 
 - Script Airflow: `airflow/dags/trigger_radar.sh` déclenche la regen via `POST /api/v1/loop/regenerate` avec auth admin. Le script charge `airflow/dags/.env` (exemple: `airflow/dags/.env.example`) avec `RADAR_API_BASE_URL`, `RADAR_ADMIN_USERNAME`, `RADAR_ADMIN_PASSWORD`, option `RADAR_TABLE_NAME`, `RADAR_TIMEOUT_S`.
 - L’agent suit `LLM_MODE` (local vLLM ou API OpenAI‑compatible) et peut être borné via `AGENT_MAX_REQUESTS` (clé `looper`). Les garde‑fous de contexte sont décrits dans `backend/README.md` (`LOOP_MAX_TICKETS`, `LOOP_TICKET_TEXT_MAX_CHARS`, `LOOP_MAX_DAYS/WEEKS/MONTHS` par défaut à 1, `LOOP_MAX_TOKENS`, `LOOP_MAX_TICKETS_PER_CALL`, `LOOP_MAX_INPUT_CHARS`, etc.). Si une synthèse est tronquée, augmenter `LOOP_MAX_TOKENS` (et si besoin `LLM_MAX_TOKENS`).
 - En cas d’erreur LLM lors d’une régénération, l’API renvoie un `502` avec un `request_id` si disponible pour faciliter le diagnostic.
-- UI Radar: page épurée avec sélection du mode (journalier/hebdo/mensuel) et de la table.
+- UI Radar: page épurée avec sélection du mode (journalier/hebdo/mensuel) et de la table, chargement automatique au rendu (sans bouton d’actualisation manuel).
 
 ## Principes d’architecture
 
@@ -327,6 +327,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le libellé “Navigation” est supprimé du bandeau latéral pour alléger l’en-tête de menu.
 - 2026-02-05: La largeur du bandeau latéral est réduite (ouvert/replié) pour une empreinte visuelle plus légère.
 - 2026-02-05: Le bandeau latéral est plus compact verticalement en mode ouvert (espacements réduits) et masque désormais le logo en mode replié.
+- 2026-02-05: La page `/radar` n’affiche plus de bouton « Actualiser »; les données se chargent automatiquement à l’ouverture.
 
 ## Maintenance
 
