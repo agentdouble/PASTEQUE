@@ -2297,7 +2297,7 @@ export default function Chat() {
                     ) : null}
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex flex-col gap-2 w-full">
-                        {ticketRanges.map((range, idx) => (
+                        {ticketRanges.map(range => (
                           <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
                             <DateRangeSlider
                               minDate={ticketMeta?.min}
@@ -2319,16 +2319,6 @@ export default function Chat() {
                                   Supprimer
                                 </button>
                               )}
-                              {idx === ticketRanges.length - 1 && (
-                                <button
-                                  type="button"
-                                  className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
-                                  onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
-                                >
-                                  <HiCalendarDays className="h-3.5 w-3.5" />
-                                  Ajouter une période
-                                </button>
-                              )}
                             </div>
                           </div>
                         ))}
@@ -2347,6 +2337,27 @@ export default function Chat() {
                         >
                           Réinitialiser
                         </button>
+                        <div className="flex flex-wrap items-center gap-2 self-start">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
+                            onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
+                          >
+                            <HiCalendarDays className="h-3.5 w-3.5" />
+                            Période
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
+                            onClick={() => setExtraTicketSources(prev => [...prev, {
+                              id: createMessageId(),
+                              ranges: ticketRanges.map(r => ({ id: createMessageId(), from: r.from, to: r.to }))
+                            }])}
+                          >
+                            <HiTableCells className="h-3.5 w-3.5" />
+                            Table
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -2440,7 +2451,7 @@ export default function Chat() {
                                   }
                                 >
                                   <HiCalendarDays className="h-3.5 w-3.5" />
-                                  Ajouter une période
+                                  Période
                                 </button>
                               )}
                             </div>
@@ -2471,17 +2482,6 @@ export default function Chat() {
                   )
                 })}
 
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors self-start"
-                      onClick={() => setExtraTicketSources(prev => [...prev, {
-                        id: createMessageId(),
-                        ranges: ticketRanges.map(r => ({ id: createMessageId(), from: r.from, to: r.to }))
-                      }])}
-                    >
-                      <HiTableCells className="h-3.5 w-3.5" />
-                      Ajouter une table
-                    </button>
                   </div>
                 ) : (
                   <div className="mb-3 border rounded-2xl bg-primary-50 px-3 py-2 flex items-center justify-between text-xs text-primary-700">
