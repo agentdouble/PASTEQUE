@@ -89,9 +89,14 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white">
+    <div
+      className={clsx(
+        'bg-gradient-to-br from-primary-50 to-white',
+        isChatRoute ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'
+      )}
+    >
       <aside
-        className="fixed left-0 top-0 z-50 h-screen border-r-2 border-primary-100 bg-white/90 backdrop-blur-sm transition-[width] duration-200"
+        className="fixed left-0 top-0 z-50 h-[100dvh] border-r-2 border-primary-100 bg-white/90 backdrop-blur-sm transition-[width] duration-200"
         style={{ width: sidebarWidthPx }}
       >
         <div className="flex h-full flex-col gap-3 p-3">
@@ -164,8 +169,8 @@ export default function Layout() {
 
       <main
         className={clsx(
-          'px-3 md:px-4 transition-[margin-left] duration-200',
-          isChatRoute ? 'h-screen overflow-hidden pt-3 pb-0' : 'py-4'
+          'box-border px-3 md:px-4 transition-[margin-left] duration-200',
+          isChatRoute ? 'h-[100dvh] overflow-hidden py-0' : 'py-4'
         )}
         style={{ marginLeft: sidebarWidthPx }}
       >
