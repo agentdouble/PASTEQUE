@@ -3031,7 +3031,7 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
                   aria-label={`${isSelected ? 'Désélectionner' : 'Sélectionner'} le ticket ${rowLabel}`}
                   title={`${isSelected ? 'Désélectionner' : 'Sélectionner'} ce ticket`}
                   className={clsx(
-                    'mt-0.5 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition-colors',
+                    'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-1',
                     isSelected
                       ? 'border-primary-700 bg-primary-700 text-white'
@@ -3049,7 +3049,6 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
                   >
                     {isSelected ? '✓' : '+'}
                   </span>
-                  <span>{isSelected ? 'Sélectionné' : 'Sélectionner'}</span>
                 </button>
               )}
               <div className="flex-1 min-w-0">
