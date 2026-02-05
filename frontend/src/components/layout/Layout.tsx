@@ -3,7 +3,6 @@ import { Button } from '@/components/ui'
 import { clearAuth, getAuth } from '@/services/auth'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-// Navigation secondaire supprimée: boutons déplacés dans le header
 import { useCallback } from 'react'
 import clsx from 'clsx'
 
@@ -11,6 +10,7 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [auth, setAuth] = useState(() => getAuth())
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const canViewGraph = Boolean(auth?.isAdmin || auth?.canViewGraph)
 
   useEffect(() => {
@@ -33,22 +33,25 @@ export default function Layout() {
 
   const isChatRoute = location.pathname === '/chat'
   const historyOpen = isChatRoute && new URLSearchParams(location.search).get('history') === '1'
-  const navItems: Array<{ key: string; label: string; onClick: () => void; active: boolean }> = [
+  const navItems: Array<{ key: string; label: string; shortLabel: string; onClick: () => void; active: boolean }> = [
     {
       key: 'chat',
       label: 'Chat',
+      shortLabel: 'C',
       onClick: () => navigate('/chat?new=1', { replace: true }),
       active: isChatRoute && !historyOpen,
     },
     {
       key: 'explorer',
       label: 'Explorer',
+      shortLabel: 'E',
       onClick: goTo('/ia'),
       active: location.pathname === '/ia',
     },
     {
       key: 'radar',
       label: 'Radar',
+      shortLabel: 'R',
       onClick: goTo('/radar'),
       active: location.pathname === '/radar',
     },
@@ -57,6 +60,7 @@ export default function Layout() {
     navItems.push({
       key: 'graph',
       label: 'Graph',
+      shortLabel: 'G',
       onClick: goTo('/dashboard'),
       active: location.pathname === '/dashboard',
     })
@@ -64,6 +68,7 @@ export default function Layout() {
   navItems.push({
     key: 'history',
     label: 'Historique',
+    shortLabel: 'H',
     onClick: () => navigate('/chat?history=1', { replace: true }),
     active: isChatRoute && historyOpen,
   })
@@ -71,10 +76,12 @@ export default function Layout() {
     navItems.push({
       key: 'admin',
       label: 'Admin',
+      shortLabel: 'A',
       onClick: goTo('/admin'),
       active: location.pathname === '/admin',
     })
   }
+  const sidebarWidthPx = sidebarCollapsed ? 84 : 272
 
   if (!auth) {
     navigate('/login')
@@ -83,29 +90,39 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white">
-      <header className="border-b-2 border-primary-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="mx-auto max-w-screen-2xl px-3 md:px-4 py-3 space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex items-center gap-3">
+      <aside
+        className="fixed left-0 top-0 z-50 h-screen border-r-2 border-primary-100 bg-white/90 backdrop-blur-sm transition-[width] duration-200"
+        style={{ width: sidebarWidthPx }}
+      >
+        <div className="flex h-full flex-col gap-3 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex items-center gap-2">
               <img
                 src={`${import.meta.env.BASE_URL}insight.svg`}
                 alt="Logo FoyerInsight"
-                className="h-8 w-8"
+                className="h-8 w-8 shrink-0"
               />
-              <h1 className="text-xl md:text-2xl font-bold text-primary-950 tracking-tight truncate">
-                FoyerInsight
-              </h1>
-              <div className="hidden md:block h-6 w-px bg-primary-200" />
-              <p className="hidden md:block text-sm text-primary-600">De la donnée à l'action</p>
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <h1 className="truncate text-lg font-bold text-primary-950 tracking-tight">FoyerInsight</h1>
+                  <p className="truncate text-xs text-primary-600">De la donnée à l'action</p>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button variant="ghost" onClick={handleLogout} size="sm" className="!rounded-xl border border-primary-200 bg-white/70 hover:bg-white">
-                Déconnexion
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(prev => !prev)}
+              className="!rounded-lg !p-0 h-8 w-8 shrink-0 border border-primary-200 bg-white/70 hover:bg-white"
+              aria-label={sidebarCollapsed ? 'Déplier le bandeau' : 'Replier le bandeau'}
+              title={sidebarCollapsed ? 'Déplier' : 'Replier'}
+            >
+              {sidebarCollapsed ? '>>' : '<<'}
+            </Button>
           </div>
-          <nav className="flex" aria-label="Navigation principale">
-            <div className="inline-flex w-full sm:w-72 flex-col gap-1 rounded-2xl border border-primary-200 bg-white/90 p-1">
+          <nav className="flex-1 overflow-y-auto" aria-label="Navigation principale">
+            <div className="flex flex-col gap-1 rounded-2xl border border-primary-200 bg-white/90 p-1">
               {navItems.map(item => (
                 <Button
                   key={item.key}
@@ -114,23 +131,44 @@ export default function Layout() {
                   size="sm"
                   onClick={item.onClick}
                   className={clsx(
-                    '!rounded-xl w-full justify-start whitespace-nowrap',
+                    '!rounded-xl w-full whitespace-nowrap',
+                    sidebarCollapsed ? 'justify-center !px-0' : 'justify-start',
                     item.active
                       ? 'shadow-sm'
                       : 'text-primary-700 hover:text-primary-900 hover:bg-primary-100'
                   )}
                   aria-current={item.active ? 'page' : undefined}
+                  title={item.label}
                 >
-                  {item.label}
+                  {sidebarCollapsed ? item.shortLabel : item.label}
                 </Button>
               ))}
             </div>
           </nav>
+          <div className="pt-1 border-t border-primary-100">
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              size="sm"
+              className={clsx(
+                '!rounded-xl w-full border border-primary-200 bg-white/70 hover:bg-white',
+                sidebarCollapsed ? 'justify-center !px-0' : 'justify-start'
+              )}
+              title="Déconnexion"
+            >
+              {sidebarCollapsed ? 'Out' : 'Déconnexion'}
+            </Button>
+          </div>
         </div>
-      </header>
+      </aside>
 
-      <main className="mx-auto max-w-screen-2xl px-3 md:px-4 py-4">
-        <Outlet />
+      <main
+        className="px-3 md:px-4 py-4 transition-[margin-left] duration-200"
+        style={{ marginLeft: sidebarWidthPx }}
+      >
+        <div className="mx-auto max-w-screen-2xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
