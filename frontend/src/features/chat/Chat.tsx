@@ -23,7 +23,7 @@ import type {
   FeedbackValue
 } from '@/types/chat'
 import type { TableExplorePreview } from '@/types/data'
-import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip, HiCheck, HiPlus, HiChevronUp } from 'react-icons/hi2'
+import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip, HiCheck, HiPlus, HiChevronUp, HiCalendarDays, HiTableCells } from 'react-icons/hi2'
 import clsx from 'clsx'
 import { renderMarkdown } from '@/utils/markdown'
 
@@ -2322,10 +2322,11 @@ export default function Chat() {
                               {idx === ticketRanges.length - 1 && (
                                 <button
                                   type="button"
-                                  className="text-xs text-primary-700 underline"
+                                  className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
                                   onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
                                 >
-                                  + Ajouter une période
+                                  <HiCalendarDays className="h-3.5 w-3.5" />
+                                  Ajouter une période
                                 </button>
                               )}
                             </div>
@@ -2427,7 +2428,7 @@ export default function Chat() {
                               {idx === (source.ranges?.length || 1) - 1 && (
                                 <button
                                   type="button"
-                                  className="text-xs text-primary-700 underline"
+                                  className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
                                   onClick={() =>
                                     setExtraTicketSources(prev =>
                                       prev.map(s =>
@@ -2438,7 +2439,8 @@ export default function Chat() {
                                     )
                                   }
                                 >
-                                  + Ajouter une période
+                                  <HiCalendarDays className="h-3.5 w-3.5" />
+                                  Ajouter une période
                                 </button>
                               )}
                             </div>
@@ -2471,13 +2473,14 @@ export default function Chat() {
 
                     <button
                       type="button"
-                      className="text-xs text-primary-700 underline self-start"
+                      className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors self-start"
                       onClick={() => setExtraTicketSources(prev => [...prev, {
                         id: createMessageId(),
                         ranges: ticketRanges.map(r => ({ id: createMessageId(), from: r.from, to: r.to }))
                       }])}
                     >
-                      + Ajouter une table
+                      <HiTableCells className="h-3.5 w-3.5" />
+                      Ajouter une table
                     </button>
                   </div>
                 ) : (
