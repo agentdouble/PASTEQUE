@@ -334,6 +334,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le bloc de filtres `/radar` est réorganisé en pile intégrée: sélection de table en haut, puis segmented control du mode centré juste en dessous.
 - 2026-02-05: Le bloc de filtres `/radar` n’est plus encadré par une carte externe (cadre/ombre retirés) pour un rendu plus léger.
 - 2026-02-05: La zone d’output `/radar` n’utilise plus de cartes imbriquées; le double cadre visuel autour de la synthèse a été supprimé.
+- 2026-02-05: Le titre de page « Radar » est retiré de `/radar` pour alléger l’en-tête (la navigation active sert déjà de repère).
 
 ## Maintenance
 

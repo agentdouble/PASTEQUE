@@ -105,10 +105,6 @@ export default function Loop() {
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-primary-950">Radar</h2>
-      </div>
-
       {loading ? (
         <Card variant="elevated" className="py-12 flex justify-center">
           <Loader text="Chargement…" />
