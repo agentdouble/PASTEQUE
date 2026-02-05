@@ -72,7 +72,8 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
 - Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l'espace du chat sans perdre la configuration active.
 - Le bandeau du panneau n’affiche plus le nom de table (déjà visible dans le champ Table) et utilise une icône flèche minimaliste pour le masquage.
-- Le bandeau du panneau affiche le nombre de tickets sélectionnés; sans sélection manuelle, il affiche le volume auto‑sélectionné par les plages de dates avec la période.
+- Le bandeau du panneau affiche toujours le nombre de tickets sélectionnés en haut à droite (sélection manuelle ou auto).
+- Sans sélection manuelle, le libellé auto n’affiche plus la période (ex: `552 tickets sélectionnés`).
 - Le compteur de sélection n’est plus dupliqué dans le panel de tickets: le nombre reste affiché uniquement dans le bandeau supérieur.
 - La période sélectionnée n’est plus répétée dans la liste de tickets à gauche (elle reste visible dans le sélecteur de dates et le bandeau supérieur).
 - La zone d’action « Tout effacer » conserve une hauteur stable pour éviter les sauts visuels du panel lors des sélections.

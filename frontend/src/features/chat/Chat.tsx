@@ -1950,27 +1950,12 @@ export default function Chat() {
     return hasCount ? total : null
   }, [ticketMode, ticketPreviewItems])
 
-  const autoSelectedPeriodLabel = useMemo(() => {
-    if (!ticketMode) return ''
-    const labels = Array.from(
-      new Set(
-        ticketPreviewItems
-          .map(item => (typeof item.period_label === 'string' ? item.period_label.trim() : ''))
-          .filter(label => label.length > 0)
-      )
-    )
-    if (labels.length === 0) return ''
-    return labels.join(' ; ')
-  }, [ticketMode, ticketPreviewItems])
-
   const autoSelectedTicketsLabel = useMemo(() => {
     if (autoSelectedTicketsCount == null) return ''
-    const base = autoSelectedTicketsCount === 1
+    return autoSelectedTicketsCount === 1
       ? '1 ticket sélectionné'
       : `${autoSelectedTicketsCount} tickets sélectionnés`
-    if (!autoSelectedPeriodLabel) return base
-    return `${base} (${autoSelectedPeriodLabel})`
-  }, [autoSelectedTicketsCount, autoSelectedPeriodLabel])
+  }, [autoSelectedTicketsCount])
 
   const panelTitle = panelItems.length === 1 && panelItems[0].spec?.entity_label
     ? panelItems[0].spec!.entity_label
@@ -2022,6 +2007,13 @@ export default function Chat() {
 
   const activeSelectionCount = activeSelection?.values.length ?? 0
 
+  const manualSelectedTicketsLabel = useMemo(() => {
+    if (activeSelectionCount <= 0) return ''
+    return activeSelectionCount === 1
+      ? '1 ticket sélectionné'
+      : `${activeSelectionCount} tickets sélectionnés`
+  }, [activeSelectionCount])
+
   const previewUsage = useMemo(() => {
     const items = ticketPreviewItems.filter(item => typeof item.context_chars === 'number')
     if (items.length === 0) return null
@@ -2049,10 +2041,11 @@ export default function Chat() {
   const contextUsageLabel = useMemo(() => formatContextUsage(ticketContextUsage), [ticketContextUsage])
   const ticketSummaryLabel = useMemo(() => {
     if (ticketMetaError) return ticketMetaError
+    if (manualSelectedTicketsLabel) return manualSelectedTicketsLabel
+    if (autoSelectedTicketsLabel) return autoSelectedTicketsLabel
     if (ticketStatus) return ticketStatus
-    if (activeSelectionCount > 0) return ''
-    return autoSelectedTicketsLabel
-  }, [ticketMetaError, ticketStatus, activeSelectionCount, autoSelectedTicketsLabel])
+    return ''
+  }, [ticketMetaError, manualSelectedTicketsLabel, autoSelectedTicketsLabel, ticketStatus])
 
   function formatPeriodLabel(item: TicketPanelItem | null): string | null {
     if (!item) return null
@@ -2232,22 +2225,6 @@ export default function Chat() {
                         </button>
                       </div>
                     </div>
-                    {activeSelectionCount > 0 && activePanelItem && (
-                      <div className="flex items-center justify-between text-[11px] text-primary-600">
-                        <span>
-                          {activeSelectionCount === 1
-                            ? '1 ticket sélectionné'
-                            : `${activeSelectionCount} tickets sélectionnés`}
-                        </span>
-                        <button
-                          type="button"
-                          className="text-primary-700 underline"
-                          onClick={() => clearTicketSelection(activePanelItem.key)}
-                        >
-                          Effacer
-                        </button>
-                      </div>
-                    )}
                     {explorerTicketLoading ? (
                       <div className="text-[11px] text-primary-500">
                         Chargement des tickets Explorer…
@@ -2487,11 +2464,6 @@ export default function Chat() {
                           )}
                         >
                           {contextUsageLabel.label}
-                        </span>
-                      )}
-                      {activeSelectionCount > 0 && (
-                        <span className="text-[11px] text-primary-600">
-                          {activeSelectionCount === 1 ? '1 sélectionné' : `${activeSelectionCount} sélectionnés`}
                         </span>
                       )}
                     </div>
