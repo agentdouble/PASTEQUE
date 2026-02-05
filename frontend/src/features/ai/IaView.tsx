@@ -430,10 +430,6 @@ export default function IaView() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-bold text-primary-950">Catégorisation automatique par IA</h2>
-      </div>
-
       {loading ? (
         <Card variant="elevated" className="py-12 flex justify-center">
           <Loader text="Chargement des répartitions Category / Sub Category…" />
@@ -545,9 +541,6 @@ function SourceCategoryCard({
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-primary-950">{source.title}</h3>
-          {selectionForCard ? (
-            <p className="text-[11px] font-semibold text-primary-700">Table sélectionnée</p>
-          ) : null}
           <p className="text-xs text-primary-500">
             {source.total_rows.toLocaleString('fr-FR')} lignes ·{' '}
             {categoryNodes.length.toLocaleString('fr-FR')} catégories
@@ -559,6 +552,7 @@ function SourceCategoryCard({
         breakdown={source.category_breakdown ?? []}
         onSelect={handleChartSelect}
         selectedCategory={selectionForCard?.category ?? null}
+        selectedSubCategory={selectionForCard?.subCategory ?? null}
         actionSlot={
           selectionForCard ? (
             <Button

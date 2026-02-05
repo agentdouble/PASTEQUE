@@ -159,20 +159,19 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 ### Explorer (navigation Category/Sub Category)
 
 - Onglet « Explorer » dans le header pour explorer les données par paires `Category` / `Sub Category` quand ces colonnes existent.
-- Le bandeau principal de l’onglet affiche désormais « Catégorisation automatique par IA » (logo et snapshot retirés).
 - Le filtre date global est intégré directement au bloc de visualisation (en tête de la première carte source) pour éviter les cartes imbriquées.
 - Les colonnes Date / Category / Sub Category sont configurables par l’admin via l’onglet Admin → Explorer et persistées via `/api/v1/data/overview/{source}/column-roles`.
 - Chaque source affichant ces colonnes est listée avec ses catégories et sous-catégories cliquables : un clic déclenche un aperçu (`/api/v1/data/explore/{source}`) limité à 25 lignes, avec le volume total de lignes correspondantes.
 - Si une source ne possède pas les deux colonnes, la vue l’ignore et affiche un message explicite plutôt que de masquer l’erreur.
 - Les aperçus sont paginés (25 lignes/page) avec navigation précédente/suivante et un tri `date` (desc/asc) directement depuis l’en-tête de la colonne date dans la table.
-- Depuis l’aperçu, un bouton « Discuter dans le chat » ouvre le chat en mode tickets avec la sélection Category/Sub Category préchargée (capée à 500 tickets, compteur affiché).
+- Le bouton « Discuter avec ces données » (placé en haut du bloc donut) ouvre le chat en mode tickets avec la sélection Category/Sub Category préchargée (capée à 500 tickets, compteur affiché).
 - Le panneau tickets du chat se cale sur la sélection Explorer, même si d’autres tables sont ouvertes (onglets séparés).
 - Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage est appliquée automatiquement (sans bouton « Appliquer ») côté backend (`/data/overview` + `/data/explore`) et la réinitialisation passe par un bouton icône flèche.
 - Le donut Category/Sub Category n’est plus encapsulé dans une carte interne: le rendu est homogénéisé (pas de « carré dans carré »).
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
 - Les actions `Discuter avec ces données` et `Retour catégories` sont regroupées en haut du bloc donut pour une meilleure visibilité.
 - La catégorie et la sous-catégorie en cours sont mises en évidence avec des badges « Sélection active » dans l’aperçu pour clarifier le contexte courant.
-- Le nom de table n’est affiché qu’une seule fois dans la carte sélectionnée pour éviter les répétitions visuelles.
+- Le nom de table est affiché une seule fois par carte pour éviter les répétitions visuelles.
 - Une animation courte (fade/slide) est déclenchée lors d’un changement de catégorie/sous-catégorie pour rendre la transition visuelle plus claire.
 - Les actions Explorer (sélection dans le donut, tri date, pagination, ajustement du filtre date) gardent l’aperçu visible pendant le chargement pour éviter les flashes et les sauts visuels.
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
