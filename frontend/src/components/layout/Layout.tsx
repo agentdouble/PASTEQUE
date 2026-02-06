@@ -51,9 +51,9 @@ export default function Layout() {
   const historyOpen = isChatRoute && new URLSearchParams(location.search).get('history') === '1'
   const navItems: Array<{ key: string; label: string; shortLabel: string; onClick: () => void; active: boolean }> = [
     {
-      key: 'chat',
-      label: 'Chat',
-      shortLabel: 'C',
+      key: 'new_chat',
+      label: 'Nouveau chat',
+      shortLabel: 'N',
       onClick: () => navigate('/chat?new=1', { replace: true }),
       active: isChatRoute && !historyOpen,
     },
