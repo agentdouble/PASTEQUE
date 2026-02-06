@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Card, Button, Loader } from '@/components/ui'
+import { Card, Loader } from '@/components/ui'
 import { apiFetch } from '@/services/api'
 import type { LoopKind, LoopOverview, LoopSummary, LoopTableOverview } from '@/types/loop'
-import { HiArrowPath } from 'react-icons/hi2'
 import { marked, Renderer } from 'marked'
 
 const escapeHtml = (text: string) =>
@@ -35,18 +34,17 @@ function renderMarkdown(content: string) {
   )
 }
 
-const modeOptions: Array<{ key: LoopKind; label: string; title: string }> = [
-  { key: 'daily', label: 'Journalier', title: 'Flash du jour' },
-  { key: 'weekly', label: 'Hebdomadaire', title: 'Focus de la semaine' },
-  { key: 'monthly', label: 'Mensuel', title: 'Panorama du mois' },
+const modeOptions: Array<{ key: LoopKind; label: string }> = [
+  { key: 'daily', label: 'Journalier' },
+  { key: 'weekly', label: 'Hebdomadaire' },
+  { key: 'monthly', label: 'Mensuel' },
 ]
 
-function SummaryList({ title, summary }: { title: string; summary?: LoopSummary }) {
+function SummaryList({ summary }: { summary?: LoopSummary }) {
   const emptyText = 'Aucune synthèse disponible.'
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-base font-semibold text-primary-900">{title}</h3>
+    <div>
       {summary ? (
         <Card
           variant="elevated"
@@ -67,13 +65,12 @@ export default function Loop() {
   const [overview, setOverview] = useState<LoopOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [refreshing, setRefreshing] = useState(false)
   const [selectedMode, setSelectedMode] = useState<LoopKind>('daily')
   const [selectedTable, setSelectedTable] = useState('')
 
   const fetchOverview = useCallback(async () => {
     setError('')
-    setRefreshing(true)
+    setLoading(true)
     try {
       const data = await apiFetch<LoopOverview>('/loop/overview')
       setOverview(data ?? null)
@@ -81,7 +78,6 @@ export default function Loop() {
       setError(err instanceof Error ? err.message : 'Chargement impossible')
     } finally {
       setLoading(false)
-      setRefreshing(false)
     }
   }, [])
 
@@ -99,7 +95,6 @@ export default function Loop() {
 
   const items = overview?.items ?? []
   const selectedItem = items.find(item => item.config.table_name === selectedTable)
-  const selectedModeMeta = modeOptions.find(option => option.key === selectedMode)
   const selectedSummary = selectedItem
     ? selectedMode === 'daily'
       ? selectedItem.daily?.[0]
@@ -110,30 +105,12 @@ export default function Loop() {
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-primary-950">Radar</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={fetchOverview}
-            disabled={refreshing}
-            className="inline-flex items-center gap-2"
-          >
-            <HiArrowPath className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-        </div>
-      </div>
-
       {loading ? (
         <Card variant="elevated" className="py-12 flex justify-center">
           <Loader text="Chargement…" />
         </Card>
       ) : error ? (
-        <Card variant="elevated" className="py-6 px-4 border border-red-200 bg-red-50 text-red-700">
+        <Card variant="elevated" className="py-6 px-4 border border-danger-light bg-danger-lighter text-danger-darker">
           <p className="text-sm">{error}</p>
         </Card>
       ) : (
@@ -146,15 +123,15 @@ export default function Loop() {
             </Card>
           ) : (
             <div className="space-y-6">
-              <Card variant="elevated" className="p-5 space-y-4">
-                <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-                  <div className="flex-1 space-y-1">
+              <div className="px-1">
+                <div className="mx-auto w-full max-w-4xl space-y-5">
+                  <div className="space-y-1">
                     <label htmlFor="radar-table" className="text-xs uppercase tracking-wide text-primary-500">
                       Table
                     </label>
                     <select
                       id="radar-table"
-                      className="w-full rounded-md border border-primary-200 px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
+                      className="w-full rounded-md border border-primary-200 bg-white px-3 py-2 text-primary-900 focus:border-primary-400 focus:outline-none"
                       value={selectedTable}
                       onChange={(event) => setSelectedTable(event.target.value)}
                     >
@@ -165,35 +142,36 @@ export default function Loop() {
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wide text-primary-500">Mode</p>
-                    <div className="flex flex-wrap gap-2">
-                      {modeOptions.map(option => (
-                        <Button
-                          key={option.key}
-                          variant={selectedMode === option.key ? 'primary' : 'secondary'}
-                          size="sm"
-                          onClick={() => setSelectedMode(option.key)}
-                        >
-                          {option.label}
-                        </Button>
-                      ))}
+                  <div className="space-y-2">
+                    <p className="text-center text-xs uppercase tracking-wide text-primary-500">Mode</p>
+                    <div className="mx-auto grid w-full max-w-xl grid-cols-3 gap-1 rounded-lg border border-primary-200 bg-primary-50/70 p-1 shadow-sm">
+                      {modeOptions.map(option => {
+                        const isActive = selectedMode === option.key
+                        return (
+                          <button
+                            key={option.key}
+                            type="button"
+                            onClick={() => setSelectedMode(option.key)}
+                            aria-pressed={isActive}
+                            className={
+                              `rounded-md px-3 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
+                                isActive
+                                  ? 'bg-primary-900 text-white shadow-sm'
+                                  : 'text-primary-700 hover:bg-white hover:text-primary-900'
+                              }`
+                            }
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
-              </Card>
+              </div>
 
               {selectedItem ? (
-                <Card variant="elevated" className="p-5 space-y-4">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-xs uppercase tracking-wide text-primary-500">Table sélectionnée</p>
-                    <h3 className="text-xl font-semibold text-primary-950">{selectedItem.config.table_name}</h3>
-                  </div>
-                  <SummaryList
-                    title={selectedModeMeta?.title ?? 'Synthèse'}
-                    summary={selectedSummary}
-                  />
-                </Card>
+                <SummaryList summary={selectedSummary} />
               ) : (
                 <Card variant="elevated" className="p-6">
                   <p className="text-primary-700 text-sm">

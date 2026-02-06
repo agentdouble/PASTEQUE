@@ -21,7 +21,6 @@ from ....core.prompts import get_prompt_store
 from ....models.user import User
 from ....services.chat_service import ChatService
 from ....services.animator_agent import AnimatorAgent
-from ....services.router_service import RouterService, RouterDecision
 from ....engines.openai_engine import OpenAIChatEngine
 from ....integrations.openai_client import OpenAICompatibleClient, OpenAIBackendError
 from ....repositories.user_table_permission_repository import UserTablePermissionRepository
@@ -215,35 +214,8 @@ def chat_completion(  # type: ignore[valid-type]
     msgs = list(payload.messages or [])
     payload.messages = _ensure_markdown_prompt(msgs)
 
-    # Router gate on every user message (avoid useless SQL/NL2SQL work)
     last = payload.messages[-1] if payload.messages else None
     if last and last.role == "user":
-        try:
-            decision = _router_decision_or_none(last.content)
-        except OpenAIBackendError as exc:
-            log.error("Router backend error: %s", exc)
-            raise HTTPException(status_code=502, detail=str(exc))
-        if decision is not None:
-            log.info(
-                "Router decision: allow=%s route=%s conf=%.2f reason=%s",
-                decision.allow,
-                decision.route,
-                decision.confidence,
-                decision.reason,
-            )
-            if not decision.allow:
-                text = "Ce n'est pas une question pour passer de la data à l'action"
-                try:
-                    with transactional(session):
-                        assistant_msg = repo.append_message(conversation_id=conv_id, role="assistant", content=text)
-                except SQLAlchemyError:
-                    log.warning("Failed to persist router reply (conversation_id=%s)", conv_id, exc_info=True)
-                meta_out = {"provider": "router", "route": decision.route, "confidence": decision.confidence}
-                if conv_id:
-                    meta_out["conversation_id"] = conv_id
-                if assistant_msg:
-                    meta_out["message_id"] = assistant_msg.id
-                return ChatResponse(reply=text, metadata=meta_out)
         try:
             resp = service.completion(payload, allowed_tables=allowed_tables)
             # Persist assistant reply
@@ -272,22 +244,6 @@ def chat_completion(  # type: ignore[valid-type]
 
 def _sse(event: str, data: dict) -> bytes:
     return f"event: {event}\n".encode("utf-8") + f"data: {json.dumps(data, ensure_ascii=False)}\n\n".encode("utf-8")
-
-
-def _router_decision_or_none(text: str) -> RouterDecision | None:
-    """Return RouterDecision or None when router is disabled or bypassed.
-
-    - Disabled when ROUTER_MODE=false
-    - Bypassed for messages starting with '/sql ' (case-insensitive)
-    - Caps input to 10k chars to avoid pathological regex workloads
-    """
-    mode = (settings.router_mode or "rule").strip().lower()
-    if mode == "false":
-        return None
-    t = (text or "")[:10000]
-    if t.strip().casefold().startswith("/sql "):
-        return None
-    return RouterService().decide(t)
 
 
 @router.post("/stream")
@@ -479,55 +435,7 @@ def chat_stream(  # type: ignore[valid-type]
                     log.warning("Failed to persist ticket event kind=%s for conversation_id=%s", kind, conversation_id, exc_info=True)
                 yield _sse(kind, data)
         try:
-            # Router gate on every user message before any SQL activity
             last = payload.messages[-1] if payload.messages else None
-            if last and last.role == "user":
-                try:
-                    decision = _router_decision_or_none(last.content)
-                except AgentBudgetExceeded as exc:
-                    yield _sse("error", {"code": "agent_budget_exceeded", "message": str(exc)})
-                    return
-                except OpenAIBackendError as exc:
-                    log.error("Router backend error: %s", exc)
-                    yield _sse("error", {"code": "router_backend_error", "message": str(exc)})
-                    return
-                if decision is not None:
-                    log.info(
-                        "Router decision: allow=%s route=%s conf=%.2f reason=%s",
-                        decision.allow,
-                        decision.route,
-                        decision.confidence,
-                        decision.reason,
-                    )
-                    if not decision.allow:
-                        prov = "router"
-                        yield _sse("meta", {"request_id": trace_id, "provider": prov, "model": "rule", "conversation_id": conversation_id, "route": decision.route, "confidence": decision.confidence})
-                        text = "Ce n'est pas une question pour passer de la data à l'action"
-                        for line in text.splitlines(True):
-                            if not line:
-                                continue
-                            seq += 1
-                            yield _sse("delta", {"seq": seq, "content": line})
-                        elapsed = max(time.perf_counter() - started, 1e-6)
-                        try:
-                            with transactional(session):
-                                msg_obj = repo.append_message(conversation_id=conversation_id, role="assistant", content=text)
-                                assistant_msg_id = msg_obj.id
-                        except SQLAlchemyError:
-                            log.warning("Failed to persist router reply (conversation_id=%s)", conversation_id, exc_info=True)
-                        yield _sse(
-                            "done",
-                            {
-                                "id": trace_id,
-                                "content_full": text,
-                                "usage": None,
-                                "finish_reason": "stop",
-                                "elapsed_s": round(elapsed, 3),
-                                "message_id": assistant_msg_id,
-                                "conversation_id": conversation_id,
-                            },
-                        )
-                        return
 
             # 1) MindsDB passthrough (/sql ...) or NL→SQL mode
             if last and last.role == "user" and last.content.strip().casefold().startswith("/sql "):

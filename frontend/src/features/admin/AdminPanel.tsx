@@ -1057,18 +1057,18 @@ export default function AdminPanel() {
         <div
           className={`flex items-start gap-3 p-4 rounded-lg border-2 animate-fade-in ${
             status.type === 'success'
-              ? 'bg-green-50 border-green-200'
-              : 'bg-red-50 border-red-200'
+              ? 'bg-success-lighter border-success-light'
+              : 'bg-danger-lighter border-danger-light'
           }`}
         >
           {status.type === 'success' ? (
-            <HiCheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <HiCheckCircle className="w-5 h-5 text-success-dark flex-shrink-0 mt-0.5" />
           ) : (
-            <HiXCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <HiXCircle className="w-5 h-5 text-danger-dark flex-shrink-0 mt-0.5" />
           )}
           <p
             className={`text-sm ${
-              status.type === 'success' ? 'text-green-800' : 'text-red-800'
+              status.type === 'success' ? 'text-success-darker' : 'text-danger-darker'
             }`}
           >
             {status.message}
@@ -1102,7 +1102,7 @@ export default function AdminPanel() {
             <Loader text="Chargement des statistiques…" />
           </div>
         ) : statsError ? (
-          <div className="py-6 text-sm text-red-600">
+          <div className="py-6 text-sm text-danger-dark">
             {statsError}
           </div>
         ) : !stats || !totals ? (
@@ -1182,7 +1182,7 @@ export default function AdminPanel() {
                                 </span>
                               )}
                               {!userStats.is_active && (
-                                <span className="text-xs font-semibold text-red-500">
+                                <span className="text-xs font-semibold text-danger">
                                   Compte inactif
                                 </span>
                               )}
@@ -1242,7 +1242,7 @@ export default function AdminPanel() {
           </div>
 
           {explorerError && (
-            <div className="rounded-lg border-2 border-red-200 bg-red-50 text-red-700 text-sm p-3">
+            <div className="rounded-lg border-2 border-danger-light bg-danger-lighter text-danger-darker text-sm p-3">
               {explorerError}
             </div>
           )}
@@ -1323,7 +1323,7 @@ export default function AdminPanel() {
                       </div>
 
                       {roleError ? (
-                        <p className="text-xs text-red-600">{roleError}</p>
+                        <p className="text-xs text-danger-dark">{roleError}</p>
                       ) : (
                         <p className="text-[11px] text-primary-500">
                           Sélectionnez Category et Sub Category ensemble pour alimenter les répartitions et l’aperçu. Les tables désactivées ne sont pas scannées tant que l’option n’est pas cochée.
@@ -1371,7 +1371,7 @@ export default function AdminPanel() {
           </div>
 
           {loopError && (
-            <div className="mb-4 rounded-lg border-2 border-red-200 bg-red-50 text-red-700 text-sm p-3">
+            <div className="mb-4 rounded-lg border-2 border-danger-light bg-danger-lighter text-danger-darker text-sm p-3">
               {loopError}
             </div>
           )}
@@ -1380,8 +1380,8 @@ export default function AdminPanel() {
             <div
               className={`mb-4 flex items-start gap-2 p-3 rounded-lg border ${
                 loopStatus.type === 'success'
-                  ? 'border-green-200 bg-green-50 text-green-800'
-                  : 'border-red-200 bg-red-50 text-red-800'
+                  ? 'border-success-light bg-success-lighter text-success-darker'
+                  : 'border-danger-light bg-danger-lighter text-danger-darker'
               }`}
             >
               {loopStatus.type === 'success' ? (
@@ -1582,7 +1582,7 @@ export default function AdminPanel() {
           </div>
 
           {ticketError && (
-            <div className="mb-4 rounded-lg border-2 border-red-200 bg-red-50 text-red-700 text-sm p-3">
+            <div className="mb-4 rounded-lg border-2 border-danger-light bg-danger-lighter text-danger-darker text-sm p-3">
               {ticketError}
             </div>
           )}
@@ -1591,8 +1591,8 @@ export default function AdminPanel() {
             <div
               className={`mb-4 flex items-start gap-2 p-3 rounded-lg border ${
                 ticketStatus.type === 'success'
-                  ? 'border-green-200 bg-green-50 text-green-800'
-                  : 'border-red-200 bg-red-50 text-red-800'
+                  ? 'border-success-light bg-success-lighter text-success-darker'
+                  : 'border-danger-light bg-danger-lighter text-danger-darker'
               }`}
             >
               {ticketStatus.type === 'success' ? (
@@ -1804,7 +1804,7 @@ export default function AdminPanel() {
                 <Loader text="Chargement des droits…" />
               </div>
             ) : permissionsError ? (
-              <div className="py-6 text-sm text-red-600">
+              <div className="py-6 text-sm text-danger-dark">
                 {permissionsError}
               </div>
             ) : tables.length === 0 ? (
