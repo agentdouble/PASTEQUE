@@ -1,27 +1,56 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { Doughnut, getElementAtEvent } from 'react-chartjs-2'
-import { ArcElement, Chart as ChartJS, Legend, Tooltip, type ChartData, type ChartOptions } from 'chart.js'
+import {
+  ArcElement,
+  Chart as ChartJS,
+  Legend,
+  Tooltip,
+  type ChartData,
+  type ChartOptions,
+  type Plugin,
+  type ScriptableContext,
+} from 'chart.js'
 import type { CategorySubCategoryCount } from '@/types/data'
 
-ChartJS.register(ArcElement, Tooltip, Legend)
-
 const PALETTE = [
-  '#2563eb',
-  '#0ea5e9',
-  '#06b6d4',
-  '#14b8a6',
-  '#10b981',
-  '#84cc16',
-  '#f59e0b',
-  '#f97316',
-  '#f43f5e',
-  '#8b5cf6',
+  { solid: '#3b82f6', from: '#60a5fa', to: '#1d4ed8' },
+  { solid: '#0ea5e9', from: '#67e8f9', to: '#0284c7' },
+  { solid: '#06b6d4', from: '#67e8f9', to: '#0891b2' },
+  { solid: '#14b8a6', from: '#5eead4', to: '#0f766e' },
+  { solid: '#22c55e', from: '#86efac', to: '#15803d' },
+  { solid: '#a3e635', from: '#bef264', to: '#65a30d' },
+  { solid: '#f59e0b', from: '#fcd34d', to: '#d97706' },
+  { solid: '#f97316', from: '#fdba74', to: '#c2410c' },
+  { solid: '#fb7185', from: '#fda4af', to: '#be123c' },
+  { solid: '#6366f1', from: '#a5b4fc', to: '#4338ca' },
 ]
 
 function pickColor(index: number): string {
   const size = PALETTE.length
   if (size === 0) return '#2563eb'
-  return PALETTE[index % size]
+  return PALETTE[index % size].solid
+}
+
+function pickGradient(index: number): { from: string; to: string } {
+  const size = PALETTE.length
+  if (size === 0) {
+    return { from: '#60a5fa', to: '#1d4ed8' }
+  }
+  const color = PALETTE[index % size]
+  return { from: color.from, to: color.to }
+}
+
+function buildSegmentGradient(context: ScriptableContext<'doughnut'>): CanvasGradient | string {
+  const chart = context.chart
+  const { chartArea, ctx } = chart
+  const index = context.dataIndex >= 0 ? context.dataIndex : 0
+  const { from, to } = pickGradient(index)
+  if (!chartArea) return from
+
+  const gradient = ctx.createLinearGradient(chartArea.left, chartArea.top, chartArea.right, chartArea.bottom)
+  gradient.addColorStop(0, from)
+  gradient.addColorStop(1, to)
+  return gradient
 }
 
 type Props = {
@@ -35,6 +64,44 @@ type Props = {
   height?: number
   className?: string
 }
+
+const futuristicHaloPlugin: Plugin<'doughnut'> = {
+  id: 'futuristicHalo',
+  beforeDatasetsDraw(chart) {
+    const firstArc = chart.getDatasetMeta(0).data[0] as ArcElement | undefined
+    if (!firstArc) return
+
+    const { ctx } = chart
+    const x = firstArc.x
+    const y = firstArc.y
+    const innerRadius = firstArc.innerRadius
+    const outerRadius = firstArc.outerRadius
+
+    ctx.save()
+
+    const halo = ctx.createRadialGradient(x, y, innerRadius - 4, x, y, outerRadius + 14)
+    halo.addColorStop(0, 'rgba(56, 189, 248, 0)')
+    halo.addColorStop(0.68, 'rgba(56, 189, 248, 0.16)')
+    halo.addColorStop(1, 'rgba(29, 78, 216, 0)')
+
+    ctx.beginPath()
+    ctx.arc(x, y, outerRadius + 6, 0, Math.PI * 2)
+    ctx.arc(x, y, innerRadius - 2, 0, Math.PI * 2, true)
+    ctx.closePath()
+    ctx.fillStyle = halo
+    ctx.fill()
+
+    ctx.setLineDash([3, 4])
+    ctx.lineWidth = 1
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)'
+    ctx.beginPath()
+    ctx.arc(x, y, innerRadius - 10, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+  },
+}
+
+ChartJS.register(ArcElement, Tooltip, Legend, futuristicHaloPlugin)
 
 export default function CategoryStackedChart({
   breakdown,
@@ -133,14 +200,14 @@ export default function CategoryStackedChart({
         {
           label: isDrilled ? 'Sous-catégories' : 'Catégories',
           data: chartDataset,
-          backgroundColor: chartLabels.map((_, index) => pickColor(index)),
-          borderColor: 'rgba(255,255,255,0.9)',
-          borderWidth: 2,
-          borderRadius: 6,
-          spacing: 0,
+          backgroundColor: context => buildSegmentGradient(context),
+          borderColor: 'rgba(241,245,249,0.95)',
+          borderWidth: 1.5,
+          borderRadius: 9,
+          spacing: 2,
           clip: false,
           radius: '90%',
-          hoverOffset: 6,
+          hoverOffset: 8,
         },
       ],
     }),
@@ -247,9 +314,17 @@ export default function CategoryStackedChart({
       className={`relative border border-primary-200/70 rounded-2xl p-4 ${wrapperClass}`}
       style={{
         background:
-          'radial-gradient(circle at 12% 8%, rgba(14,165,233,0.14), transparent 42%), radial-gradient(circle at 88% 92%, rgba(139,92,246,0.12), transparent 38%), linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.96))',
+          'radial-gradient(circle at 12% 8%, rgba(56,189,248,0.18), transparent 44%), radial-gradient(circle at 88% 92%, rgba(59,130,246,0.14), transparent 40%), linear-gradient(170deg, rgba(255,255,255,0.96), rgba(240,249,255,0.94))',
       }}
     >
+      <div
+        className="pointer-events-none absolute inset-0 rounded-2xl opacity-[0.16]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(56,189,248,0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.55) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+        }}
+      />
       <div className="pointer-events-none absolute -top-8 -right-10 h-32 w-32 rounded-full bg-primary-200/35 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-10 -left-8 h-28 w-28 rounded-full bg-cyan-200/40 blur-2xl" />
       {(title || subtitle) && (
