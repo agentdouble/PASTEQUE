@@ -45,13 +45,26 @@ type ColumnRolesState = Record<string, ColumnRoleSelection>
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend)
 
-const CHART_COLORS = ['#2563eb', '#0ea5e9', '#14b8a6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#f97316']
-const LINE_COLOR = '#2563eb'
-const LINE_FILL = 'rgba(37,99,235,0.15)'
+const CHART_COLORS = [
+  '#004C92',
+  '#0C77D9',
+  '#4EABFF',
+  '#69C2C3',
+  '#00A88C',
+  '#2957C8',
+  '#3979B4',
+  '#C780B4',
+  '#C4057A',
+  '#F5CE22',
+  '#FF9E00',
+  '#FF5A5F',
+]
+const LINE_COLOR = '#0C77D9'
+const LINE_FILL = 'rgba(12, 119, 217, 0.18)'
 
 function pickColor(index: number): string {
   const paletteSize = CHART_COLORS.length
-  if (paletteSize === 0) return '#2563eb'
+  if (paletteSize === 0) return '#004C92'
   return CHART_COLORS[index % paletteSize]
 }
 
@@ -877,13 +890,13 @@ function DateTimeline({ counts }: { counts: ValueCount[] }) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#52525b', maxRotation: 45, minRotation: 45 },
+          ticks: { color: '#454F5F', maxRotation: 45, minRotation: 45 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: '#e5e7eb' },
+          grid: { color: '#C4CEDE' },
           ticks: {
-            color: '#52525b',
+            color: '#454F5F',
             callback: value => Number(value).toLocaleString('fr-FR'),
           },
         },
@@ -937,16 +950,16 @@ function BarList({ counts }: { counts: ValueCount[] }) {
       scales: {
         x: {
           beginAtZero: true,
-          grid: { color: '#e5e7eb' },
+          grid: { color: '#C4CEDE' },
           ticks: {
-            color: '#52525b',
+            color: '#454F5F',
             callback: value => Number(value).toLocaleString('fr-FR'),
           },
         },
         y: {
           grid: { display: false },
           ticks: {
-            color: '#52525b',
+            color: '#454F5F',
             autoSkip: false,
           },
         },

@@ -307,6 +307,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 
 ## Notes UI
 
+- 2026-02-06: La palette frontend est alignée sur les couleurs Foyer (référence `foyer-colors.css`) via `primary` Tailwind (incluant `primary-25`) et les couleurs Chart.js (Explorer + donuts) ont été harmonisées pour un rendu plus premium.
 - 2025-10-21: L'état vide du chat (« Discutez avec vos données ») est maintenant centré via un overlay `fixed` non interactif: pas de scroll tant qu'aucun message n'est présent; la barre de saisie reste accessible.
  - 2025-10-21: Ajout d'un petit avertissement sous la zone de saisie: « L'IA peut faire des erreurs, FoyerInsight aussi. »
 - 2026-02-05: Le cadre visuel externe de la colonne chat (bordure/ombre/arrondi du conteneur principal) a été supprimé dans l’onglet Chat pour alléger la vue.

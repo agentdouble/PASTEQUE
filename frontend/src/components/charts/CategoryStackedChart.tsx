@@ -6,11 +6,24 @@ import type { CategorySubCategoryCount } from '@/types/data'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
-const PALETTE = ['#2563eb', '#0ea5e9', '#14b8a6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#f97316']
+const PALETTE = [
+  '#004C92',
+  '#0C77D9',
+  '#4EABFF',
+  '#69C2C3',
+  '#00A88C',
+  '#2957C8',
+  '#3979B4',
+  '#C780B4',
+  '#C4057A',
+  '#F5CE22',
+  '#FF9E00',
+  '#FF5A5F',
+]
 
 function pickColor(index: number): string {
   const size = PALETTE.length
-  if (size === 0) return '#2563eb'
+  if (size === 0) return '#004C92'
   return PALETTE[index % size]
 }
 
@@ -129,7 +142,7 @@ export default function CategoryStackedChart({
         legend: {
           display: true,
           position: 'right',
-          labels: { color: '#52525b', boxWidth: 12 },
+          labels: { color: '#454F5F', boxWidth: 12 },
         },
         tooltip: {
           callbacks: {

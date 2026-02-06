@@ -7,19 +7,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Noir et blanc moderne avec nuances de gris
+        // Palette Foyer (bleus + gris fumés)
         primary: {
-          50: '#fafafa',
-          100: '#f4f4f5',
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa',
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46',
-          800: '#27272a',
-          900: '#18181b',
-          950: '#09090b',
+          25: '#F8F9FC',
+          50: '#F0F5FA',
+          100: '#EAEEF6',
+          200: '#C4CEDE',
+          300: '#A9BCE9',
+          400: '#3979B4',
+          500: '#67768E',
+          600: '#454F5F',
+          700: '#3B4856',
+          800: '#004C92',
+          900: '#033767',
+          950: '#01213C',
         },
       },
       fontFamily: {
