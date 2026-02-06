@@ -110,7 +110,7 @@ export default function Loop() {
           <Loader text="Chargement…" />
         </Card>
       ) : error ? (
-        <Card variant="elevated" className="py-6 px-4 border border-red-200 bg-red-50 text-red-700">
+        <Card variant="elevated" className="py-6 px-4 border border-danger-light bg-danger-lighter text-danger-darker">
           <p className="text-sm">{error}</p>
         </Card>
       ) : (

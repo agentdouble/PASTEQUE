@@ -135,7 +135,7 @@ export default function FeedbackAdmin({ embedded = false }: FeedbackAdminProps) 
             <Loader text="Chargement des feedbacks..." />
           </div>
         ) : error ? (
-          <div className="text-sm text-red-600 py-4">{error}</div>
+          <div className="text-sm text-danger-dark py-4">{error}</div>
         ) : items.length === 0 ? (
           <div className="text-sm text-primary-600 py-4">Aucun feedback pour le moment.</div>
         ) : (
@@ -173,8 +173,8 @@ export default function FeedbackAdmin({ embedded = false }: FeedbackAdminProps) 
                           className={clsx(
                             'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold border',
                             isUp
-                              ? 'bg-green-50 text-green-700 border-green-200'
-                              : 'bg-red-50 text-red-700 border-red-200'
+                              ? 'bg-success-lighter text-success-dark border-success-light'
+                              : 'bg-danger-lighter text-danger-darker border-danger-light'
                           )}
                         >
                           {isUp ? <HiHandThumbUp className="w-4 h-4" /> : <HiHandThumbDown className="w-4 h-4" />}

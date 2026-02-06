@@ -112,7 +112,7 @@ export default function Layout() {
       )}
     >
       <aside
-        className="fixed left-0 top-0 z-50 h-[100dvh] border-r-2 border-primary-100 bg-white/90 backdrop-blur-sm transition-[width] duration-200"
+        className="fixed left-0 top-0 z-50 h-[100dvh] border-r border-primary-800 bg-gradient-to-b from-primary-900 via-primary-800 to-primary-900 transition-[width] duration-200"
         style={{ width: sidebarWidthPx }}
       >
         <div className={clsx('flex h-full flex-col', sidebarCollapsed ? 'gap-3 p-3' : 'gap-2 px-2.5 py-2')}>
@@ -125,8 +125,8 @@ export default function Layout() {
                   className="h-7 w-7 shrink-0"
                 />
                 <div className="min-w-0">
-                  <h1 className="truncate text-base font-bold text-primary-950 tracking-tight">FoyerInsight</h1>
-                  <p className="truncate text-xs text-primary-600">De la donnée à l'action</p>
+                  <h1 className="truncate text-base font-bold text-white tracking-tight">FoyerInsight</h1>
+                  <p className="truncate text-xs text-primary-200">De la donnée à l'action</p>
                 </div>
               </div>
             )}
@@ -135,7 +135,7 @@ export default function Layout() {
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(prev => !prev)}
-              className="h-7 w-7 shrink-0 !rounded-full !p-0 border border-primary-200/80 bg-white/65 text-primary-600 hover:bg-primary-50 hover:text-primary-900"
+              className="h-7 w-7 shrink-0 !rounded-full !p-0 !border !border-primary-500/40 !bg-primary-800/70 !text-primary-100 hover:!bg-primary-700 hover:!text-white"
               aria-label={sidebarCollapsed ? 'Déplier le bandeau' : 'Replier le bandeau'}
               title={sidebarCollapsed ? 'Déplier' : 'Replier'}
             >
@@ -157,8 +157,8 @@ export default function Layout() {
                     'w-full rounded-xl no-focus-ring transition-colors duration-200',
                     sidebarCollapsed ? 'h-10 px-0 text-center' : 'px-2 py-1 text-left',
                     item.active
-                      ? 'bg-transparent text-primary-950 font-semibold'
-                      : 'text-primary-700 hover:text-primary-900 hover:bg-primary-50'
+                      ? 'bg-white/15 text-white font-semibold'
+                      : 'text-primary-200 hover:text-white hover:bg-white/10'
                   )}
                   aria-current={item.active ? 'page' : undefined}
                   title={sidebarCollapsed ? item.label : undefined}
@@ -168,13 +168,13 @@ export default function Layout() {
               ))}
             </div>
           </nav>
-          <div className={clsx('border-t border-primary-100', sidebarCollapsed ? 'pt-1' : 'pt-0.5')}>
+          <div className={clsx('border-t border-primary-700/70', sidebarCollapsed ? 'pt-1' : 'pt-0.5')}>
             <Button
               variant="ghost"
               onClick={handleLogout}
               size="sm"
               className={clsx(
-                '!rounded-xl w-full border border-primary-200 bg-white/70 hover:bg-white',
+                '!rounded-xl w-full !border !border-primary-500/45 !bg-primary-800/65 !text-primary-100 hover:!bg-primary-700 hover:!text-white',
                 sidebarCollapsed ? 'justify-center !px-0' : 'justify-start !py-1'
               )}
               title="Déconnexion"

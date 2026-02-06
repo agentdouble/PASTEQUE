@@ -22,6 +22,27 @@ export default {
           900: '#033767',
           950: '#01213C',
         },
+        success: {
+          lighter: '#E0F5F3',
+          light: '#59C5B3',
+          DEFAULT: '#00A88C',
+          dark: '#008670',
+          darker: '#006353',
+        },
+        danger: {
+          lighter: '#FFF0F0',
+          light: '#F39194',
+          DEFAULT: '#ED5E63',
+          dark: '#D14449',
+          darker: '#A32C30',
+        },
+        warning: {
+          lighter: '#FEECD7',
+          light: '#FBB54B',
+          DEFAULT: '#FF9E00',
+          dark: '#D18B00',
+          darker: '#975F09',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

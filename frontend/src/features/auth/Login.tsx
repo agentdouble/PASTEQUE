@@ -158,8 +158,8 @@ export default function Login() {
           )}
 
           {error && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 animate-fade-in">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="bg-danger-lighter border-2 border-danger-light rounded-lg p-3 animate-fade-in">
+              <p className="text-sm text-danger-darker">{error}</p>
             </div>
           )}
 

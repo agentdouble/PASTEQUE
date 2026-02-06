@@ -334,7 +334,7 @@ export default function Explorer() {
       </div>
 
       {updateError ? (
-        <Card variant="elevated" className="py-3 px-4 text-sm text-red-700 border border-red-100 bg-red-50">
+        <Card variant="elevated" className="py-3 px-4 text-sm text-danger-darker border border-danger-light bg-danger-lighter">
           {updateError}
         </Card>
       ) : null}
@@ -344,7 +344,7 @@ export default function Explorer() {
           <Loader text="Chargement de l’explorateur…" />
         </Card>
       ) : error ? (
-        <Card variant="elevated" className="py-6 px-4 text-sm text-red-600">
+        <Card variant="elevated" className="py-6 px-4 text-sm text-danger-dark">
           {error}
         </Card>
       ) : sources.length === 0 ? (
@@ -617,7 +617,7 @@ function CategorySelectionPreview({
       {loading ? (
         <p className="text-[11px] text-primary-500">Chargement des lignes…</p>
       ) : error ? (
-        <p className="text-[11px] text-red-600">{error}</p>
+        <p className="text-[11px] text-danger-dark">{error}</p>
       ) : preview && preview.preview_rows.length > 0 ? (
         <div className="mt-2 overflow-x-auto">
           <table className="min-w-full text-[11px] text-left">
@@ -709,7 +709,7 @@ function ColumnRolesSelector({
         {renderSelect('Category', 'category_field')}
         {renderSelect('Sub Category', 'sub_category_field')}
       </div>
-      {error ? <p className="text-[11px] text-red-600">{error}</p> : null}
+      {error ? <p className="text-[11px] text-danger-dark">{error}</p> : null}
     </div>
   )
 }
