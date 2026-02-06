@@ -1608,15 +1608,41 @@ export default function Chat() {
     }
   }
 
-  // Reset the chat session state. Used by the `?new=1` URL flow (Layout button)
+  // Reset the chat session state to the default ticket-first view.
   function onNewChat() {
     if (loading && abortRef.current) {
       abortRef.current.abort()
     }
+    if (ticketPreviewAbortRef.current) {
+      ticketPreviewAbortRef.current.abort()
+      ticketPreviewAbortRef.current = null
+    }
+    if (explorerSelectionAbortRef.current) {
+      explorerSelectionAbortRef.current.abort()
+      explorerSelectionAbortRef.current = null
+    }
+    const resetRange = ticketMeta
+      ? {
+          id: createMessageId(),
+          from: ticketMeta.recommendedFrom ?? ticketMeta.min,
+          to: ticketMeta.max,
+        }
+      : { id: createMessageId() }
     setConversationId(null)
     setMessages([])
+    setInput('')
+    setChartMode(false)
+    setTicketMode(true)
+    setSqlMode(false)
+    setShowTicketPanel(true)
+    setShowTicketsSheet(false)
     setEvidenceSpec(null)
     setEvidenceData(null)
+    setTicketRanges([resetRange])
+    setExtraTicketSources([])
+    setExplorerTicketSelection(null)
+    setExplorerTicketError('')
+    setExplorerTicketLoading(false)
     setTicketPreviewItems([])
     setTicketPreviewError('')
     setTicketPreviewLoading(false)
@@ -1626,7 +1652,13 @@ export default function Chat() {
     setHistoryOpen(false)
     setHighlightMessageId(null)
     setTicketStatus('')
+    setTicketContextUsage(null)
     setAwaitingFirstDelta(false)
+    setDeepSearchStatus('')
+    setAnimStatus('')
+    if (!ticketMeta && !ticketMetaLoading) {
+      void loadTicketMetadata()
+    }
   }
 
   async function onFeedback(messageId: string, vote: FeedbackValue) {
