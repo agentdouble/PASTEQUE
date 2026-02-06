@@ -27,14 +27,14 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             'resize-none',
             'transition-all duration-200',
             {
-              'border-red-500 focus:border-red-600': error,
+              'border-danger focus:border-danger-dark': error,
             },
             className
           )}
           {...props}
         />
         {error && (
-          <span className="text-sm text-red-600">{error}</span>
+          <span className="text-sm text-danger-dark">{error}</span>
         )}
       </div>
     )

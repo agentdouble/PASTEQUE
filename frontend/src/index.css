@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --foyer-blue-ink: #01213c;
+    --foyer-blue-smoke: #eaeef6;
     /* Evidence sidebar layout tokens (desktop) */
     --evidence-panel-w: 420px; /* visible width of the panel */
     --evidence-offset: 24px;   /* left offset (matches left-6) */
@@ -14,7 +16,7 @@
   }
 
   body {
-    @apply bg-white text-primary-950 antialiased;
+    @apply bg-primary-25 text-primary-950 antialiased;
   }
 
   /* Scrollbar personnalisé noir et blanc */
@@ -27,11 +29,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary-400 rounded-full;
+    @apply bg-primary-500 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary-500;
+    @apply bg-primary-800;
   }
 }
 
@@ -49,7 +51,7 @@
   a:focus-visible,
   input:focus-visible,
   textarea:focus-visible {
-    @apply outline-none ring-2 ring-primary-400 ring-offset-2;
+    @apply outline-none ring-2 ring-primary-400 ring-offset-2 ring-offset-primary-25;
   }
 
   /* Curseur double pour le filtre de dates */
@@ -67,8 +69,8 @@
     height: 16px;
     width: 16px;
     border-radius: 9999px;
-    background: #0f172a;
-    border: 2px solid #e5e7eb;
+    background: var(--foyer-blue-ink);
+    border: 2px solid var(--foyer-blue-smoke);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
     pointer-events: auto;
   }
@@ -82,8 +84,8 @@
     height: 16px;
     width: 16px;
     border-radius: 9999px;
-    background: #0f172a;
-    border: 2px solid #e5e7eb;
+    background: var(--foyer-blue-ink);
+    border: 2px solid var(--foyer-blue-smoke);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
     pointer-events: auto;
   }
