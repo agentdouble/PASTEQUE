@@ -100,8 +100,8 @@ export default function PromptsManager() {
           className={clsx(
             'px-3 py-2 rounded-lg text-sm font-medium',
             status.type === 'success'
-              ? 'bg-success-lighter text-success-dark border border-success-light'
-              : 'bg-danger-lighter text-danger-darker border border-danger-light'
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
           )}
         >
           {status.message}
@@ -109,7 +109,7 @@ export default function PromptsManager() {
       )}
 
       {error && (
-        <div className="px-3 py-2 rounded-lg bg-danger-lighter border border-danger-light text-danger-darker text-sm">
+        <div className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
           {error}
         </div>
       )}
@@ -183,7 +183,7 @@ export default function PromptsManager() {
                   <Button onClick={() => void handleSave()} disabled={saving || !isDirty}>
                     {saving ? 'Sauvegarde…' : 'Sauvegarder'}
                   </Button>
-                  {isDirty && <span className="text-xs text-warning-dark">Modifications non sauvegardées</span>}
+                  {isDirty && <span className="text-xs text-amber-600">Modifications non sauvegardées</span>}
                 </div>
               </div>
             )}

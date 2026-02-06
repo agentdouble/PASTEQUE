@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CategoryStackedChart from '@/components/charts/CategoryStackedChart'
 import { Card, Loader, Button } from '@/components/ui'
@@ -10,7 +10,7 @@ import type {
   TableExplorePreview,
   TableRow,
 } from '@/types/data'
-import { HiArrowPath } from 'react-icons/hi2'
+import { HiSparkles } from 'react-icons/hi2'
 
 type CategoryNode = {
   name: string
@@ -72,7 +72,6 @@ export default function IaView() {
   const [pendingRange, setPendingRange] = useState<{ from?: string; to?: string } | null>(null)
   const [appliedRange, setAppliedRange] = useState<{ from?: string; to?: string } | null>(null)
   const requestRef = useRef(0)
-  const overviewRequestRef = useRef(0)
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const navigate = useNavigate()
 
@@ -90,8 +89,6 @@ export default function IaView() {
     range: { from?: string; to?: string } | null = appliedRange,
     withLoader = true
   ) => {
-    const requestId = overviewRequestRef.current + 1
-    overviewRequestRef.current = requestId
     if (withLoader) {
       setLoading(true)
       setError('')
@@ -102,7 +99,6 @@ export default function IaView() {
     const url = params.size ? `/data/overview?${params.toString()}` : '/data/overview'
     try {
       const res = await apiFetch<DataOverviewResponse>(url)
-      if (overviewRequestRef.current !== requestId) return
       const data = res ?? { generated_at: '', sources: [] }
       setOverview(data)
       const bounds = computeGlobalBounds(data.sources)
@@ -114,11 +110,11 @@ export default function IaView() {
         setAppliedRange(range ?? { from: bounds.min, to: bounds.max })
       }
     } catch (err) {
-      if (withLoader && overviewRequestRef.current === requestId) {
+      if (withLoader) {
         setError(err instanceof Error ? err.message : 'Chargement impossible.')
       }
     } finally {
-      if (withLoader && overviewRequestRef.current === requestId) {
+      if (withLoader) {
         setLoading(false)
       }
     }
@@ -207,6 +203,7 @@ export default function IaView() {
     range: { from?: string; to?: string } | null = appliedRange
   ) => {
     const offset = pageIndex * PAGE_SIZE
+    setPreview(null)
     setPreviewError('')
     setPreviewLoading(true)
     const requestId = requestRef.current + 1
@@ -283,6 +280,18 @@ export default function IaView() {
     fetchPreview(selection, 0, nextDirection, appliedRange)
   }
 
+  const handleApplyRange = () => {
+    if (!pendingRange || !hasGlobalDate) return
+    setAppliedRange(pendingRange)
+    setPage(0)
+    void (async () => {
+      await loadOverview(pendingRange)
+      if (selection) {
+        fetchPreview(selection, 0, sortDirection, pendingRange)
+      }
+    })()
+  }
+
   const handleResetRange = () => {
     if (!hasGlobalDate || !globalBounds.min || !globalBounds.max) return
     const fullRange = { from: globalBounds.min, to: globalBounds.max }
@@ -296,29 +305,6 @@ export default function IaView() {
       }
     })()
   }
-
-  useEffect(() => {
-    if (!pendingRange || !hasGlobalDate) return
-    if (
-      pendingRange.from === appliedRange?.from &&
-      pendingRange.to === appliedRange?.to
-    ) {
-      return
-    }
-    const timeoutId = window.setTimeout(() => {
-      setAppliedRange(pendingRange)
-      setPage(0)
-      void (async () => {
-        await loadOverview(pendingRange, false)
-        if (selection) {
-          fetchPreview(selection, 0, sortDirection, pendingRange)
-        }
-      })()
-    }, 180)
-    return () => {
-      window.clearTimeout(timeoutId)
-    }
-  }, [pendingRange, hasGlobalDate, appliedRange?.from, appliedRange?.to, selection, sortDirection])
 
   const handleDiscussSelection = () => {
     if (!selection) return
@@ -335,107 +321,127 @@ export default function IaView() {
   }
 
   const selectionHasDate = selection ? sourceHasDate(selection.source) : false
-  const globalDateFilterControl =
-    hasGlobalDate && minTs !== undefined && maxTs !== undefined ? (
-      <div className="space-y-3 pb-4 border-b border-primary-100">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-primary-700">
-            <span className="font-semibold text-primary-900">Filtre date global</span>
-          </div>
-          <div className="flex items-center gap-3 text-[11px] text-primary-600">
-            <span>
-              De{' '}
-              <span className="font-semibold text-primary-900">
-                {formatDate(pendingRange?.from ?? globalBounds.min)}
-              </span>
-            </span>
-            <span>
-              A{' '}
-              <span className="font-semibold text-primary-900">
-                {formatDate(pendingRange?.to ?? globalBounds.max)}
-              </span>
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetRange}
-              disabled={loading}
-              className="!rounded-full !p-2"
-              aria-label="Réinitialiser le filtre date"
-              title="Réinitialiser le filtre date"
-            >
-              <HiArrowPath className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="relative h-10" ref={sliderRef}>
-          <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-100" />
-          <div
-            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-900/60 transition-all duration-200"
-            style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
-          />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-950 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
-            style={{ left: `calc(${startPercent}% - 8px)` }}
-          />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-900 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
-            style={{ left: `calc(${endPercent}% - 8px)` }}
-          />
-          <button
-            type="button"
-            aria-label="Début de période"
-            className="absolute top-0 h-full w-11 -translate-x-1/2"
-            onPointerDown={event => {
-              event.preventDefault()
-              const ts = tsFromPointer(event.clientX)
-              if (ts !== undefined) handleRangeStartChange(ts)
-              const move = (evt: PointerEvent) => {
-                const next = tsFromPointer(evt.clientX)
-                if (next !== undefined) handleRangeStartChange(next)
-              }
-              const stop = () => {
-                window.removeEventListener('pointermove', move)
-                window.removeEventListener('pointerup', stop)
-              }
-              window.addEventListener('pointermove', move)
-              window.addEventListener('pointerup', stop, { once: true })
-            }}
-            style={{ zIndex: 30, background: 'transparent', left: `${startPercent}%` }}
-          />
-          <button
-            type="button"
-            aria-label="Fin de période"
-            className="absolute top-0 h-full w-11 -translate-x-1/2"
-            onPointerDown={event => {
-              event.preventDefault()
-              const ts = tsFromPointer(event.clientX)
-              if (ts !== undefined) handleRangeEndChange(ts)
-              const move = (evt: PointerEvent) => {
-                const next = tsFromPointer(evt.clientX)
-                if (next !== undefined) handleRangeEndChange(next)
-              }
-              const stop = () => {
-                window.removeEventListener('pointermove', move)
-                window.removeEventListener('pointerup', stop)
-              }
-              window.addEventListener('pointermove', move)
-              window.addEventListener('pointerup', stop, { once: true })
-            }}
-            style={{ zIndex: 31, background: 'transparent', left: `${endPercent}%` }}
-          />
-        </div>
-      </div>
-    ) : null
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary-900 text-white rounded-lg">
+            <HiSparkles className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-primary-950">Explorer</h2>
+            <p className="text-primary-600">
+              Naviguez par Category / Sub Category pour inspecter les données cliquables.
+            </p>
+          </div>
+        </div>
+        <div className="text-right text-sm text-primary-600">
+          {overview?.generated_at ? (
+            <span className="font-semibold text-primary-900">
+              Snapshot : {new Date(overview.generated_at).toLocaleString('fr-FR')}
+            </span>
+          ) : (
+            'Chargement…'
+          )}
+        </div>
+      </div>
+
+      {hasGlobalDate && minTs !== undefined && maxTs !== undefined ? (
+        <Card variant="elevated" className="space-y-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-primary-700">
+              <span className="font-semibold text-primary-900">Filtre date</span>
+            </div>
+            <div className="text-[11px] text-primary-600 flex gap-2">
+              <span>
+                De <span className="font-semibold text-primary-900">{formatDate(pendingRange?.from ?? globalBounds.min)}</span>
+              </span>
+              <span>
+                À <span className="font-semibold text-primary-900">{formatDate(pendingRange?.to ?? globalBounds.max)}</span>
+              </span>
+            </div>
+          </div>
+          <div className="relative h-10" ref={sliderRef}>
+            <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-100" />
+            <div
+              className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary-900/60 transition-all duration-200"
+              style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-950 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
+              style={{ left: `calc(${startPercent}% - 8px)` }}
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-900 border-2 border-primary-100 shadow-sm pointer-events-none transition-transform duration-150"
+              style={{ left: `calc(${endPercent}% - 8px)` }}
+            />
+            <button
+              type="button"
+              aria-label="Début de période"
+              className="absolute top-0 h-full w-11 -translate-x-1/2"
+              onPointerDown={event => {
+                event.preventDefault()
+                const ts = tsFromPointer(event.clientX)
+                if (ts !== undefined) handleRangeStartChange(ts)
+                const move = (evt: PointerEvent) => {
+                  const next = tsFromPointer(evt.clientX)
+                  if (next !== undefined) handleRangeStartChange(next)
+                }
+                const stop = () => {
+                  window.removeEventListener('pointermove', move)
+                  window.removeEventListener('pointerup', stop)
+                }
+                window.addEventListener('pointermove', move)
+                window.addEventListener('pointerup', stop, { once: true })
+              }}
+              style={{ zIndex: 30, background: 'transparent', left: `${startPercent}%` }}
+            />
+            <button
+              type="button"
+              aria-label="Fin de période"
+              className="absolute top-0 h-full w-11 -translate-x-1/2"
+              onPointerDown={event => {
+                event.preventDefault()
+                const ts = tsFromPointer(event.clientX)
+                if (ts !== undefined) handleRangeEndChange(ts)
+                const move = (evt: PointerEvent) => {
+                  const next = tsFromPointer(evt.clientX)
+                  if (next !== undefined) handleRangeEndChange(next)
+                }
+                const stop = () => {
+                  window.removeEventListener('pointermove', move)
+                  window.removeEventListener('pointerup', stop)
+                }
+                window.addEventListener('pointermove', move)
+                window.addEventListener('pointerup', stop, { once: true })
+              }}
+              style={{ zIndex: 31, background: 'transparent', left: `${endPercent}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleApplyRange}
+              className="!rounded-full"
+              disabled={loading}
+            >
+              Appliquer le filtre
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleResetRange} disabled={loading}>
+              Réinitialiser
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
       {loading ? (
         <Card variant="elevated" className="py-12 flex justify-center">
           <Loader text="Chargement des répartitions Category / Sub Category…" />
         </Card>
       ) : error ? (
-        <Card variant="elevated" className="py-6 px-4 text-sm text-danger-dark">{error}</Card>
+        <Card variant="elevated" className="py-6 px-4 text-sm text-red-600">{error}</Card>
       ) : sourcesWithCategories.length === 0 ? (
         <Card variant="elevated" className="py-10 px-4 text-center text-primary-600">
           Aucune source ne contient les colonnes « Category » et « Sub Category » avec des valeurs
@@ -443,11 +449,10 @@ export default function IaView() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {sourcesWithCategories.map((source, index) => (
+          {sourcesWithCategories.map(source => (
             <SourceCategoryCard
               key={source.source}
               source={source}
-              dateFilterContent={index === 0 ? globalDateFilterControl : null}
               onSelect={handleSelect}
               selection={selection}
               preview={preview}
@@ -460,6 +465,7 @@ export default function IaView() {
               onPageChange={handlePageChange}
               onToggleSort={handleToggleSort}
               canSort={selectionHasDate}
+              activeRange={appliedRange}
               onDiscuss={handleDiscussSelection}
               canDiscuss={selectionHasDate}
             />
@@ -472,7 +478,6 @@ export default function IaView() {
 
 function SourceCategoryCard({
   source,
-  dateFilterContent,
   onSelect,
   selection,
   preview,
@@ -485,11 +490,11 @@ function SourceCategoryCard({
   onPageChange,
   onToggleSort,
   canSort,
+  activeRange,
   onDiscuss,
   canDiscuss,
 }: {
   source: DataSourceOverview
-  dateFilterContent?: ReactNode
   onSelect: (source: string, category: string, subCategory: string) => void
   selection: Selection | null
   preview: TableExplorePreview | null
@@ -502,6 +507,7 @@ function SourceCategoryCard({
   onPageChange: (nextPage: number) => void
   onToggleSort: () => void
   canSort: boolean
+  activeRange: { from?: string; to?: string } | null
   onDiscuss: () => void
   canDiscuss: boolean
 }) {
@@ -511,9 +517,6 @@ function SourceCategoryCard({
   )
 
   const selectionForCard = selection?.source === source.source ? selection : null
-  const selectionAnimationKey = selectionForCard
-    ? `${selectionForCard.category}::${selectionForCard.subCategory}`
-    : 'none'
 
   if (!categoryNodes.length) {
     return (
@@ -537,9 +540,9 @@ function SourceCategoryCard({
 
   return (
     <Card variant="elevated" padding="md" className="space-y-3">
-      {dateFilterContent ? <div>{dateFilterContent}</div> : null}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
+          <p className="text-xs uppercase tracking-wide text-primary-500">{source.source}</p>
           <h3 className="text-lg font-semibold text-primary-950">{source.title}</h3>
           <p className="text-xs text-primary-500">
             {source.total_rows.toLocaleString('fr-FR')} lignes ·{' '}
@@ -551,40 +554,25 @@ function SourceCategoryCard({
       <CategoryStackedChart
         breakdown={source.category_breakdown ?? []}
         onSelect={handleChartSelect}
-        selectedCategory={selectionForCard?.category ?? null}
-        selectedSubCategory={selectionForCard?.subCategory ?? null}
-        actionSlot={
-          selectionForCard ? (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onDiscuss}
-              disabled={!canDiscuss || previewLoading}
-              className="!rounded-full"
-            >
-              Discuter avec ces données
-            </Button>
-          ) : null
-        }
         className="bg-primary-50/80"
       />
 
-      <div key={selectionAnimationKey} className={selectionForCard ? 'animate-slide-up' : ''}>
-        <SelectionPreview
-          selection={selectionForCard}
-          preview={selectionForCard ? preview : null}
-          loading={selectionForCard ? previewLoading : false}
-          error={selectionForCard ? previewError : ''}
-          limit={limit}
-          page={page}
-          matchingRows={matchingRows}
-          sortDirection={sortDirection}
-          onPageChange={onPageChange}
-          onToggleSort={onToggleSort}
-          canSort={canSort}
-          dateField={source.date_field ?? null}
-        />
-      </div>
+      <SelectionPreview
+        selection={selectionForCard}
+        preview={selectionForCard ? preview : null}
+        loading={selectionForCard ? previewLoading : false}
+        error={selectionForCard ? previewError : ''}
+        limit={limit}
+        page={page}
+        matchingRows={matchingRows}
+        sortDirection={sortDirection}
+        onPageChange={onPageChange}
+        onToggleSort={onToggleSort}
+        canSort={canSort}
+        activeRange={activeRange}
+        onDiscuss={onDiscuss}
+        canDiscuss={canDiscuss}
+      />
     </Card>
   )
 }
@@ -601,7 +589,9 @@ function SelectionPreview({
   onPageChange,
   onToggleSort,
   canSort,
-  dateField,
+  activeRange,
+  onDiscuss,
+  canDiscuss,
 }: {
   selection: Selection | null
   preview: TableExplorePreview | null
@@ -614,7 +604,9 @@ function SelectionPreview({
   onPageChange: (nextPage: number) => void
   onToggleSort: () => void
   canSort: boolean
-  dateField: string | null
+  activeRange: { from?: string; to?: string } | null
+  onDiscuss: () => void
+  canDiscuss: boolean
 }) {
   if (!selection) return null
 
@@ -625,60 +617,73 @@ function SelectionPreview({
   const currentPage = Math.min(page, totalPages - 1)
   const hasPrev = currentPage > 0
   const hasNext = currentPage < totalPages - 1
-  const findColumnInsensitive = (target: string) =>
-    columns.find(col => col.trim().toLowerCase() === target.trim().toLowerCase()) ?? null
-  const sortableDateColumn = canSort
-    ? (dateField ? findColumnInsensitive(dateField) : null) ?? findColumnInsensitive('date')
-    : null
-  const selectionKey = `${selection.category}::${selection.subCategory}`
 
   return (
     <Card variant="outlined" className="space-y-3">
-      <div className="flex flex-col gap-2">
-        <div className="space-y-1">
-          <div key={selectionKey} className="flex flex-wrap items-center gap-2 text-xs animate-fade-in">
-            <span className="font-semibold text-primary-700">Sélection active</span>
-            <span className="inline-flex items-center rounded-full border border-primary-200 bg-white px-2.5 py-1 font-semibold text-primary-900">
-              Category: {selection.category}
-            </span>
-            <span className="text-primary-500">→</span>
-            <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-900 px-2.5 py-1 font-semibold text-white">
-              Sub Category: {selection.subCategory}
-            </span>
-          </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-primary-700">
+          <span className="font-semibold text-primary-900">{selection.source}</span> ·{' '}
+          <span className="font-semibold text-primary-900">{selection.category}</span> /{' '}
+          <span className="font-semibold text-primary-900">{selection.subCategory}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onDiscuss}
+            disabled={!canDiscuss || loading}
+            className="!rounded-full"
+          >
+            Discuter avec ces données
+          </Button>
         </div>
       </div>
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={!hasPrev || loading}
-        >
-          Précédent
-        </Button>
-        <span className="text-[11px] text-primary-600">
-          Page {currentPage + 1} / {totalPages} · {limit} lignes/page
-        </span>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={!hasNext || loading}
-        >
-          Suivant
-        </Button>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onToggleSort}
+            disabled={loading || !canSort}
+            className="!rounded-full"
+          >
+            Tri date {sortDirection === 'desc' ? '↓' : '↑'}
+          </Button>
+          {activeRange?.from || activeRange?.to ? (
+            <span className="text-[11px] text-primary-600">
+              Filtre appliqué : {activeRange?.from ?? '…'} → {activeRange?.to ?? '…'}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={!hasPrev || loading}
+          >
+            Précédent
+          </Button>
+          <span className="text-[11px] text-primary-600">
+            Page {currentPage + 1} / {totalPages} · {limit} lignes/page
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={!hasNext || loading}
+          >
+            Suivant
+          </Button>
+        </div>
       </div>
-      {loading && preview ? (
-        <p className="text-[11px] font-medium text-primary-600 animate-fade-in">Mise à jour…</p>
-      ) : null}
 
-      {loading && !preview ? (
+      {loading ? (
         <div className="py-6">
           <Loader text="Chargement de l’aperçu…" />
         </div>
       ) : error ? (
-        <p className="text-sm text-danger-darker">{error}</p>
+        <p className="text-sm text-red-700">{error}</p>
       ) : !preview || rows.length === 0 ? (
         <p className="text-sm text-primary-600">Aucune ligne trouvée pour cette sélection.</p>
       ) : (
@@ -691,21 +696,7 @@ function SelectionPreview({
                     key={col}
                     className="px-2 py-2 font-semibold text-primary-800 whitespace-nowrap"
                   >
-                    {sortableDateColumn &&
-                    col.trim().toLowerCase() === sortableDateColumn.trim().toLowerCase() ? (
-                      <button
-                        type="button"
-                        onClick={onToggleSort}
-                        disabled={loading}
-                        className="inline-flex items-center gap-1 hover:text-primary-700 disabled:opacity-50"
-                        title="Trier par date"
-                      >
-                        <span>{col}</span>
-                        <span className="text-[11px]">{sortDirection === 'desc' ? '↓' : '↑'}</span>
-                      </button>
-                    ) : (
-                      col
-                    )}
+                    {col}
                   </th>
                 ))}
               </tr>

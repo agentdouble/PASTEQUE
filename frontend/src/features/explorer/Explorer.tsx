@@ -45,26 +45,13 @@ type ColumnRolesState = Record<string, ColumnRoleSelection>
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend)
 
-const CHART_COLORS = [
-  '#004C92',
-  '#0C77D9',
-  '#4EABFF',
-  '#69C2C3',
-  '#00A88C',
-  '#2957C8',
-  '#3979B4',
-  '#C780B4',
-  '#C4057A',
-  '#F5CE22',
-  '#FF9E00',
-  '#FF5A5F',
-]
-const LINE_COLOR = '#0C77D9'
-const LINE_FILL = 'rgba(12, 119, 217, 0.18)'
+const CHART_COLORS = ['#2563eb', '#0ea5e9', '#14b8a6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#f97316']
+const LINE_COLOR = '#2563eb'
+const LINE_FILL = 'rgba(37,99,235,0.15)'
 
 function pickColor(index: number): string {
   const paletteSize = CHART_COLORS.length
-  if (paletteSize === 0) return '#004C92'
+  if (paletteSize === 0) return '#2563eb'
   return CHART_COLORS[index % paletteSize]
 }
 
@@ -334,7 +321,7 @@ export default function Explorer() {
       </div>
 
       {updateError ? (
-        <Card variant="elevated" className="py-3 px-4 text-sm text-danger-darker border border-danger-light bg-danger-lighter">
+        <Card variant="elevated" className="py-3 px-4 text-sm text-red-700 border border-red-100 bg-red-50">
           {updateError}
         </Card>
       ) : null}
@@ -344,7 +331,7 @@ export default function Explorer() {
           <Loader text="Chargement de l’explorateur…" />
         </Card>
       ) : error ? (
-        <Card variant="elevated" className="py-6 px-4 text-sm text-danger-dark">
+        <Card variant="elevated" className="py-6 px-4 text-sm text-red-600">
           {error}
         </Card>
       ) : sources.length === 0 ? (
@@ -617,7 +604,7 @@ function CategorySelectionPreview({
       {loading ? (
         <p className="text-[11px] text-primary-500">Chargement des lignes…</p>
       ) : error ? (
-        <p className="text-[11px] text-danger-dark">{error}</p>
+        <p className="text-[11px] text-red-600">{error}</p>
       ) : preview && preview.preview_rows.length > 0 ? (
         <div className="mt-2 overflow-x-auto">
           <table className="min-w-full text-[11px] text-left">
@@ -709,7 +696,7 @@ function ColumnRolesSelector({
         {renderSelect('Category', 'category_field')}
         {renderSelect('Sub Category', 'sub_category_field')}
       </div>
-      {error ? <p className="text-[11px] text-danger-dark">{error}</p> : null}
+      {error ? <p className="text-[11px] text-red-600">{error}</p> : null}
     </div>
   )
 }
@@ -890,13 +877,13 @@ function DateTimeline({ counts }: { counts: ValueCount[] }) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#454F5F', maxRotation: 45, minRotation: 45 },
+          ticks: { color: '#52525b', maxRotation: 45, minRotation: 45 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: '#C4CEDE' },
+          grid: { color: '#e5e7eb' },
           ticks: {
-            color: '#454F5F',
+            color: '#52525b',
             callback: value => Number(value).toLocaleString('fr-FR'),
           },
         },
@@ -950,16 +937,16 @@ function BarList({ counts }: { counts: ValueCount[] }) {
       scales: {
         x: {
           beginAtZero: true,
-          grid: { color: '#C4CEDE' },
+          grid: { color: '#e5e7eb' },
           ticks: {
-            color: '#454F5F',
+            color: '#52525b',
             callback: value => Number(value).toLocaleString('fr-FR'),
           },
         },
         y: {
           grid: { display: false },
           ticks: {
-            color: '#454F5F',
+            color: '#52525b',
             autoSkip: false,
           },
         },

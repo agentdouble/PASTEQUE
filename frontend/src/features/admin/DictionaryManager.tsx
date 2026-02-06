@@ -154,7 +154,7 @@ export default function DictionaryManager() {
         <div
           className={clsx(
             'px-3 py-2 rounded-lg text-sm font-medium',
-            status.type === 'success' ? 'bg-success-lighter text-success-dark border border-success-light' : 'bg-danger-lighter text-danger-darker border border-danger-light'
+            status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
           )}
         >
           {status.message}
@@ -162,7 +162,7 @@ export default function DictionaryManager() {
       )}
 
       {error && (
-        <div className="px-3 py-2 rounded-lg bg-danger-lighter border border-danger-light text-danger-darker text-sm">
+        <div className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
           {error}
         </div>
       )}
@@ -190,8 +190,8 @@ export default function DictionaryManager() {
                     className={clsx(
                       'text-xs px-2 py-0.5 rounded-full border',
                       item.has_dictionary
-                        ? 'bg-success-lighter text-success-dark border-success-light'
-                        : 'bg-warning-lighter text-warning-darker border-warning-light'
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
                     )}
                   >
                     {item.has_dictionary ? 'Défini' : 'À créer'}

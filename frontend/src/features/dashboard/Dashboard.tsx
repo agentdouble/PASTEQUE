@@ -109,7 +109,7 @@ export default function Dashboard() {
       </div>
 
       {actionError && (
-        <Card variant="elevated" className="mb-6 border border-danger-light bg-danger-lighter text-danger-darker text-sm">
+        <Card variant="elevated" className="mb-6 border border-red-100 bg-red-50 text-red-700 text-sm">
           <p>{actionError}</p>
         </Card>
       )}
@@ -120,7 +120,7 @@ export default function Dashboard() {
         </Card>
       ) : fetchError ? (
         <Card variant="elevated" className="py-8 px-4">
-          <p className="text-sm text-danger-dark text-center">{fetchError}</p>
+          <p className="text-sm text-red-600 text-center">{fetchError}</p>
         </Card>
       ) : chartCount === 0 ? (
         <Card variant="elevated" className="text-center py-12">

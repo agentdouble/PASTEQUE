@@ -23,7 +23,7 @@ import type {
   FeedbackValue
 } from '@/types/chat'
 import type { TableExplorePreview } from '@/types/data'
-import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip, HiCheck, HiPlus, HiChevronUp, HiCalendarDays, HiTableCells, HiArrowPath } from 'react-icons/hi2'
+import { HiPaperAirplane, HiChartBar, HiBookmark, HiCheckCircle, HiXMark, HiHandThumbUp, HiHandThumbDown, HiCpuChip } from 'react-icons/hi2'
 import clsx from 'clsx'
 import { renderMarkdown } from '@/utils/markdown'
 
@@ -205,13 +205,6 @@ function formatContextUsage(usage: { chars: number; limit: number } | null): { l
   return { label, overLimit: safeChars > safeLimit }
 }
 
-function shouldShowContextDisclaimer(usage: { chars: number; limit: number } | null): boolean {
-  if (!usage) return false
-  const { chars, limit } = usage
-  if (!Number.isFinite(chars) || !Number.isFinite(limit) || limit <= 0) return false
-  return chars / limit > 0.99
-}
-
 function createMessageId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
@@ -384,80 +377,46 @@ function DateRangeSlider({ minDate, maxDate, range, onChange }: DateRangeSliderP
     }
   }
 
-  const presetItems = [
-    { key: '7d', label: '7j', days: 7 },
-    { key: '30d', label: '30j', days: 30 },
-    { key: '365d', label: '1 an', days: 365 },
-    { key: 'all', label: 'Tout', days: 'all' as const },
-  ] as const
-  const currentFromIso = toDateIso(startTs)
-  const currentToIso = toDateIso(endTs)
-  const allFromIso = minDate ?? ''
-  const allToIso = maxDate ?? ''
-  const selectedPresetKey = (() => {
-    if (currentFromIso === allFromIso && currentToIso === allToIso) {
-      return 'all'
-    }
-    for (const preset of presetItems) {
-      if (preset.days === 'all') continue
-      const endDate = new Date(maxTs)
-      const startDate = new Date(maxTs)
-      startDate.setDate(startDate.getDate() - preset.days)
-      const clampedStart = Math.max(startDate.getTime(), minTs)
-      const fromIso = toDateIso(clampedStart)
-      const toIso = toDateIso(endDate.getTime())
-      if (currentFromIso === fromIso && currentToIso === toIso) {
-        return preset.key
-      }
-    }
-    return null
-  })()
-
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Date inputs */}
-        <div className="flex items-center gap-2 text-[11px]">
-          <label className="text-primary-600">Du</label>
-          <input
-            type="date"
-            value={range.from ?? ''}
-            min={minDate}
-            max={range.to ?? maxDate}
-            onChange={e => handleFromInputChange(e.target.value)}
-            className="border border-primary-200 rounded px-1.5 py-0.5 text-[11px] text-primary-900 focus:outline-none focus:border-primary-400"
-          />
-          <label className="text-primary-600">au</label>
-          <input
-            type="date"
-            value={range.to ?? ''}
-            min={range.from ?? minDate}
-            max={maxDate}
-            onChange={e => handleToInputChange(e.target.value)}
-            className="border border-primary-200 rounded px-1.5 py-0.5 text-[11px] text-primary-900 focus:outline-none focus:border-primary-400"
-          />
-        </div>
-        <span className="text-[11px] font-medium text-primary-500">ou</span>
-        {/* Quick selection segmented control */}
-        <div className="inline-flex w-fit items-center overflow-hidden rounded-lg border border-primary-200 bg-white shadow-sm">
-          {presetItems.map((preset, idx) => (
-            <button
-              key={preset.key}
-              type="button"
-              onClick={() => setQuickRange(preset.days)}
-              className={clsx(
-                'px-2.5 py-1 text-[10px] font-medium transition-colors',
-                idx > 0 && 'border-l border-primary-200',
-                selectedPresetKey === preset.key
-                  ? 'bg-primary-900 text-white'
-                  : 'bg-white text-primary-700 hover:bg-primary-50'
-              )}
-              aria-pressed={selectedPresetKey === preset.key}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
+      {/* Quick selection buttons */}
+      <div className="flex flex-wrap gap-1">
+        {[
+          { label: '7j', days: 7 },
+          { label: '30j', days: 30 },
+          { label: '1 an', days: 365 },
+          { label: 'Tout', days: 'all' as const },
+        ].map(({ label, days }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setQuickRange(days)}
+            className="text-[10px] px-2 py-0.5 rounded border border-primary-200 bg-white text-primary-700 hover:bg-primary-50 transition-colors"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {/* Date inputs */}
+      <div className="flex items-center gap-2 text-[11px]">
+        <label className="text-primary-600">Du</label>
+        <input
+          type="date"
+          value={range.from ?? ''}
+          min={minDate}
+          max={range.to ?? maxDate}
+          onChange={e => handleFromInputChange(e.target.value)}
+          className="border border-primary-200 rounded px-1.5 py-0.5 text-[11px] text-primary-900 focus:outline-none focus:border-primary-400"
+        />
+        <label className="text-primary-600">au</label>
+        <input
+          type="date"
+          value={range.to ?? ''}
+          min={range.from ?? minDate}
+          max={maxDate}
+          onChange={e => handleToInputChange(e.target.value)}
+          className="border border-primary-200 rounded px-1.5 py-0.5 text-[11px] text-primary-900 focus:outline-none focus:border-primary-400"
+        />
       </div>
       {/* Slider */}
       <div className="relative h-10" ref={sliderRef}>
@@ -618,43 +577,17 @@ export default function Chat() {
   const [tablesLoading] = useState(false)
   // Saving behavior: opt‑in for updating user defaults to avoid cross‑tab races
   const [saveAsDefault, setSaveAsDefault] = useState(false)
-  const [newChatFading, setNewChatFading] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const ticketPreviewAbortRef = useRef<AbortController | null>(null)
   const ticketPreviewRequestRef = useRef(0)
   const explorerSelectionAbortRef = useRef<AbortController | null>(null)
-  const newChatFadeTimerRef = useRef<number | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
   const deepSearchStatusRef = useRef('')
   const deepSearchUsedWordsRef = useRef<Set<string>>(new Set())
   const explorerSelectionKeyRef = useRef<string | null>(null)
   const explorerSelectionAppliedKeyRef = useRef<string | null>(null)
-
-  function triggerNewChatFade() {
-    if (newChatFadeTimerRef.current) {
-      window.clearTimeout(newChatFadeTimerRef.current)
-      newChatFadeTimerRef.current = null
-    }
-    setNewChatFading(false)
-    window.requestAnimationFrame(() => {
-      setNewChatFading(true)
-      newChatFadeTimerRef.current = window.setTimeout(() => {
-        setNewChatFading(false)
-        newChatFadeTimerRef.current = null
-      }, 220)
-    })
-  }
-
-  useEffect(
-    () => () => {
-      if (newChatFadeTimerRef.current) {
-        window.clearTimeout(newChatFadeTimerRef.current)
-      }
-    },
-    []
-  )
 
   useEffect(() => {
     if (!ticketMode || !awaitingFirstDelta) {
@@ -1166,12 +1099,6 @@ export default function Chat() {
   async function onSend() {
     const text = input.trim()
     if (!text || loading) return
-    if (shouldShowContextDisclaimer(ticketContextUsage)) {
-      const confirmed = window.confirm(
-        "Vous dépassez les capacités de contexte de l'IA, les réponses peuvent être imprécises.\n\nVoulez-vous continuer ?"
-      )
-      if (!confirmed) return
-    }
     setError('')
     const userMessage: Message = { id: createMessageId(), role: 'user', content: text }
     const next = [...messages, userMessage]
@@ -1634,42 +1561,15 @@ export default function Chat() {
     }
   }
 
-  // Reset the chat session state to the default ticket-first view.
+  // Reset the chat session state. Used by the `?new=1` URL flow (Layout button)
   function onNewChat() {
-    triggerNewChatFade()
     if (loading && abortRef.current) {
       abortRef.current.abort()
     }
-    if (ticketPreviewAbortRef.current) {
-      ticketPreviewAbortRef.current.abort()
-      ticketPreviewAbortRef.current = null
-    }
-    if (explorerSelectionAbortRef.current) {
-      explorerSelectionAbortRef.current.abort()
-      explorerSelectionAbortRef.current = null
-    }
-    const resetRange = ticketMeta
-      ? {
-          id: createMessageId(),
-          from: ticketMeta.recommendedFrom ?? ticketMeta.min,
-          to: ticketMeta.max,
-        }
-      : { id: createMessageId() }
     setConversationId(null)
     setMessages([])
-    setInput('')
-    setChartMode(false)
-    setTicketMode(true)
-    setSqlMode(false)
-    setShowTicketPanel(true)
-    setShowTicketsSheet(false)
     setEvidenceSpec(null)
     setEvidenceData(null)
-    setTicketRanges([resetRange])
-    setExtraTicketSources([])
-    setExplorerTicketSelection(null)
-    setExplorerTicketError('')
-    setExplorerTicketLoading(false)
     setTicketPreviewItems([])
     setTicketPreviewError('')
     setTicketPreviewLoading(false)
@@ -1679,13 +1579,7 @@ export default function Chat() {
     setHistoryOpen(false)
     setHighlightMessageId(null)
     setTicketStatus('')
-    setTicketContextUsage(null)
     setAwaitingFirstDelta(false)
-    setDeepSearchStatus('')
-    setAnimStatus('')
-    if (!ticketMeta && !ticketMetaLoading) {
-      void loadTicketMetadata()
-    }
   }
 
   async function onFeedback(messageId: string, vote: FeedbackValue) {
@@ -2030,7 +1924,7 @@ export default function Chat() {
     [panelItems]
   )
 
-  const autoSelectedTicketsCount = useMemo(() => {
+  const selectedTicketsCount = useMemo(() => {
     if (!ticketMode) return null
     let total = 0
     let hasCount = false
@@ -2043,12 +1937,10 @@ export default function Chat() {
     return hasCount ? total : null
   }, [ticketMode, ticketPreviewItems])
 
-  const autoSelectedTicketsLabel = useMemo(() => {
-    if (autoSelectedTicketsCount == null) return ''
-    return autoSelectedTicketsCount === 1
-      ? '1 ticket sélectionné'
-      : `${autoSelectedTicketsCount} tickets sélectionnés`
-  }, [autoSelectedTicketsCount])
+  const selectedTicketsLabel = useMemo(() => {
+    if (selectedTicketsCount == null) return ''
+    return selectedTicketsCount === 1 ? '1 ticket sélectionné' : `${selectedTicketsCount} tickets sélectionnés`
+  }, [selectedTicketsCount])
 
   const panelTitle = panelItems.length === 1 && panelItems[0].spec?.entity_label
     ? panelItems[0].spec!.entity_label
@@ -2100,13 +1992,6 @@ export default function Chat() {
 
   const activeSelectionCount = activeSelection?.values.length ?? 0
 
-  const manualSelectedTicketsLabel = useMemo(() => {
-    if (activeSelectionCount <= 0) return ''
-    return activeSelectionCount === 1
-      ? '1 ticket sélectionné'
-      : `${activeSelectionCount} tickets sélectionnés`
-  }, [activeSelectionCount])
-
   const previewUsage = useMemo(() => {
     const items = ticketPreviewItems.filter(item => typeof item.context_chars === 'number')
     if (items.length === 0) return null
@@ -2132,13 +2017,7 @@ export default function Chat() {
   }, [ticketMode, activeSelectionCount, previewUsage, ticketPreviewLoading])
 
   const contextUsageLabel = useMemo(() => formatContextUsage(ticketContextUsage), [ticketContextUsage])
-  const ticketSummaryLabel = useMemo(() => {
-    if (ticketMetaError) return ticketMetaError
-    if (manualSelectedTicketsLabel) return manualSelectedTicketsLabel
-    if (autoSelectedTicketsLabel) return autoSelectedTicketsLabel
-    if (ticketStatus) return ticketStatus
-    return ''
-  }, [ticketMetaError, manualSelectedTicketsLabel, autoSelectedTicketsLabel, ticketStatus])
+  const ticketSummaryLabel = ticketMetaError || ticketStatus || selectedTicketsLabel
 
   function formatPeriodLabel(item: TicketPanelItem | null): string | null {
     if (!item) return null
@@ -2163,7 +2042,7 @@ export default function Chat() {
         return <div className="text-sm text-primary-500">Chargement de l’aperçu…</div>
       }
       if (ticketPreviewError && ticketMode) {
-        return <div className="text-sm text-danger-dark">{ticketPreviewError}</div>
+        return <div className="text-sm text-red-600">{ticketPreviewError}</div>
       }
       return (
         <div className="text-sm text-primary-500">
@@ -2174,8 +2053,13 @@ export default function Chat() {
     const showTabs = ticketMode && panelItems.length > 1
     const activeIndex = showTabs ? Math.min(ticketPreviewTab, panelItems.length - 1) : 0
     const activeItem = showTabs ? panelItems[activeIndex] : panelItems[0]
+    const activeLabel = activeItem?.table || activeItem?.spec?.entity_label || 'Tickets'
+    const activePeriod = formatPeriodLabel(activeItem)
     const selectionValues = ticketMode && activeItem ? ticketSelections[activeItem.key]?.values ?? [] : []
     const selectionCount = selectionValues.length
+    const selectionLabel = selectionCount === 1
+      ? '1 ticket sélectionné'
+      : `${selectionCount} tickets sélectionnés`
     return (
       <div className="space-y-3">
         {showTabs && (
@@ -2202,20 +2086,32 @@ export default function Chat() {
             })}
           </div>
         )}
-        {ticketMode && activeItem && selectionCount > 0 && (
-          <div className="flex items-center justify-end text-[11px] text-primary-600">
+        {ticketMode && selectionCount > 0 && activeItem && (
+          <div className="flex items-center justify-between text-[11px] text-primary-600">
+            <span>{selectionLabel}</span>
             <button
               type="button"
-              className="text-primary-700 underline transition-opacity"
-              aria-label="Effacer la sélection des tickets"
+              className="text-primary-700 underline"
               onClick={() => clearTicketSelection(activeItem.key)}
             >
               Tout effacer
             </button>
           </div>
         )}
+        {activePeriod && (
+          <div className="text-[11px] text-primary-500">
+            {showTabs ? (
+              <>
+                <span className="font-semibold text-primary-800">{activeLabel}</span>
+                <span className="ml-2">{activePeriod}</span>
+              </>
+            ) : (
+              activePeriod
+            )}
+          </div>
+        )}
         {activeItem?.error ? (
-          <div className="text-xs text-danger-dark">{activeItem.error}</div>
+          <div className="text-xs text-red-600">{activeItem.error}</div>
         ) : (
           <TicketPanel
             key={activeItem?.key}
@@ -2237,22 +2133,26 @@ export default function Chat() {
   }
 
   return (
-    <div className={clsx('grid h-full min-h-0 grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5', newChatFading && 'animate-fade-in')}>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
       {/* Colonne gauche: Ticket exploration */}
-      <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5 h-full min-h-0">
-        <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm px-3 pb-3 pt-1.5 h-full min-h-0 overflow-auto">
+      <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5">
+        <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm p-3 sticky top-20 max-h-[calc(100vh-120px)] overflow-auto">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-primary-900">{panelTitle}</h2>
+          </div>
           {renderTicketPanels(ticketPanelRef)}
         </div>
       </aside>
 
       {/* Colonne droite: Chat */}
-      <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7 h-full min-h-0">
-        <div className="bg-transparent p-0 flex flex-col h-full min-h-0 overflow-hidden">
+      <section className="lg:col-span-7 xl:col-span-7 2xl:col-span-7">
+        <div className="border rounded-lg bg-white shadow-sm p-0 flex flex-col min-h-[calc(100vh-120px)]">
           {/* Messages */}
-          <div ref={listRef} className="flex-1 min-h-0 px-4 pb-4 pt-1.5 flex flex-col gap-4 overflow-auto">
+          <div ref={listRef} className="flex-1 p-4 space-y-4 overflow-auto">
             {/* Mobile toolbar (Exploration uniquement) */}
             <div className="sticky top-0 z-10 -mt-4 -mx-4 mb-2 px-4 pt-3 pb-2 bg-white/95 backdrop-blur border-b lg:hidden">
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : ''}</div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -2271,32 +2171,20 @@ export default function Chat() {
                 </div>
               </div>
             </div>
+            {/* Desktop toolbar (sans boutons Historique/Chat pour éviter doublons avec le header) */}
+            <div className="hidden lg:flex items-center justify-between mb-2">
+              <div className="text-xs text-primary-500">{conversationId ? `Discussion #${conversationId}` : ''}</div>
+            </div>
 
             {ticketMode && (
               <>
                 {showTicketPanel ? (
-                  <div className="mb-3 border rounded-2xl bg-primary-50 px-3 pb-3 pt-1.5 flex flex-col gap-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <label className="text-[11px] text-primary-600">Source</label>
-                        <select
-                          value={ticketTable}
-                          onChange={e => {
-                            const next = e.target.value
-                            setTicketTable(next)
-                            void loadTicketMetadata(next || undefined, { target: 'main' })
-                          }}
-                          className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
-                        >
-                          <option value="">Auto (config chat)</option>
-                          {ticketTables.map(name => (
-                            <option key={name} value={name}>{name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-primary-700">
+                  <div className="mb-3 border rounded-2xl bg-primary-50 p-3 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs text-primary-700">
+                      <span>{ticketMeta?.table ? `Tickets (${ticketMeta.table})` : 'Tickets'}</span>
+                      <div className="flex flex-wrap items-center gap-3">
                         {ticketSummaryLabel && (
-                          <span className={clsx('text-[11px]', ticketMetaError ? 'text-danger-dark' : 'text-primary-600')}>
+                          <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                             {ticketSummaryLabel}
                           </span>
                         )}
@@ -2304,7 +2192,7 @@ export default function Chat() {
                           <span
                             className={clsx(
                               'text-[11px]',
-                              contextUsageLabel.overLimit ? 'text-warning-dark' : 'text-primary-600'
+                              contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
                             )}
                           >
                             {contextUsageLabel.label}
@@ -2312,21 +2200,35 @@ export default function Chat() {
                         )}
                         <button
                           type="button"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-primary-200 text-primary-600 hover:bg-primary-100"
+                          className="text-[11px] text-primary-600 underline"
                           onClick={() => setShowTicketPanel(false)}
-                          aria-label="Masquer le panneau tickets"
-                          title="Masquer"
                         >
-                          <HiChevronUp className="h-3.5 w-3.5" />
+                          Masquer
                         </button>
                       </div>
                     </div>
+                    {activeSelectionCount > 0 && activePanelItem && (
+                      <div className="flex items-center justify-between text-[11px] text-primary-600">
+                        <span>
+                          {activeSelectionCount === 1
+                            ? '1 ticket sélectionné'
+                            : `${activeSelectionCount} tickets sélectionnés`}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-primary-700 underline"
+                          onClick={() => clearTicketSelection(activePanelItem.key)}
+                        >
+                          Effacer
+                        </button>
+                      </div>
+                    )}
                     {explorerTicketLoading ? (
                       <div className="text-[11px] text-primary-500">
                         Chargement des tickets Explorer…
                       </div>
                     ) : explorerTicketError ? (
-                      <div className="text-[11px] text-danger-dark">{explorerTicketError}</div>
+                      <div className="text-[11px] text-red-600">{explorerTicketError}</div>
                     ) : explorerTicketSelection ? (
                       <div className="flex items-center justify-between text-[11px] text-primary-600 rounded-lg border border-primary-100 bg-white/70 px-2 py-1">
                         <span className="truncate">
@@ -2341,8 +2243,26 @@ export default function Chat() {
                         </span>
                       </div>
                     ) : null}
-                    <div className="flex flex-col gap-2 w-full">
-                        {ticketRanges.map(range => (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <label className="text-[11px] text-primary-600">Table</label>
+                      <select
+                        value={ticketTable}
+                        onChange={e => {
+                          const next = e.target.value
+                          setTicketTable(next)
+                          void loadTicketMetadata(next || undefined, { target: 'main' })
+                        }}
+                        className="border border-primary-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-400"
+                      >
+                        <option value="">Auto (config chat)</option>
+                        {ticketTables.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex flex-col gap-2 w-full">
+                        {ticketRanges.map((range, idx) => (
                           <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
                             <DateRangeSlider
                               minDate={ticketMeta?.min}
@@ -2358,52 +2278,40 @@ export default function Chat() {
                               {ticketRanges.length > 1 && (
                                 <button
                                   type="button"
-                                  className="text-xs text-danger-dark underline"
+                                  className="text-xs text-red-600 underline"
                                   onClick={() => setTicketRanges(prev => prev.filter(r => r.id !== range.id))}
                                 >
                                   Supprimer
                                 </button>
                               )}
+                              {idx === ticketRanges.length - 1 && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-primary-700 underline"
+                                  onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
+                                >
+                                  + Ajouter une période
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
-                        <div className="flex flex-wrap items-center gap-2 self-start">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
-                            onClick={() => setTicketRanges(prev => [...prev, { id: createMessageId() }])}
-                          >
-                            <HiCalendarDays className="h-3.5 w-3.5" />
-                            Période
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
-                            onClick={() => setExtraTicketSources(prev => [...prev, {
-                              id: createMessageId(),
-                              ranges: ticketRanges.map(r => ({ id: createMessageId(), from: r.from, to: r.to }))
-                            }])}
-                          >
-                            <HiTableCells className="h-3.5 w-3.5" />
-                            Table
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-md border border-primary-300 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
-                            onClick={() => {
-                              if (ticketMeta) {
-                                // Use recommendedFrom (99% context) as default, fallback to min
-                                setTicketRanges([{ id: createMessageId(), from: ticketMeta.recommendedFrom ?? ticketMeta.min, to: ticketMeta.max }])
-                                setTicketStatus('')
-                              } else {
-                                setTicketRanges([{ id: createMessageId() }])
-                              }
-                            }}
-                          >
-                            <HiArrowPath className="h-3.5 w-3.5" />
-                            Réinit.
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          className="text-xs text-primary-700 underline self-start"
+                          onClick={() => {
+                            if (ticketMeta) {
+                              // Use recommendedFrom (99% context) as default, fallback to min
+                              setTicketRanges([{ id: createMessageId(), from: ticketMeta.recommendedFrom ?? ticketMeta.min, to: ticketMeta.max }])
+                              setTicketStatus('')
+                            } else {
+                              setTicketRanges([{ id: createMessageId() }])
+                            }
+                          }}
+                        >
+                          Réinitialiser
+                        </button>
+                      </div>
                     </div>
 
                 {/* Tables supplémentaires */}
@@ -2419,7 +2327,7 @@ export default function Chat() {
                         <span>Table additionnelle {sourceIdx + 1}</span>
                         <button
                           type="button"
-                          className="text-[11px] text-danger-dark underline"
+                          className="text-[11px] text-red-600 underline"
                           onClick={() => setExtraTicketSources(prev => prev.filter(s => s.id !== source.id))}
                         >
                           Supprimer
@@ -2447,7 +2355,7 @@ export default function Chat() {
                         </select>
                       </div>
                       <div className="flex flex-col gap-2 w-full mt-1">
-                        {(source.ranges || []).map(range => (
+                        {(source.ranges || []).map((range, idx) => (
                           <div key={range.id} className="w-full rounded-xl border border-primary-100 bg-white/70 px-3 py-2 flex flex-col gap-2">
                             <DateRangeSlider
                               minDate={minDate}
@@ -2467,7 +2375,7 @@ export default function Chat() {
                               {(source.ranges?.length || 0) > 1 && (
                                 <button
                                   type="button"
-                                  className="text-xs text-danger-dark underline"
+                                  className="text-xs text-red-600 underline"
                                   onClick={() =>
                                     setExtraTicketSources(prev =>
                                       prev.map(s =>
@@ -2481,60 +2389,68 @@ export default function Chat() {
                                   Supprimer
                                 </button>
                               )}
+                              {idx === (source.ranges?.length || 1) - 1 && (
+                                <button
+                                  type="button"
+                                  className="text-xs text-primary-700 underline"
+                                  onClick={() =>
+                                    setExtraTicketSources(prev =>
+                                      prev.map(s =>
+                                        s.id === source.id
+                                          ? { ...s, ranges: [...s.ranges, { id: createMessageId() }] }
+                                          : s
+                                      )
+                                    )
+                                  }
+                                >
+                                  + Ajouter une période
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
-                        <div className="flex flex-wrap items-center gap-2 self-start">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
-                            onClick={() =>
-                              setExtraTicketSources(prev =>
-                                prev.map(s =>
-                                  s.id === source.id
-                                    ? { ...s, ranges: [...s.ranges, { id: createMessageId() }] }
-                                    : s
-                                )
+                        <button
+                          type="button"
+                          className="text-xs text-primary-700 underline self-start"
+                          onClick={() =>
+                            setExtraTicketSources(prev =>
+                              prev.map(s =>
+                                s.id === source.id
+                                  ? {
+                                      ...s,
+                                      ranges: [
+                                        { id: createMessageId(), from: defaultFrom, to: maxDate },
+                                      ],
+                                    }
+                                  : s
                               )
-                            }
-                          >
-                            <HiCalendarDays className="h-3.5 w-3.5" />
-                            Période
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-md border border-primary-300 bg-white px-2 py-1 text-xs text-primary-700 hover:bg-primary-50 transition-colors"
-                            onClick={() =>
-                              setExtraTicketSources(prev =>
-                                prev.map(s =>
-                                  s.id === source.id
-                                    ? {
-                                        ...s,
-                                        ranges: [
-                                          { id: createMessageId(), from: defaultFrom, to: maxDate },
-                                        ],
-                                      }
-                                    : s
-                                )
-                              )
-                            }
-                          >
-                            <HiArrowPath className="h-3.5 w-3.5" />
-                            Réinit.
-                          </button>
-                        </div>
+                            )
+                          }
+                        >
+                          Réinitialiser cette table
+                        </button>
                       </div>
                     </div>
                   )
                 })}
 
+                    <button
+                      type="button"
+                      className="text-xs text-primary-700 underline self-start"
+                      onClick={() => setExtraTicketSources(prev => [...prev, {
+                        id: createMessageId(),
+                        ranges: ticketRanges.map(r => ({ id: createMessageId(), from: r.from, to: r.to }))
+                      }])}
+                    >
+                      + Ajouter une table
+                    </button>
                   </div>
                 ) : (
                   <div className="mb-3 border rounded-2xl bg-primary-50 px-3 py-2 flex items-center justify-between text-xs text-primary-700">
                     <div className="flex flex-wrap items-center gap-2">
                       <span>Tickets masqués</span>
                       {ticketSummaryLabel && (
-                        <span className={clsx('text-[11px]', ticketMetaError ? 'text-danger-dark' : 'text-primary-600')}>
+                        <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
                           {ticketSummaryLabel}
                         </span>
                       )}
@@ -2542,10 +2458,15 @@ export default function Chat() {
                         <span
                           className={clsx(
                             'text-[11px]',
-                            contextUsageLabel.overLimit ? 'text-warning-dark' : 'text-primary-600'
+                            contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
                           )}
                         >
                           {contextUsageLabel.label}
+                        </span>
+                      )}
+                      {activeSelectionCount > 0 && (
+                        <span className="text-[11px] text-primary-600">
+                          {activeSelectionCount === 1 ? '1 sélectionné' : `${activeSelectionCount} sélectionnés`}
                         </span>
                       )}
                     </div>
@@ -2588,14 +2509,14 @@ export default function Chat() {
               </div>
             )}
             {error && (
-              <div className="mt-2 bg-danger-lighter border-2 border-danger-light rounded-lg p-3">
-                <p className="text-sm text-danger-darker">{error}</p>
+              <div className="mt-2 bg-red-50 border-2 border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
           </div>
 
           {/* Composer */}
-          <div className="p-3 shrink-0">
+          <div className="p-3">
             <div className="relative">
               <div className="absolute left-2 top-1/2 -translate-y-1/2 transform inline-flex items-center gap-2">
                 {canUseSqlAgent && (
@@ -2801,7 +2722,7 @@ export default function Chat() {
                       className="text-left text-sm text-primary-900 hover:underline"
                       onClick={() => loadConversation(item.id)}
                     >
-                      <div className="font-medium truncate max-w-[42ch]">{item.title || 'Conversation sans titre'}</div>
+                      <div className="font-medium truncate max-w-[42ch]">{item.title || `Discussion #${item.id}`}</div>
                       <div className="text-xs text-primary-500">{new Date(item.updated_at).toLocaleString()}</div>
                     </button>
                     <button
@@ -2844,10 +2765,6 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
   // Preview caps (configurable)
   const PREVIEW_COL_MAX = TICKETS_CONFIG.PREVIEW_COL_MAX
   const PREVIEW_CHAR_MAX = TICKETS_CONFIG.PREVIEW_CHAR_MAX
-  const COLUMN_NAME_CELL_CLASS =
-    'w-40 max-w-[10rem] pr-2 py-1 text-primary-400 align-top break-words [overflow-wrap:anywhere]'
-  const COLUMN_VALUE_CELL_CLASS =
-    'py-1 text-primary-800 break-words [overflow-wrap:anywhere]'
 
   const count = data?.row_count ?? data?.rows?.length ?? 0
   const limit = spec?.limit ?? 100
@@ -3001,7 +2918,7 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
             <div className="text-sm font-semibold text-primary-900">Détail</div>
             <button type="button" onClick={backToList} className="text-xs rounded-full border px-2 py-1 hover:bg-primary-50">Tout voir</button>
           </div>
-          <div className="text-sm text-danger-dark">Configuration manquante: clé primaire introuvable.</div>
+          <div className="text-sm text-red-600">Configuration manquante: clé primaire introuvable.</div>
         </div>
       )
     }
@@ -3040,12 +2957,12 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
               </div>
             )}
             <div className="mt-2 overflow-auto">
-              <table className="min-w-full table-fixed text-[11px]">
+              <table className="min-w-full text-[11px]">
                 <tbody>
                   {orderedColumns.map((c) => (
                     <tr key={c} className="border-t border-primary-100">
-                      <td className={COLUMN_NAME_CELL_CLASS} title={c}>{c}</td>
-                      <td className={COLUMN_VALUE_CELL_CLASS}>{String(row[c] ?? '')}</td>
+                      <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
+                      <td className="py-1 text-primary-800 break-all">{String(row[c] ?? '')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -3070,7 +2987,6 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
         const rowId = pkKey && pk != null ? String(pk) : ''
         const canSelect = selectionEnabled && Boolean(rowId)
         const isSelected = canSelect && selectedSet.has(rowId)
-        const rowLabel = String(title ?? pk ?? `#${idx + 1}`)
         return (
           <div
             key={uniqueKey}
@@ -3082,35 +2998,18 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
               'border rounded-md p-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300',
               isSelected ? 'border-primary-300 bg-primary-50' : 'border-primary-100 hover:bg-primary-50'
             )}
-            aria-label={`Voir le ticket ${rowLabel}`}
+            aria-label={`Voir le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
           >
             <div className="flex items-start gap-2">
               {canSelect && (
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation()
-                    toggleSelection(rowId, !isSelected)
-                  }}
-                  onKeyDown={e => e.stopPropagation()}
-                  aria-pressed={isSelected}
-                  aria-label={`${isSelected ? 'Désélectionner' : 'Sélectionner'} le ticket ${rowLabel}`}
-                  title={`${isSelected ? 'Désélectionner' : 'Sélectionner'} ce ticket`}
-                  className={clsx(
-                    'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-1',
-                    isSelected
-                      ? 'border-primary-700 bg-primary-700 text-white shadow-sm'
-                      : 'border-primary-300 bg-white text-primary-700 hover:border-primary-500 hover:bg-primary-50'
-                  )}
-                >
-                  {isSelected ? (
-                    <HiCheck className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <HiPlus className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  <span className="sr-only">{isSelected ? 'Sélectionné' : 'Non sélectionné'}</span>
-                </button>
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={isSelected}
+                  onChange={e => toggleSelection(rowId, e.target.checked)}
+                  onClick={e => e.stopPropagation()}
+                  aria-label={`Sélectionner le ticket ${String(title ?? pk ?? `#${idx + 1}`)}`}
+                />
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
@@ -3131,12 +3030,12 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
                 )}
                 {previewColumns && previewColumns.length > 0 && (
                   <div className="mt-2 overflow-auto">
-                    <table className="min-w-full table-fixed text-[11px]">
+                    <table className="min-w-full text-[11px]">
                       <tbody>
                         {previewColumns.map((c) => (
                           <tr key={c} className="border-t border-primary-100">
-                            <td className={COLUMN_NAME_CELL_CLASS} title={c}>{c}</td>
-                            <td className={COLUMN_VALUE_CELL_CLASS} title={String(row[c] ?? '')}>{truncate(row[c])}</td>
+                            <td className="pr-2 py-1 text-primary-400 whitespace-nowrap align-top">{c}</td>
+                            <td className="py-1 text-primary-800 break-all" title={String(row[c] ?? '')}>{truncate(row[c])}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -3263,7 +3162,7 @@ function MessageBubble({
               </div>
             )}
             {chartSaveError && (
-              <p className="text-xs text-danger-dark pt-2">
+              <p className="text-xs text-red-600 pt-2">
                 {chartSaveError}
               </p>
             )}
@@ -3295,7 +3194,7 @@ function MessageBubble({
                       className={clsx(
                         'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors',
                         feedbackUp
-                          ? 'bg-success-lighter border-success-light text-success-darker'
+                          ? 'bg-green-100 border-green-200 text-green-800'
                           : 'border-primary-200 text-primary-600 hover:bg-primary-50',
                         feedbackPending && 'opacity-60 cursor-not-allowed'
                       )}
@@ -3311,7 +3210,7 @@ function MessageBubble({
                       className={clsx(
                         'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors',
                         feedbackDown
-                          ? 'bg-danger-lighter border-danger-light text-danger-darker'
+                          ? 'bg-red-100 border-red-200 text-red-800'
                           : 'border-primary-200 text-primary-600 hover:bg-primary-50',
                         feedbackPending && 'opacity-60 cursor-not-allowed'
                       )}
@@ -3357,7 +3256,7 @@ function MessageBubble({
                   {showDetails ? 'Masquer' : 'Détails'}
                 </Button>
                 {message.feedbackError && (
-                  <span className="text-[11px] text-danger-dark">{message.feedbackError}</span>
+                  <span className="text-[11px] text-red-600">{message.feedbackError}</span>
                 )}
               </div>
             )}

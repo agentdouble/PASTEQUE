@@ -6,6 +6,10 @@ Plateforme modulaire pour « discuter avec les données » (chatbot, dashboard, 
 - Backend: Python (FastAPI), packagé avec `uv`. Toute la logique, l’accès aux données et les services.
 - Data: stockage des données sources et dérivées (pas de code ici).
 
+## Maintenance
+
+- Revert du merge `dev` -> `main` (commit `ce261875d06f90bd9bfb345cb9285813c15dc56b`).
+
 ## Dossiers
 
 - `frontend/` – UI React, pages, composants, services d’appel API.
@@ -65,27 +69,13 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 - Le prompt de synthèse tickets reçoit un `total_tickets` stable même quand le contexte est chunké.
 - Le backend journalise le nombre de workers actifs pour la synthèse tickets.
 - L’UI indique la charge du contexte tickets avec un pourcentage (`context_chars` / `TICKET_CONTEXT_DIRECT_MAX_CHARS`).
-- À l’envoi d’une requête, si la charge contexte dépasse 99%, une fenêtre de disclaimer avertit que les réponses peuvent être imprécises avant confirmation.
 - En mode tickets, l’UI affiche un indicateur « DeepSearch mode : … » avec variantes aléatoires à cadence lente, sans répétition de mots, et avec certaines variantes exclues au démarrage.
 - En mode tickets par défaut, l’UI pré-charge automatiquement la config (table/colonnes/date min-max) dès l’ouverture du chat pour que la liste des tables soit disponible sans action supplémentaire.
 - Plusieurs périodes peuvent être sélectionnées via un double curseur (ex.: septembre 2025 et octobre 2024) et le bouton « + Ajouter une période »; les périodes sont transmises en métadonnées `ticket_periods` et filtrent le contexte injecté.
 - Plusieurs tables peuvent être ajoutées (« + Ajouter une table ») avec leurs propres périodes; le frontend envoie `ticket_sources` (table + périodes) en plus du couple principal `ticket_table`/`ticket_periods` pour compatibilité.
-- Les actions sont regroupées sous la sélection de dates en boutons courts avec icônes explicites: `Période`, `Table`, `Réinit.` (flèche loop).
 - Le panneau Contexte tickets peut être masqué/affiché (bouton « Masquer »/« Afficher ») pour libérer l'espace du chat sans perdre la configuration active.
-- Le bandeau du panneau n’affiche plus le nom de table (déjà visible dans le champ Table) et utilise une icône flèche minimaliste pour le masquage.
-- Le sélecteur de source de données est positionné en haut du panel de dates pour un accès direct.
-- Le header du panel de dates est compacté (moins de vide en tête) pour remonter visuellement la sélection des périodes.
-- Le bloc `Discussion #...` desktop n’est affiché que lorsqu’une conversation est active, pour éviter un espace vide en haut.
-- Le panneau de visualisation tickets (colonne gauche desktop) n’affiche plus le titre “Tickets” et démarre plus haut pour supprimer le blanc.
-- Le bandeau du panneau affiche toujours le nombre de tickets sélectionnés en haut à droite (sélection manuelle ou auto).
-- Sans sélection manuelle, le libellé auto n’affiche plus la période (ex: `552 tickets sélectionnés`).
-- Le compteur de sélection n’est plus dupliqué dans le panel de tickets: le nombre reste affiché uniquement dans le bandeau supérieur.
-- La période sélectionnée n’est plus répétée dans la liste de tickets à gauche (elle reste visible dans le sélecteur de dates et le bandeau supérieur).
-- La zone d’action « Tout effacer » conserve une hauteur stable pour éviter les sauts visuels du panel lors des sélections.
-- `Du/au` apparaît en premier sur la ligne de période, puis `ou`, puis les presets rapides (`7j`, `30j`, `1 an`, `Tout`) en segmented control.
+- Le bandeau du panneau affiche le nombre de tickets sélectionnés selon les plages de dates actives.
 - En mode tickets, le panneau « Ticket exploration » affiche immédiatement l'aperçu des tickets filtrés par les périodes sélectionnées ou par une sélection Explorer active (limite pilotée par `EVIDENCE_LIMIT_DEFAULT` côté backend). En cas de plusieurs tables, un onglet par table est affiché, y compris pour la table issue de l'Explorer.
-- Le panel « Ticket exploration » gère désormais les noms de colonnes très longs (retour à la ligne automatique + largeur bornée) pour éviter les débordements visuels.
-- La sélection de tickets dans le panel utilise un bouton compact, minimaliste (icône seule), avec états visuels contrastés et focus clavier renforcé pour l’accessibilité.
 - Lors d'un changement d'onglet (multi‑tables), la vue détail revient à la liste pour éviter un écran vide.
 - Les panels multi‑tables utilisent des clés stables pour éviter l'inversion des données lors de la suppression d'une table.
 - Lorsqu'une table est supprimée, son aperçu est retiré immédiatement du panel pour éviter les restes visuels.
@@ -122,7 +112,12 @@ Lors du premier lancement, connectez-vous avec `admin / admin` (ou les valeurs `
 
 ### Router (à chaque message)
 
-Le garde‑fou bloquant du routeur a été supprimé du flux chat: les messages ne sont plus interrompus par une réponse de refus avant traitement.
+Un routeur léger s’exécute à chaque message utilisateur pour éviter de lancer des requêtes SQL/NL→SQL lorsque le message n’est pas orienté « data ».
+
+- Modes: `ROUTER_MODE=rule|local|api|false` (voir `backend/.env.example`).
+  - `false` désactive complètement le routeur (aucun blocage).
+- Politique par défaut plus permissive: questions, indices temporels (mois/années) ou chiffres déclenchent le mode data même avec une salutation.
+- Exemple de blocage: « Ce n'est pas une question pour passer de la data à l'action » (banalités très courtes uniquement).
 
 ### Historique des conversations (branche `feature/historique`)
 
@@ -168,25 +163,14 @@ Le garde‑fou bloquant du routeur a été supprimé du flux chat: les messages 
 ### Explorer (navigation Category/Sub Category)
 
 - Onglet « Explorer » dans le header pour explorer les données par paires `Category` / `Sub Category` quand ces colonnes existent.
-- Le filtre date global est intégré directement au bloc de visualisation (en tête de la première carte source) pour éviter les cartes imbriquées.
 - Les colonnes Date / Category / Sub Category sont configurables par l’admin via l’onglet Admin → Explorer et persistées via `/api/v1/data/overview/{source}/column-roles`.
 - Chaque source affichant ces colonnes est listée avec ses catégories et sous-catégories cliquables : un clic déclenche un aperçu (`/api/v1/data/explore/{source}`) limité à 25 lignes, avec le volume total de lignes correspondantes.
 - Si une source ne possède pas les deux colonnes, la vue l’ignore et affiche un message explicite plutôt que de masquer l’erreur.
-- Les aperçus sont paginés (25 lignes/page) avec navigation précédente/suivante et un tri `date` (desc/asc) directement depuis l’en-tête de la colonne date dans la table.
-- Le bouton « Discuter avec ces données » (placé en haut du bloc donut) ouvre le chat en mode tickets avec la sélection Category/Sub Category préchargée (capée à 500 tickets, compteur affiché).
+- Les aperçus sont paginés (25 lignes/page) avec navigation précédente/suivante et un tri par colonne `date` (desc/asc) quand la colonne est présente.
+- Depuis l’aperçu, un bouton « Discuter dans le chat » ouvre le chat en mode tickets avec la sélection Category/Sub Category préchargée (capée à 500 tickets, compteur affiché).
 - Le panneau tickets du chat se cale sur la sélection Explorer, même si d’autres tables sont ouvertes (onglets séparés).
-- Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage est appliquée automatiquement (sans bouton « Appliquer ») côté backend (`/data/overview` + `/data/explore`) et la réinitialisation passe par un bouton icône flèche.
-- Le donut Category/Sub Category n’est plus encapsulé dans une carte interne: le rendu est homogénéisé (pas de « carré dans carré »).
+- Un range slider « date » global (tout en haut) filtre les données et l’aperçu d’un seul coup : la plage sélectionnée est appliquée côté backend (`/data/overview` + `/data/explore`) pour recalculer les volumes, avec un rail unique qui met en évidence la plage choisie.
 - Chaque source inclut désormais un camembert Category/Sub Category (Chart.js) cliquable qui déclenche l’aperçu, se recalcule automatiquement quand le filtre date est appliqué et permet un drill-down : clic catégorie → camembert des sous-catégories + mise à jour immédiate de la table sur la sous-catégorie dominante, clic sous-catégorie → ouverture de l’aperçu (bouton retour pour remonter).
-- Les actions `Discuter avec ces données` et `Retour catégories` sont regroupées en haut du bloc donut pour une meilleure visibilité.
-- La catégorie et la sous-catégorie en cours sont mises en évidence avec des badges « Sélection active » dans l’aperçu pour clarifier le contexte courant.
-- Le nom de table est affiché une seule fois par carte pour éviter les répétitions visuelles.
-- Une animation courte (fade/slide) est déclenchée lors d’un changement de catégorie/sous-catégorie pour rendre la transition visuelle plus claire.
-- Les actions Explorer (sélection dans le donut, tri date, pagination, ajustement du filtre date) gardent l’aperçu visible pendant le chargement pour éviter les flashes et les sauts visuels.
-- Le composant donut applique une marge interne renforcée (padding + rayon borné) pour éviter qu’un segment soit tronqué pendant les interactions.
-- Le badge central (catégorie/sous-catégorie + volume) a été retiré du donut pour épurer la visualisation et éviter tout chevauchement visuel.
-- L’anneau du donut a été légèrement épaissi (`radius` 90%, `cutout` 72%) pour améliorer la lisibilité visuelle.
-- Le donut adopte un style plus futuriste: segments en dégradés néon, halo circulaire subtil, séparateurs renforcés et fond grille léger.
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
 - Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et le donut.
 - La navigation se fait directement via le donut (clic catégorie puis sous-catégorie).
@@ -199,7 +183,7 @@ Le garde‑fou bloquant du routeur a été supprimé du flux chat: les messages 
 - Script Airflow: `airflow/dags/trigger_radar.sh` déclenche la regen via `POST /api/v1/loop/regenerate` avec auth admin. Le script charge `airflow/dags/.env` (exemple: `airflow/dags/.env.example`) avec `RADAR_API_BASE_URL`, `RADAR_ADMIN_USERNAME`, `RADAR_ADMIN_PASSWORD`, option `RADAR_TABLE_NAME`, `RADAR_TIMEOUT_S`.
 - L’agent suit `LLM_MODE` (local vLLM ou API OpenAI‑compatible) et peut être borné via `AGENT_MAX_REQUESTS` (clé `looper`). Les garde‑fous de contexte sont décrits dans `backend/README.md` (`LOOP_MAX_TICKETS`, `LOOP_TICKET_TEXT_MAX_CHARS`, `LOOP_MAX_DAYS/WEEKS/MONTHS` par défaut à 1, `LOOP_MAX_TOKENS`, `LOOP_MAX_TICKETS_PER_CALL`, `LOOP_MAX_INPUT_CHARS`, etc.). Si une synthèse est tronquée, augmenter `LOOP_MAX_TOKENS` (et si besoin `LLM_MAX_TOKENS`).
 - En cas d’erreur LLM lors d’une régénération, l’API renvoie un `502` avec un `request_id` si disponible pour faciliter le diagnostic.
-- UI Radar: page épurée avec sélection du mode (journalier/hebdo/mensuel) et de la table, chargement automatique au rendu (sans bouton d’actualisation manuel).
+- UI Radar: page épurée avec sélection du mode (journalier/hebdo/mensuel) et de la table.
 
 ## Principes d’architecture
 
@@ -318,40 +302,8 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 
 ## Notes UI
 
-- 2026-02-06: Le logo du bandeau latéral est affiché en blanc ; le libellé `FoyerInsight` utilise la police par défaut du site, avec la casse exacte.
-- 2026-02-06: Le bandeau latéral est désormais en bleu plein (dégradé Foyer) avec contrastes ajustés pour les états actifs/inactifs; les états UI `success/danger/warning` utilisent une palette sémantique Foyer (plus de classes `green/red/amber` natives).
-- 2026-02-06: La palette frontend est alignée sur les couleurs Foyer (référence `foyer-colors.css`) via `primary` Tailwind (incluant `primary-25`) et les couleurs Chart.js (Explorer + donuts) ont été harmonisées pour un rendu plus premium.
 - 2025-10-21: L'état vide du chat (« Discutez avec vos données ») est maintenant centré via un overlay `fixed` non interactif: pas de scroll tant qu'aucun message n'est présent; la barre de saisie reste accessible.
  - 2025-10-21: Ajout d'un petit avertissement sous la zone de saisie: « L'IA peut faire des erreurs, FoyerInsight aussi. »
-- 2026-02-05: Le cadre visuel externe de la colonne chat (bordure/ombre/arrondi du conteneur principal) a été supprimé dans l’onglet Chat pour alléger la vue.
-- 2026-02-05: Le fond du conteneur principal du chat est passé en transparent pour reprendre exactement le background global de l’application.
-- 2026-02-05: Le numéro de discussion (`Discussion #...`) n’est plus affiché dans l’onglet Chat; l’historique utilise désormais le fallback « Conversation sans titre ».
-- 2026-02-05: Le panneau tickets (colonne gauche) n’affiche plus de ligne vide réservée à « Tout effacer » quand aucune sélection manuelle n’est active, pour aligner visuellement le haut des deux panneaux.
-- 2026-02-05: Le flux de messages du panneau chat utilise désormais `flex + gap` (au lieu de `space-y`) pour éviter un décalage vertical quand la toolbar mobile est masquée sur desktop; les deux panneaux démarrent au même niveau.
-- 2026-02-05: Le header a été réorganisé avec une vraie barre de navigation (Chat/Explorer/Radar/Graph/Historique/Admin), un état actif visible et un comportement responsive horizontal pour améliorer la lisibilité des boutons.
-- 2026-02-05: La navigation du header est affichée en bandeau vertical (colonne de boutons pleine largeur) avec maintien de l’état actif.
-- 2026-02-05: Le header horizontal est remplacé par un bandeau latéral fixe à gauche (nom + onglets + déconnexion), rabattable via un bouton `<<` / `>>`.
-- 2026-02-05: Sur la page Chat, le layout passe en hauteur pleine (`h-screen` + `h-full`) et retire les anciens offsets `calc(100vh-120px)` / `top-20` pour que le panneau tickets et la zone chat descendent bien jusqu’en bas de la page.
-- 2026-02-05: Correction du scroll infini sur `/chat` en verrouillant la page sur `100dvh` (`Layout` + `aside` + `main`) et en gardant le scroll uniquement dans les zones internes du chat.
-- 2026-02-05: Ajustement de la chaîne flex du chat (`min-h-0`, `overflow-hidden`, composer `shrink-0`) pour maintenir durablement la barre « Posez votre question » collée en bas de viewport.
-- 2026-02-05: Verrouillage explicite du scroll global (`html/body overflow: hidden`) sur la route `/chat` pour supprimer le scroll page résiduel; seul le scroll interne des panneaux reste actif.
-- 2026-02-05: Ajout d’un léger espacement en haut de la page `/chat` (`main` en `pt-3`) pour éviter un rendu trop collé au bord supérieur.
-- 2026-02-05: Le menu du bandeau latéral n’utilise plus un conteneur “carte” encadré; les onglets sont désormais intégrés directement au rail vertical avec un état actif plus discret.
-- 2026-02-05: Le bouton de repli du bandeau latéral passe en icône chevrons (style plus fin) et la sélection d’onglet n’affiche plus de contour/badge encadré.
-- 2026-02-05: Le libellé “Navigation” est supprimé du bandeau latéral pour alléger l’en-tête de menu.
-- 2026-02-05: La largeur du bandeau latéral est réduite (ouvert/replié) pour une empreinte visuelle plus légère.
-- 2026-02-05: Le bandeau latéral est plus compact verticalement en mode ouvert (espacements réduits) et masque désormais le logo en mode replié.
-- 2026-02-05: La page `/radar` n’affiche plus de bouton « Actualiser »; les données se chargent automatiquement à l’ouverture.
-- 2026-02-05: Le sélecteur de mode sur `/radar` utilise désormais un segmented control (3 segments alignés) avec état actif plus contrasté.
-- 2026-02-05: La carte de synthèse `/radar` n’affiche plus le rappel « Table sélectionnée » pour éviter la redondance avec le sélecteur.
-- 2026-02-05: La carte de synthèse `/radar` n’affiche plus l’intitulé redondant du mode (« Flash du jour », « Panorama du mois », etc.), le mode actif étant déjà visible dans le segmented control.
-- 2026-02-05: Le bloc de filtres `/radar` est réorganisé en pile intégrée: sélection de table en haut, puis segmented control du mode centré juste en dessous.
-- 2026-02-05: Le bloc de filtres `/radar` n’est plus encadré par une carte externe (cadre/ombre retirés) pour un rendu plus léger.
-- 2026-02-05: La zone d’output `/radar` n’utilise plus de cartes imbriquées; le double cadre visuel autour de la synthèse a été supprimé.
-- 2026-02-05: Le titre de page « Radar » est retiré de `/radar` pour alléger l’en-tête (la navigation active sert déjà de repère).
-- 2026-02-05: Le bandeau latéral remplace l’entrée `Chat` par `Nouveau chat` (action `/chat?new=1`) et le bouton `Nouveau chat` de la barre sticky du flux `/chat` est retiré.
-- 2026-02-05: `Nouveau chat` réinitialise désormais `/chat` vers l’état par défaut (tickets visibles, mode tickets actif, filtres reset) et annule les requêtes en cours pour éviter un écran vide.
-- 2026-02-05: Le clic sur `Nouveau chat` déclenche un fondu court (`animate-fade-in`) sur la vue `/chat` pendant la réinitialisation.
 
 ## Maintenance
 
