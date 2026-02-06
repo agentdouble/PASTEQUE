@@ -13,28 +13,30 @@ import {
 import type { CategorySubCategoryCount } from '@/types/data'
 
 const PALETTE = [
-  { solid: '#3b82f6', from: '#60a5fa', to: '#1d4ed8' },
-  { solid: '#0ea5e9', from: '#67e8f9', to: '#0284c7' },
-  { solid: '#06b6d4', from: '#67e8f9', to: '#0891b2' },
-  { solid: '#14b8a6', from: '#5eead4', to: '#0f766e' },
-  { solid: '#22c55e', from: '#86efac', to: '#15803d' },
-  { solid: '#a3e635', from: '#bef264', to: '#65a30d' },
-  { solid: '#f59e0b', from: '#fcd34d', to: '#d97706' },
-  { solid: '#f97316', from: '#fdba74', to: '#c2410c' },
-  { solid: '#fb7185', from: '#fda4af', to: '#be123c' },
-  { solid: '#6366f1', from: '#a5b4fc', to: '#4338ca' },
+  { solid: '#004C92', from: '#3979B4', to: '#033767' },
+  { solid: '#0C77D9', from: '#4EABFF', to: '#086DCA' },
+  { solid: '#4EABFF', from: '#4EABFF', to: '#0F8DFF' },
+  { solid: '#69C2C3', from: '#69C2C3', to: '#0F8E79' },
+  { solid: '#00A88C', from: '#59C5B3', to: '#008670' },
+  { solid: '#2957C8', from: '#A9BCE9', to: '#0736A8' },
+  { solid: '#3979B4', from: '#A9BCE9', to: '#004C92' },
+  { solid: '#C780B4', from: '#EEB8D8', to: '#9A1C6E' },
+  { solid: '#C4057A', from: '#D44D9E', to: '#710B55' },
+  { solid: '#F5CE22', from: '#F9E176', to: '#D8A600' },
+  { solid: '#FF9E00', from: '#FBB54B', to: '#D18B00' },
+  { solid: '#FF5A5F', from: '#F97F7F', to: '#D74B50' },
 ]
 
 function pickColor(index: number): string {
   const size = PALETTE.length
-  if (size === 0) return '#2563eb'
+  if (size === 0) return '#004C92'
   return PALETTE[index % size].solid
 }
 
 function pickGradient(index: number): { from: string; to: string } {
   const size = PALETTE.length
   if (size === 0) {
-    return { from: '#60a5fa', to: '#1d4ed8' }
+    return { from: '#3979B4', to: '#033767' }
   }
   const color = PALETTE[index % size]
   return { from: color.from, to: color.to }

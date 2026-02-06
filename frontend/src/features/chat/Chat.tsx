@@ -2163,7 +2163,7 @@ export default function Chat() {
         return <div className="text-sm text-primary-500">Chargement de l’aperçu…</div>
       }
       if (ticketPreviewError && ticketMode) {
-        return <div className="text-sm text-red-600">{ticketPreviewError}</div>
+        return <div className="text-sm text-danger-dark">{ticketPreviewError}</div>
       }
       return (
         <div className="text-sm text-primary-500">
@@ -2215,7 +2215,7 @@ export default function Chat() {
           </div>
         )}
         {activeItem?.error ? (
-          <div className="text-xs text-red-600">{activeItem.error}</div>
+          <div className="text-xs text-danger-dark">{activeItem.error}</div>
         ) : (
           <TicketPanel
             key={activeItem?.key}
@@ -2296,7 +2296,7 @@ export default function Chat() {
                       </div>
                       <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-primary-700">
                         {ticketSummaryLabel && (
-                          <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
+                          <span className={clsx('text-[11px]', ticketMetaError ? 'text-danger-dark' : 'text-primary-600')}>
                             {ticketSummaryLabel}
                           </span>
                         )}
@@ -2304,7 +2304,7 @@ export default function Chat() {
                           <span
                             className={clsx(
                               'text-[11px]',
-                              contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
+                              contextUsageLabel.overLimit ? 'text-warning-dark' : 'text-primary-600'
                             )}
                           >
                             {contextUsageLabel.label}
@@ -2326,7 +2326,7 @@ export default function Chat() {
                         Chargement des tickets Explorer…
                       </div>
                     ) : explorerTicketError ? (
-                      <div className="text-[11px] text-red-600">{explorerTicketError}</div>
+                      <div className="text-[11px] text-danger-dark">{explorerTicketError}</div>
                     ) : explorerTicketSelection ? (
                       <div className="flex items-center justify-between text-[11px] text-primary-600 rounded-lg border border-primary-100 bg-white/70 px-2 py-1">
                         <span className="truncate">
@@ -2358,7 +2358,7 @@ export default function Chat() {
                               {ticketRanges.length > 1 && (
                                 <button
                                   type="button"
-                                  className="text-xs text-red-600 underline"
+                                  className="text-xs text-danger-dark underline"
                                   onClick={() => setTicketRanges(prev => prev.filter(r => r.id !== range.id))}
                                 >
                                   Supprimer
@@ -2419,7 +2419,7 @@ export default function Chat() {
                         <span>Table additionnelle {sourceIdx + 1}</span>
                         <button
                           type="button"
-                          className="text-[11px] text-red-600 underline"
+                          className="text-[11px] text-danger-dark underline"
                           onClick={() => setExtraTicketSources(prev => prev.filter(s => s.id !== source.id))}
                         >
                           Supprimer
@@ -2467,7 +2467,7 @@ export default function Chat() {
                               {(source.ranges?.length || 0) > 1 && (
                                 <button
                                   type="button"
-                                  className="text-xs text-red-600 underline"
+                                  className="text-xs text-danger-dark underline"
                                   onClick={() =>
                                     setExtraTicketSources(prev =>
                                       prev.map(s =>
@@ -2534,7 +2534,7 @@ export default function Chat() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span>Tickets masqués</span>
                       {ticketSummaryLabel && (
-                        <span className={clsx('text-[11px]', ticketMetaError ? 'text-red-600' : 'text-primary-600')}>
+                        <span className={clsx('text-[11px]', ticketMetaError ? 'text-danger-dark' : 'text-primary-600')}>
                           {ticketSummaryLabel}
                         </span>
                       )}
@@ -2542,7 +2542,7 @@ export default function Chat() {
                         <span
                           className={clsx(
                             'text-[11px]',
-                            contextUsageLabel.overLimit ? 'text-amber-600' : 'text-primary-600'
+                            contextUsageLabel.overLimit ? 'text-warning-dark' : 'text-primary-600'
                           )}
                         >
                           {contextUsageLabel.label}
@@ -2588,8 +2588,8 @@ export default function Chat() {
               </div>
             )}
             {error && (
-              <div className="mt-2 bg-red-50 border-2 border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="mt-2 bg-danger-lighter border-2 border-danger-light rounded-lg p-3">
+                <p className="text-sm text-danger-darker">{error}</p>
               </div>
             )}
           </div>
@@ -3001,7 +3001,7 @@ function TicketPanel({ spec, data, containerRef, selection }: TicketPanelProps) 
             <div className="text-sm font-semibold text-primary-900">Détail</div>
             <button type="button" onClick={backToList} className="text-xs rounded-full border px-2 py-1 hover:bg-primary-50">Tout voir</button>
           </div>
-          <div className="text-sm text-red-600">Configuration manquante: clé primaire introuvable.</div>
+          <div className="text-sm text-danger-dark">Configuration manquante: clé primaire introuvable.</div>
         </div>
       )
     }
@@ -3263,7 +3263,7 @@ function MessageBubble({
               </div>
             )}
             {chartSaveError && (
-              <p className="text-xs text-red-600 pt-2">
+              <p className="text-xs text-danger-dark pt-2">
                 {chartSaveError}
               </p>
             )}
@@ -3295,7 +3295,7 @@ function MessageBubble({
                       className={clsx(
                         'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors',
                         feedbackUp
-                          ? 'bg-green-100 border-green-200 text-green-800'
+                          ? 'bg-success-lighter border-success-light text-success-darker'
                           : 'border-primary-200 text-primary-600 hover:bg-primary-50',
                         feedbackPending && 'opacity-60 cursor-not-allowed'
                       )}
@@ -3311,7 +3311,7 @@ function MessageBubble({
                       className={clsx(
                         'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors',
                         feedbackDown
-                          ? 'bg-red-100 border-red-200 text-red-800'
+                          ? 'bg-danger-lighter border-danger-light text-danger-darker'
                           : 'border-primary-200 text-primary-600 hover:bg-primary-50',
                         feedbackPending && 'opacity-60 cursor-not-allowed'
                       )}
@@ -3357,7 +3357,7 @@ function MessageBubble({
                   {showDetails ? 'Masquer' : 'Détails'}
                 </Button>
                 {message.feedbackError && (
-                  <span className="text-[11px] text-red-600">{message.feedbackError}</span>
+                  <span className="text-[11px] text-danger-dark">{message.feedbackError}</span>
                 )}
               </div>
             )}

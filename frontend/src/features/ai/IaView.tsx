@@ -435,7 +435,7 @@ export default function IaView() {
           <Loader text="Chargement des répartitions Category / Sub Category…" />
         </Card>
       ) : error ? (
-        <Card variant="elevated" className="py-6 px-4 text-sm text-red-600">{error}</Card>
+        <Card variant="elevated" className="py-6 px-4 text-sm text-danger-dark">{error}</Card>
       ) : sourcesWithCategories.length === 0 ? (
         <Card variant="elevated" className="py-10 px-4 text-center text-primary-600">
           Aucune source ne contient les colonnes « Category » et « Sub Category » avec des valeurs
@@ -678,7 +678,7 @@ function SelectionPreview({
           <Loader text="Chargement de l’aperçu…" />
         </div>
       ) : error ? (
-        <p className="text-sm text-red-700">{error}</p>
+        <p className="text-sm text-danger-darker">{error}</p>
       ) : !preview || rows.length === 0 ? (
         <p className="text-sm text-primary-600">Aucune ligne trouvée pour cette sélection.</p>
       ) : (
