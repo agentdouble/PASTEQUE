@@ -176,6 +176,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Les actions Explorer (sélection dans le donut, tri date, pagination, ajustement du filtre date) gardent l’aperçu visible pendant le chargement pour éviter les flashes et les sauts visuels.
 - Le composant donut applique une marge interne renforcée (padding + rayon borné) pour éviter qu’un segment soit tronqué pendant les interactions.
 - Le badge central (catégorie/sous-catégorie + volume) a été retiré du donut pour épurer la visualisation et éviter tout chevauchement visuel.
+- L’anneau du donut a été légèrement épaissi (`radius` 90%, `cutout` 72%) pour améliorer la lisibilité visuelle.
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
 - Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et le donut.
 - La navigation se fait directement via le donut (clic catégorie puis sous-catégorie).

@@ -139,7 +139,7 @@ export default function CategoryStackedChart({
           borderRadius: 6,
           spacing: 0,
           clip: false,
-          radius: '88%',
+          radius: '90%',
           hoverOffset: 6,
         },
       ],
@@ -182,7 +182,7 @@ export default function CategoryStackedChart({
       layout: {
         padding: 28,
       },
-      cutout: '75%',
+      cutout: '72%',
     }),
     []
   )
