@@ -307,6 +307,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 
 ## Notes UI
 
+- 2026-02-06: Le mot‑symbole `FoyerInsight` du bandeau latéral est stylé en majuscules avec tracking renforcé et une police de titre dédiée (fallback) ; le logo du bandeau est affiché en blanc.
 - 2026-02-06: Le bandeau latéral est désormais en bleu plein (dégradé Foyer) avec contrastes ajustés pour les états actifs/inactifs; les états UI `success/danger/warning` utilisent une palette sémantique Foyer (plus de classes `green/red/amber` natives).
 - 2026-02-06: La palette frontend est alignée sur les couleurs Foyer (référence `foyer-colors.css`) via `primary` Tailwind (incluant `primary-25`) et les couleurs Chart.js (Explorer + donuts) ont été harmonisées pour un rendu plus premium.
 - 2025-10-21: L'état vide du chat (« Discutez avec vos données ») est maintenant centré via un overlay `fixed` non interactif: pas de scroll tant qu'aucun message n'est présent; la barre de saisie reste accessible.

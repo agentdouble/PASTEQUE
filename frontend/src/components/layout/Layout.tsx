@@ -122,10 +122,15 @@ export default function Layout() {
                 <img
                   src={`${import.meta.env.BASE_URL}insight.svg`}
                   alt="Logo FoyerInsight"
-                  className="h-7 w-7 shrink-0"
+                  className="h-7 w-7 shrink-0 brightness-0 invert"
                 />
                 <div className="min-w-0">
-                  <h1 className="truncate text-base font-bold text-white tracking-tight">FoyerInsight</h1>
+                  <h1
+                    className="truncate text-sm font-extrabold uppercase tracking-[0.14em] text-white"
+                    style={{ fontFamily: '"Avenir Next", Montserrat, Inter, sans-serif' }}
+                  >
+                    FoyerInsight
+                  </h1>
                   <p className="truncate text-xs text-primary-200">De la donnée à l'action</p>
                 </div>
               </div>
