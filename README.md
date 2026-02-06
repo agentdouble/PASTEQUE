@@ -337,6 +337,7 @@ Une barre de progression `tqdm` est affichée pour chaque table afin de suivre l
 - 2026-02-05: Le titre de page « Radar » est retiré de `/radar` pour alléger l’en-tête (la navigation active sert déjà de repère).
 - 2026-02-05: Le bandeau latéral remplace l’entrée `Chat` par `Nouveau chat` (action `/chat?new=1`) et le bouton `Nouveau chat` de la barre sticky du flux `/chat` est retiré.
 - 2026-02-05: `Nouveau chat` réinitialise désormais `/chat` vers l’état par défaut (tickets visibles, mode tickets actif, filtres reset) et annule les requêtes en cours pour éviter un écran vide.
+- 2026-02-05: Le clic sur `Nouveau chat` déclenche un fondu court (`animate-fade-in`) sur la vue `/chat` pendant la réinitialisation.
 
 ## Maintenance
 

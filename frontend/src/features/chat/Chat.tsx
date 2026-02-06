@@ -618,17 +618,43 @@ export default function Chat() {
   const [tablesLoading] = useState(false)
   // Saving behavior: opt‑in for updating user defaults to avoid cross‑tab races
   const [saveAsDefault, setSaveAsDefault] = useState(false)
+  const [newChatFading, setNewChatFading] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const ticketPreviewAbortRef = useRef<AbortController | null>(null)
   const ticketPreviewRequestRef = useRef(0)
   const explorerSelectionAbortRef = useRef<AbortController | null>(null)
+  const newChatFadeTimerRef = useRef<number | null>(null)
   const ticketPanelRef = useRef<HTMLDivElement>(null)
   const mobileTicketsRef = useRef<HTMLDivElement>(null)
   const deepSearchStatusRef = useRef('')
   const deepSearchUsedWordsRef = useRef<Set<string>>(new Set())
   const explorerSelectionKeyRef = useRef<string | null>(null)
   const explorerSelectionAppliedKeyRef = useRef<string | null>(null)
+
+  function triggerNewChatFade() {
+    if (newChatFadeTimerRef.current) {
+      window.clearTimeout(newChatFadeTimerRef.current)
+      newChatFadeTimerRef.current = null
+    }
+    setNewChatFading(false)
+    window.requestAnimationFrame(() => {
+      setNewChatFading(true)
+      newChatFadeTimerRef.current = window.setTimeout(() => {
+        setNewChatFading(false)
+        newChatFadeTimerRef.current = null
+      }, 220)
+    })
+  }
+
+  useEffect(
+    () => () => {
+      if (newChatFadeTimerRef.current) {
+        window.clearTimeout(newChatFadeTimerRef.current)
+      }
+    },
+    []
+  )
 
   useEffect(() => {
     if (!ticketMode || !awaitingFirstDelta) {
@@ -1610,6 +1636,7 @@ export default function Chat() {
 
   // Reset the chat session state to the default ticket-first view.
   function onNewChat() {
+    triggerNewChatFade()
     if (loading && abortRef.current) {
       abortRef.current.abort()
     }
@@ -2210,7 +2237,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5">
+    <div className={clsx('grid h-full min-h-0 grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5', newChatFading && 'animate-fade-in')}>
       {/* Colonne gauche: Ticket exploration */}
       <aside className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-5 h-full min-h-0">
         <div ref={ticketPanelRef} className="border rounded-lg bg-white shadow-sm px-3 pb-3 pt-1.5 h-full min-h-0 overflow-auto">
