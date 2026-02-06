@@ -281,19 +281,6 @@ export default function CategoryStackedChart({
       <div className="relative grid gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-center">
         <div className="relative mx-auto w-full max-w-[380px] overflow-visible p-3" style={{ height }}>
           <Doughnut ref={chartRef} data={chartData} options={options} onClick={handleClick} />
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="w-[62%] max-w-[210px] rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-center shadow-sm backdrop-blur-sm">
-              <p className="text-[10px] uppercase tracking-wide text-primary-500">
-                {isDrilled ? 'Sous-catégories' : 'Catégories'}
-              </p>
-              <p className="text-lg font-bold text-primary-950">{totalValue.toLocaleString('fr-FR')}</p>
-              {isDrilled && focusedCategory ? (
-                <p className="mx-auto max-w-[180px] truncate text-[11px] text-primary-600">
-                  {focusedCategory}
-                </p>
-              ) : null}
-            </div>
-          </div>
         </div>
         <div className="space-y-2">
           <p className="text-[11px] uppercase tracking-wide text-primary-500">
