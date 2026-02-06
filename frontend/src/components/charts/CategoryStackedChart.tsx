@@ -182,7 +182,7 @@ export default function CategoryStackedChart({
       layout: {
         padding: 28,
       },
-      cutout: '70%',
+      cutout: '75%',
     }),
     []
   )
@@ -282,7 +282,7 @@ export default function CategoryStackedChart({
         <div className="relative mx-auto w-full max-w-[380px] overflow-visible p-3" style={{ height }}>
           <Doughnut ref={chartRef} data={chartData} options={options} onClick={handleClick} />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="w-[72%] max-w-[230px] rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-center shadow-sm backdrop-blur-sm">
+            <div className="w-[62%] max-w-[210px] rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-center shadow-sm backdrop-blur-sm">
               <p className="text-[10px] uppercase tracking-wide text-primary-500">
                 {isDrilled ? 'Sous-catégories' : 'Catégories'}
               </p>

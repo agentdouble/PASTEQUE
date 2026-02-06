@@ -175,7 +175,7 @@ Un routeur léger s’exécute à chaque message utilisateur pour éviter de lan
 - Une animation courte (fade/slide) est déclenchée lors d’un changement de catégorie/sous-catégorie pour rendre la transition visuelle plus claire.
 - Les actions Explorer (sélection dans le donut, tri date, pagination, ajustement du filtre date) gardent l’aperçu visible pendant le chargement pour éviter les flashes et les sauts visuels.
 - Le composant donut applique une marge interne renforcée (padding + rayon borné) pour éviter qu’un segment soit tronqué pendant les interactions.
-- Le badge central (catégorie/sous-catégorie) est contraint en largeur et le `cutout` est augmenté pour éviter tout chevauchement visuel avec l’anneau.
+- Le badge central (catégorie/sous-catégorie) est davantage contraint (`w` 62% max 210px) et le `cutout` du donut est relevé à 75% pour éviter tout chevauchement visuel avec l’anneau.
 - Les répartitions Category/Sub Category renvoient l’ensemble des couples disponibles afin d’éviter des totaux tronqués.
 - Les tuiles de synthèse (sources/couples/sélection) ont été retirées de l’Explorer pour alléger l’interface et concentrer l’espace sur l’aperçu et le donut.
 - La navigation se fait directement via le donut (clic catégorie puis sous-catégorie).
